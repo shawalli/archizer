@@ -146,6 +146,254 @@ The extension solves the problem of order history clutter and privacy concerns w
 - `updateHideType(orderNumber, hideType)` - Toggle between "details" and "full" hiding
 - `getFilteredOrders(tags, hiddenByUser)` - Retrieve orders filtered by tags and user
 
+## Apps Script Template
+
+**Copy and paste this code into your Google Apps Script project:**
+
+```javascript
+/**
+ * Amazon Order Archiver - Google Apps Script Backend
+ * Copy this code into your Apps Script project and deploy as a web app
+ */
+
+// Configuration - Update these values
+const SHEET_NAME = 'HiddenOrders'; // Name of your sheet tab
+const HEADERS = ['order_number', 'hide_type', 'price', 'order_date', 'hidden_date', 'tags', 'hidden_by_user'];
+
+/**
+ * Initialize the sheet with proper headers if it doesn't exist
+ */
+function initializeSheet() {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  let sheet = ss.getSheetByName(SHEET_NAME);
+  
+  if (!sheet) {
+    sheet = ss.insertSheet(SHEET_NAME);
+    sheet.getRange(1, 1, 1, HEADERS.length).setValues([HEADERS]);
+    sheet.getRange(1, 1, 1, HEADERS.length).setFontWeight('bold');
+  }
+  
+  return sheet;
+}
+
+/**
+ * Main entry point for web app requests
+ */
+function doPost(e) {
+  try {
+    const data = JSON.parse(e.postData.contents);
+    const action = data.action;
+    
+    switch (action) {
+      case 'addHiddenOrder':
+        return addHiddenOrder(data.orderNumber, data.hideType, data.price, data.orderDate, data.tags, data.hiddenByUser);
+      case 'removeHiddenOrder':
+        return removeHiddenOrder(data.orderNumber);
+      case 'getHiddenOrders':
+        return getHiddenOrders();
+      case 'updateHideType':
+        return updateHideType(data.orderNumber, data.hideType);
+      case 'getFilteredOrders':
+        return getFilteredOrders(data.tags, data.hiddenByUser);
+      default:
+        return createResponse(false, 'Unknown action: ' + action);
+    }
+  } catch (error) {
+    return createResponse(false, 'Error: ' + error.toString());
+  }
+}
+
+/**
+ * Add a new hidden order
+ */
+function addHiddenOrder(orderNumber, hideType, price, orderDate, tags, hiddenByUser) {
+  try {
+    const sheet = initializeSheet();
+    const hiddenDate = new Date().toISOString();
+    
+    // Check if order already exists
+    const existingRow = findOrderRow(orderNumber);
+    if (existingRow > 0) {
+      // Update existing order
+      sheet.getRange(existingRow, 2, 1, 6).setValues([[hideType, price, orderDate, hiddenDate, tags, hiddenByUser]]);
+    } else {
+      // Add new order
+      sheet.appendRow([orderNumber, hideType, price, orderDate, hiddenDate, tags, hiddenByUser]);
+    }
+    
+    return createResponse(true, 'Order hidden successfully');
+  } catch (error) {
+    return createResponse(false, 'Error adding hidden order: ' + error.toString());
+  }
+}
+
+/**
+ * Remove/unhide an order
+ */
+function removeHiddenOrder(orderNumber) {
+  try {
+    const sheet = initializeSheet();
+    const row = findOrderRow(orderNumber);
+    
+    if (row > 0) {
+      sheet.deleteRow(row);
+      return createResponse(true, 'Order unhidden successfully');
+    } else {
+      return createResponse(false, 'Order not found');
+    }
+  } catch (error) {
+    return createResponse(false, 'Error removing hidden order: ' + error.toString());
+  }
+}
+
+/**
+ * Get all hidden orders
+ */
+function getHiddenOrders() {
+  try {
+    const sheet = initializeSheet();
+    const data = sheet.getDataRange().getValues();
+    
+    if (data.length <= 1) {
+      return createResponse(true, 'No hidden orders found', []);
+    }
+    
+    const orders = data.slice(1).map(row => ({
+      orderNumber: row[0],
+      hideType: row[1],
+      price: row[2],
+      orderDate: row[3],
+      hiddenDate: row[4],
+      tags: row[5],
+      hiddenByUser: row[6]
+    }));
+    
+    return createResponse(true, 'Orders retrieved successfully', orders);
+  } catch (error) {
+    return createResponse(false, 'Error getting hidden orders: ' + error.toString());
+  }
+}
+
+/**
+ * Update hide type for an existing order
+ */
+function updateHideType(orderNumber, hideType) {
+  try {
+    const sheet = initializeSheet();
+    const row = findOrderRow(orderNumber);
+    
+    if (row > 0) {
+      sheet.getRange(row, 2).setValue(hideType);
+      return createResponse(true, 'Hide type updated successfully');
+    } else {
+      return createResponse(false, 'Order not found');
+    }
+  } catch (error) {
+    return createResponse(false, 'Error updating hide type: ' + error.toString());
+  }
+}
+
+/**
+ * Get filtered orders based on tags and user
+ */
+function getFilteredOrders(tags, hiddenByUser) {
+  try {
+    const allOrders = getHiddenOrders();
+    if (!allOrders.success) {
+      return allOrders;
+    }
+    
+    let filteredOrders = allOrders.data;
+    
+    // Filter by tags if provided
+    if (tags && tags.length > 0) {
+      filteredOrders = filteredOrders.filter(order => {
+        const orderTags = order.tags.toLowerCase().split(',');
+        return tags.some(tag => orderTags.includes(tag.toLowerCase()));
+      });
+    }
+    
+    // Filter by user if provided
+    if (hiddenByUser) {
+      filteredOrders = filteredOrders.filter(order => 
+        order.hiddenByUser.toLowerCase().includes(hiddenByUser.toLowerCase())
+      );
+    }
+    
+    return createResponse(true, 'Filtered orders retrieved successfully', filteredOrders);
+  } catch (error) {
+    return createResponse(false, 'Error filtering orders: ' + error.toString());
+  }
+}
+
+/**
+ * Helper function to find order row by order number
+ */
+function findOrderRow(orderNumber) {
+  const sheet = initializeSheet();
+  const data = sheet.getDataRange().getValues();
+  
+  for (let i = 1; i < data.length; i++) {
+    if (data[i][0] === orderNumber) {
+      return i + 1; // +1 because getRange is 1-indexed
+    }
+  }
+  
+  return -1; // Not found
+}
+
+/**
+ * Helper function to create consistent response format
+ */
+function createResponse(success, message, data = null) {
+  const response = {
+    success: success,
+    message: message
+  };
+  
+  if (data !== null) {
+    response.data = data;
+  }
+  
+  return ContentService
+    .createTextOutput(JSON.stringify(response))
+    .setMimeType(ContentService.MimeType.JSON);
+}
+
+/**
+ * Test function - run this to verify your setup works
+ */
+function testSetup() {
+  console.log('Testing Apps Script setup...');
+  
+  // Test adding an order
+  const addResult = addHiddenOrder('123-456789-123456', 'full', '$29.99', '2024-01-15', 'test,setup', 'TestUser');
+  console.log('Add test:', addResult.getContent());
+  
+  // Test getting orders
+  const getResult = getHiddenOrders();
+  console.log('Get test:', getResult.getContent());
+  
+  // Test removing the order
+  const removeResult = removeHiddenOrder('123-456789-123456');
+  console.log('Remove test:', removeResult.getContent());
+  
+  console.log('Setup test complete!');
+}
+```
+
+**Setup Instructions:**
+1. Open Google Apps Script (script.google.com)
+2. Create a new project
+3. Replace the default code with the template above
+4. Save the project with a meaningful name (e.g., "Amazon Order Archiver")
+5. Run the `testSetup()` function to verify everything works
+6. Deploy as a web app:
+   - Click "Deploy" → "New deployment"
+   - Choose "Web app" as the type
+   - Set execute as "Me" and access to "Anyone with Google account"
+   - Copy the web app URL for use in the Chrome extension
+
 ## Open Questions
 
 1. **Amazon Layout Changes**: How frequently should we monitor for Amazon UI changes, and what's the update strategy?
