@@ -1,0 +1,3 @@
+#!/usr/bin/env bash
+#MISE description="Run unit tests"
+mise exec node -- npm run test

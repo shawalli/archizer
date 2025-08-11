@@ -29,12 +29,12 @@
 
 ## Tasks
 
-- [ ] 1.0 **Chrome Extension Foundation Setup**
-  - [ ] 1.1 Create `manifest.json` with required permissions (activeTab, storage, identity, host permissions for amazon.com and Google Sheets API)
-  - [ ] 1.2 Set up project structure with proper directory organization
-  - [ ] 1.3 Configure build process and development environment
-  - [ ] 1.4 Set up Jest testing framework for unit testing
-  - [ ] 1.5 Create basic extension loading and error handling
+- [x] 1.0 **Chrome Extension Foundation Setup**
+  - [x] 1.1 Create `manifest.json` with required permissions (activeTab, storage, identity, host permissions for amazon.com and Google Sheets API)
+  - [x] 1.2 Set up project structure with proper directory organization
+  - [x] 1.3 Configure build process and development environment
+  - [x] 1.4 Set up Jest testing framework for unit testing
+  - [x] 1.5 Create basic extension loading and error handling
 
 - [ ] 2.0 **Content Script Implementation for Amazon Integration**
   - [ ] 2.1 Implement order detection and parsing on Amazon order history page

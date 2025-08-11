@@ -1,0 +1,10 @@
+/* Popup Styles for Amazon Order Archiver */
+
+.popup-container {
+    /* TODO: Add popup styling */
+    width: 400px;
+    min-height: 300px;
+    padding: 16px;
+}
+
+/* TODO: Add responsive design styles */
