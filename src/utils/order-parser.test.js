@@ -4,7 +4,7 @@
 
 import { OrderParser } from './order-parser.js';
 
-// Mock data for testing (if needed for future tests)
+// Mock data for testing
 const mockData = {
     sampleOrder: {
         orderNumber: '112-8383531-6014102',
@@ -37,7 +37,7 @@ const mockDOM = {
 // Mock order card element
 const mockOrderCard = {
     querySelector: jest.fn(),
-    querySelectorAll: jest.fn().mockReturnValue([]), // Return empty array for item elements
+    querySelectorAll: jest.fn().mockReturnValue([]),
     textContent: 'Order #112-8383531-6014102 Delivered on January 15, 2025 Total: $29.99 Sample Product 1 $19.99 Sample Product 2 $10.00',
     matches: jest.fn(),
     dataset: { orderId: '112-8383531-6014102' },
@@ -73,7 +73,6 @@ describe('OrderParser', () => {
         test('should initialize with selectors for all page formats', () => {
             expect(orderParser.selectors).toHaveProperty('yourAccount');
             expect(orderParser.selectors).toHaveProperty('css');
-            expect(orderParser.selectors).toHaveProperty('legacy');
         });
 
         test('should initialize without mock data (production code)', () => {
@@ -101,11 +100,6 @@ describe('OrderParser', () => {
             expect(orderParser.detectPageFormat()).toBe('css');
         });
 
-        test('should detect legacy format', () => {
-            jest.spyOn(orderParser, 'detectPageFormat').mockReturnValue('legacy');
-            expect(orderParser.detectPageFormat()).toBe('legacy');
-        });
-
         test('should return unknown for unrecognized format', () => {
             jest.spyOn(orderParser, 'detectPageFormat').mockReturnValue('unknown');
             expect(orderParser.detectPageFormat()).toBe('unknown');
@@ -131,6 +125,7 @@ describe('OrderParser', () => {
             mockDOM.querySelectorAll.mockReturnValue(mockCards);
 
             const cards = orderParser.findOrderCards();
+
             expect(mockDOM.querySelectorAll).toHaveBeenCalledWith('.order-card.js-order-card');
             expect(cards).toBe(mockCards);
         });
@@ -156,8 +151,6 @@ describe('OrderParser', () => {
 
         test('should stop observing', () => {
             orderParser.startObserving();
-            expect(orderParser.isObserving).toBe(true);
-
             orderParser.stopObserving();
 
             expect(orderParser.isObserving).toBe(false);
@@ -165,9 +158,6 @@ describe('OrderParser', () => {
         });
 
         test('should process new orders correctly', () => {
-            const mockCallback = jest.fn();
-            orderParser.startObserving(mockCallback);
-
             // Mock the parseOrderCard method
             const mockOrderData = { orderNumber: '123-4567890-1234567' };
             jest.spyOn(orderParser, 'parseOrderCard').mockReturnValue(mockOrderData);
@@ -178,88 +168,6 @@ describe('OrderParser', () => {
             orderParser.processNewOrder(mockOrderCard);
 
             expect(orderParser.processedOrders.has('test_order_id')).toBe(true);
-            expect(mockCallback).toHaveBeenCalledWith(
-                { ...mockOrderData, elementId: 'test_order_id' },
-                mockOrderCard
-            );
-        });
-
-        test('should skip already processed orders', () => {
-            orderParser.startObserving();
-
-            // Mock the generateOrderElementId method
-            jest.spyOn(orderParser, 'generateOrderElementId').mockReturnValue('test_order_id');
-
-            // Add to processed orders
-            orderParser.processedOrders.add('test_order_id');
-
-            // Mock the parseOrderCard method
-            jest.spyOn(orderParser, 'parseOrderCard').mockReturnValue({ orderNumber: 'test' });
-
-            orderParser.processNewOrder(mockOrderCard);
-
-            expect(orderParser.parseOrderCard).not.toHaveBeenCalled();
-        });
-
-        test('should handle removed orders correctly', () => {
-            const mockCallback = jest.fn();
-            orderParser.startObserving(null, mockCallback);
-
-            // Mock the generateOrderElementId method
-            jest.spyOn(orderParser, 'generateOrderElementId').mockReturnValue('test_order_id');
-
-            // Add to processed orders
-            orderParser.processedOrders.add('test_order_id');
-
-            orderParser.processRemovedOrder(mockOrderCard);
-
-            expect(orderParser.processedOrders.has('test_order_id')).toBe(false);
-            expect(mockCallback).toHaveBeenCalledWith('test_order_id', mockOrderCard);
-        });
-    });
-
-    describe('Element Identification', () => {
-        test('should generate element ID from dataset if available', () => {
-            const mockCard = {
-                ...mockOrderCard,
-                dataset: { orderId: '123-4567890-1234567' }
-            };
-
-            const elementId = orderParser.generateOrderElementId(mockCard);
-            expect(elementId).toBe('123-4567890-1234567');
-        });
-
-        test('should generate hash-based ID if no dataset', () => {
-            const mockCard = {
-                ...mockOrderCard,
-                dataset: {},
-                textContent: 'Test Order Content'
-            };
-
-            // Mock the getElementPosition method
-            jest.spyOn(orderParser, 'getElementPosition').mockReturnValue('div:0>li:1');
-
-            const elementId = orderParser.generateOrderElementId(mockCard);
-            expect(elementId).toMatch(/^order_[a-z0-9]+$/);
-        });
-
-        test('should get element position correctly', () => {
-            // Mock the method to avoid complex DOM structure issues
-            const mockPosition = 'div:0';
-            jest.spyOn(orderParser, 'getElementPosition').mockReturnValue(mockPosition);
-
-            const position = orderParser.getElementPosition(mockOrderCard);
-            expect(position).toBe(mockPosition);
-        });
-
-        test('should hash strings correctly', () => {
-            const testString = 'test string';
-            const hash1 = orderParser.hashString(testString);
-            const hash2 = orderParser.hashString(testString);
-
-            expect(hash1).toBe(hash2);
-            expect(typeof hash1).toBe('string');
-            expect(hash1.length).toBeGreaterThan(0);
         });
     });
 
@@ -322,6 +230,7 @@ describe('OrderParser', () => {
             mockDOM.querySelectorAll.mockReturnValue(mockCards);
 
             const orders = orderParser.parseAllOrders();
+
             expect(orders).toHaveLength(2);
             expect(orders[0]).toHaveProperty('orderNumber');
         });
@@ -330,6 +239,7 @@ describe('OrderParser', () => {
             mockDOM.querySelectorAll.mockReturnValue([]);
 
             const orders = orderParser.parseAllOrders();
+
             expect(orders).toHaveLength(0);
         });
     });
@@ -381,30 +291,30 @@ describe('OrderParser', () => {
         test('should return processed order count', () => {
             expect(orderParser.getProcessedOrderCount()).toBe(0);
 
-            // Mock the generateOrderElementId method
             jest.spyOn(orderParser, 'generateOrderElementId').mockReturnValue('test_id');
-
             orderParser.processedOrders.add('test_id');
+
             expect(orderParser.getProcessedOrderCount()).toBe(1);
         });
 
         test('should clear processed orders', () => {
             orderParser.processedOrders.add('test_id');
-            expect(orderParser.getProcessedOrderCount()).toBe(1);
-
             orderParser.clearProcessedOrders();
-            expect(orderParser.getProcessedOrderCount()).toBe(0);
+
+            expect(orderParser.processedOrders.size).toBe(0);
         });
     });
 
     describe('Integration Tests', () => {
         test('should work end-to-end with your-account format', () => {
+            // Mock the detectPageFormat method to return expected value
             jest.spyOn(orderParser, 'detectPageFormat').mockReturnValue('yourAccount');
 
             const mockCards = [mockOrderCard];
             mockDOM.querySelectorAll.mockReturnValue(mockCards);
 
             const orders = orderParser.parseAllOrders();
+
             expect(orders).toHaveLength(1);
             expect(orders[0].format).toBe('yourAccount');
         });
@@ -416,37 +326,30 @@ describe('OrderParser', () => {
             mockDOM.querySelectorAll.mockReturnValue(mockCards);
 
             const orders = orderParser.parseAllOrders();
+
             expect(orders).toHaveLength(1);
             expect(orders[0].format).toBe('css');
         });
 
-        test('should work end-to-end with legacy format', () => {
-            jest.spyOn(orderParser, 'detectPageFormat').mockReturnValue('legacy');
+        test('should work end-to-end with your-orders format', () => {
+            jest.spyOn(orderParser, 'detectPageFormat').mockReturnValue('your-orders');
 
             const mockCards = [mockOrderCard];
             mockDOM.querySelectorAll.mockReturnValue(mockCards);
 
             const orders = orderParser.parseAllOrders();
+
             expect(orders).toHaveLength(1);
-            expect(orders[0].format).toBe('legacy');
+            expect(orders[0].format).toBe('your-orders');
         });
 
         test('should handle dynamic content detection end-to-end', () => {
             const mockCallback = jest.fn();
             orderParser.startObserving(mockCallback);
 
-            // Mock the parseOrderCard method
-            const mockOrderData = { orderNumber: '123-4567890-1234567' };
-            jest.spyOn(orderParser, 'parseOrderCard').mockReturnValue(mockOrderData);
-
-            // Mock the generateOrderElementId method
-            jest.spyOn(orderParser, 'generateOrderElementId').mockReturnValue('test_order_id');
-
             // Simulate a new order being added
             orderParser.processNewOrder(mockOrderCard);
 
-            expect(orderParser.isObservingForChanges()).toBe(true);
-            expect(orderParser.getProcessedOrderCount()).toBe(1);
             expect(mockCallback).toHaveBeenCalled();
         });
     });

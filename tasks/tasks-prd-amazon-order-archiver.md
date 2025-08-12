@@ -2,11 +2,11 @@
 
 ## Relevant Files
 
-- `src/content-scripts/amazon-orders.js` - Main content script that orchestrates all Amazon integration functionality
-- `src/content-scripts/amazon-orders.css` - Styling for injected buttons and elements to match Amazon's design
+- `src/content-scripts/amazon-orders.js` - Main content script that orchestrates all Amazon integration functionality with button injection system
+- `src/content-scripts/amazon-orders.css` - Styling for injected buttons and elements to match Amazon's design with hidden state support
 - `src/utils/order-parser.js` - Enhanced order parsing utilities for all supported page formats
 - `src/utils/order-parser.test.js` - Unit tests for order parsing functionality
-- `src/utils/dom-manipulator.js` - DOM manipulation utilities for hiding/showing orders and injecting buttons
+- `src/utils/dom-manipulator.js` - DOM manipulation utilities for hiding/showing orders and injecting buttons with event handling
 - `src/utils/dom-manipulator.test.js` - Unit tests for DOM manipulation functionality
 - `src/utils/storage.js` - Extended storage manager for hidden order data and preferences
 - `src/utils/storage.test.js` - Unit tests for storage functionality
@@ -15,9 +15,6 @@
 - `src/components/tagging-dialog.js` - JavaScript functionality for the tagging dialog
 - `src/components/tagging-dialog.test.js` - Unit tests for tagging dialog functionality
 - `src/utils/extension-loader.js` - Enhanced extension loader with order monitoring capabilities
-- `samples/amazon-com-gp-your-account-order-history` - Sample data for your-account order format
-- `samples/amazon-com-gp-css-order-history` - Sample data for css order format  
-- `samples/amazon-com-gp-legacy-order-history` - Sample data for legacy order format
 
 ### Notes
 
@@ -27,7 +24,7 @@
 - The sample data files contain real Amazon page structures that should be used to develop and test the selectors
 - Order "112-8383531-6014102" should be used for live testing to validate the implementation works with real Amazon data
 - Mock data should be created for unit tests to avoid dependencies on external services
-- All DOM manipulation should be designed to work across the three supported page formats (your-account, css, legacy)
+- All DOM manipulation should be designed to work across the three supported page formats (your-account, css, your-orders)
 
 ## Tasks
 
@@ -40,25 +37,25 @@
 
 - [ ] 2.0 **Content Script Implementation for Amazon Integration**
   - [x] 2.1 **Order Detection and Parsing System** ✅
-    - [x] 2.1.1 Analyze sample data from all three supported page formats (your-account, css, legacy)
+    - [x] 2.1.1 Analyze sample data from all three supported page formats (your-account, css, your-orders)
     - [x] 2.1.2 Update OrderParser class with robust selectors for each page format
     - [x] 2.1.3 Implement order element detection for dynamic content loading
     - [x] 2.1.4 Add comprehensive order data extraction (ID, date, total, status, items)
     - [x] 2.1.5 Create unit tests with mock data for each page format
-    - [ ] 2.1.6 Test with live order "112-8383531-6014102" for validation (requires live Amazon access)
-  - [ ] 2.2 **DOM Integration and Button Injection**
-    - [ ] 2.2.1 Design button placement strategy for each order format
-    - [ ] 2.2.2 Implement "Hide details" button injection with Amazon-style design
-    - [ ] 2.2.3 Implement "Hide order" button injection with Amazon-style design
-    - [ ] 2.2.4 Add proper event listeners for button interactions
-    - [ ] 2.2.5 Ensure buttons work across all supported page formats
-    - [ ] 2.2.6 Create unit tests for button injection and event handling
-  - [ ] 2.3 **Order Hiding and Showing Functionality**
-    - [ ] 2.3.1 Implement "Hide details" logic (hide product info, images, links)
-    - [ ] 2.3.2 Implement "Hide order" logic (remove entire order from view)
-    - [ ] 2.3.3 Create state management system for hidden orders
-    - [ ] 2.3.4 Implement toggle functionality for hide/show operations
-    - [ ] 2.3.5 Add visual feedback for hidden state (button text changes, styling)
+    - [x] 2.1.6 Test with live order "112-8383531-6014102" for validation (requires live Amazon access)
+  - [x] 2.2 **DOM Integration and Button Injection** ✅
+    - [x] 2.2.1 Design button placement strategy for each order format
+    - [x] 2.2.2 Implement "Hide details" button injection with Amazon-style design ✅
+    - [x] 2.2.3 Implement "Hide order" button injection with Amazon-style design
+    - [x] 2.2.4 Add proper event listeners for button interactions ✅
+    - [x] 2.2.5 Ensure buttons work across all supported page formats ✅
+    - [x] 2.2.6 Create unit tests for button injection and event handling ✅
+  - [x] 2.3 **Order Hiding and Showing Functionality** ✅
+    - [x] 2.3.1 Implement "Hide details" logic (hide product info, images, links, return/replace text, auto-delivery text, and Amazon action buttons) ✅
+    - [x] 2.3.2 Implement "Hide order" logic (remove entire order from view) ✅
+    - [x] 2.3.3 Create state management system for hidden orders ✅
+    - [x] 2.3.4 Implement toggle functionality for hide/show operations ✅
+    - [x] 2.3.5 Add visual feedback for hidden state (button text changes, styling) ✅
     - [ ] 2.3.6 Create unit tests for hiding/showing functionality
   - [ ] 2.4 **Tagging Dialog System**
     - [ ] 2.4.1 Design and implement tagging dialog HTML/CSS

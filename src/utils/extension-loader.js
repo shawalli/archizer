@@ -52,8 +52,7 @@ export class ExtensionLoader {
         const supportedPatterns = [
             /amazon\.com\/gp\/your-account\/order-history/,
             /amazon\.com\/gp\/css\/order-history/,
-            /amazon\.com\/gp\/legacy\/order-history/,
-
+            /amazon\.com\/your-orders\/orders/,
         ];
 
         return supportedPatterns.some(pattern => pattern.test(currentUrl));

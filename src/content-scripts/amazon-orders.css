@@ -1,10 +1,138 @@
-/* Amazon Orders Content Script Styles */
-/* Styling for injected buttons and order elements */
+/* Amazon Order Archiver Content Script Styles */
 
-.amazon-archiver-button {
-    /* TODO: Add button styling */
+/* Button container styling - minimal, no gray box */
+.archivaz-button-container {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-top: 8px;
 }
 
-.amazon-archiver-hidden {
-    /* TODO: Add hidden order styling */
+/* Hidden elements styling */
+.archivaz-hidden-details {
+    display: none !important;
+}
+
+/* Order card states */
+.archivaz-details-hidden {
+    opacity: 0.8;
+    transition: opacity 0.3s ease;
+}
+
+.archivaz-order-hidden {
+    display: none !important;
+}
+
+/* Hidden order indicator */
+.archivaz-hidden-order-indicator {
+    background: #f8f9fa;
+    border: 1px solid #dee2e6;
+    border-radius: 8px;
+    padding: 12px 16px;
+    margin: 8px 0;
+    font-size: 14px;
+    color: #6c757d;
+    transition: all 0.2s ease;
+}
+
+.archivaz-hidden-order-indicator:hover {
+    background: #e9ecef;
+    border-color: #adb5bd;
+}
+
+.archivaz-hidden-order-content {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.archivaz-hidden-order-icon {
+    font-size: 16px;
+    opacity: 0.7;
+}
+
+.archivaz-hidden-order-text {
+    flex: 1;
+    font-weight: 500;
+}
+
+.archivaz-show-order-btn {
+    background: #007bff;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    padding: 6px 12px;
+    font-size: 12px;
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+}
+
+.archivaz-show-order-btn:hover {
+    background: #0056b3;
+}
+
+/* Button states */
+.archivaz-details-hidden {
+    background: #e8f0fe !important;
+    border-color: #4285f4 !important;
+    color: #1a73e8 !important;
+}
+
+.archivaz-order-hidden {
+    background: #fce8e6 !important;
+    border-color: #ea4335 !important;
+    color: #d93025 !important;
+}
+
+/* Button hover states for hidden elements */
+.archivaz-details-hidden:hover {
+    background: #d2e3fc !important;
+    border-color: #1a73e8 !important;
+}
+
+.archivaz-order-hidden:hover {
+    background: #fad2cf !important;
+    border-color: #d93025 !important;
+}
+
+/* Smooth transitions for all state changes */
+.archivaz-button-container,
+.archivaz-button-container button,
+.order-card {
+    transition: all 0.2s ease;
+}
+
+/* Responsive design for smaller screens */
+@media (max-width: 768px) {
+    .archivaz-button-container {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .archivaz-button-container button {
+        margin: 4px 0;
+        width: 100%;
+    }
+}
+
+/* High contrast mode support */
+@media (prefers-contrast: high) {
+    .archivaz-button-container {
+        border-width: 2px;
+    }
+
+    .archivaz-details-hidden,
+    .archivaz-order-hidden {
+        border-width: 2px;
+    }
+}
+
+/* Reduced motion support */
+@media (prefers-reduced-motion: reduce) {
+
+    .archivaz-button-container,
+    .archivaz-button-container button,
+    .order-card {
+        transition: none;
+    }
 }

@@ -29,8 +29,8 @@ export class OrderParser {
                 orderStatus: '.order-status',
                 orderItems: '.order-item'
             },
-            // Legacy format
-            legacy: {
+            // Modern "your-orders" format
+            yourOrders: {
                 orderCards: '.order-card.js-order-card',
                 orderList: '.order-card__list',
                 orderInfo: '.csd-encrypted-sensitive',
@@ -61,10 +61,9 @@ export class OrderParser {
             return 'yourAccount';
         } else if (url.includes('/gp/css/order-history')) {
             return 'css';
-        } else if (url.includes('/gp/legacy/order-history')) {
-            return 'legacy';
+        } else if (url.includes('/your-orders/orders')) {
+            return 'yourOrders';
         }
-
         return 'unknown';
     }
 
