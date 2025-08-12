@@ -2,30 +2,32 @@
 
 ## Relevant Files
 
-- `manifest.json` - Chrome extension manifest with required permissions and content scripts
-- `src/content-scripts/amazon-orders.js` - Content script for injecting buttons and modifying Amazon order history page
-- `src/background/background.js` - Background script for handling Google OAuth and API calls
-- `src/popup/popup.html` - HTML structure for the extension popup interface
-- `src/popup/popup.js` - JavaScript logic for popup functionality and order management
-- `src/popup/popup.css` - Styling for the popup interface
-- `src/utils/google-sheets-api.js` - Utility functions for Google Sheets API integration
-- `src/utils/order-parser.js` - Functions to parse Amazon order data and extract required information
-- `src/utils/storage.js` - Local storage management for user preferences and caching
-- `src/utils/dom-manipulator.js` - DOM manipulation utilities for hiding/showing order elements
-- `src/components/tagging-dialog.js` - Modal dialog component for order tagging functionality
+- `src/content-scripts/amazon-orders.js` - Main content script that orchestrates all Amazon integration functionality
+- `src/content-scripts/amazon-orders.css` - Styling for injected buttons and elements to match Amazon's design
+- `src/utils/order-parser.js` - Enhanced order parsing utilities for all supported page formats
+- `src/utils/order-parser.test.js` - Unit tests for order parsing functionality
+- `src/utils/dom-manipulator.js` - DOM manipulation utilities for hiding/showing orders and injecting buttons
+- `src/utils/dom-manipulator.test.js` - Unit tests for DOM manipulation functionality
+- `src/utils/storage.js` - Extended storage manager for hidden order data and preferences
+- `src/utils/storage.test.js` - Unit tests for storage functionality
+- `src/components/tagging-dialog.html` - HTML template for the tagging dialog
 - `src/components/tagging-dialog.css` - Styling for the tagging dialog
-- `src/components/tagging-dialog.test.js` - Unit tests for tagging dialog component
-- `src/content-scripts/amazon-orders.test.js` - Unit tests for content script functionality
-- `src/popup/popup.test.js` - Unit tests for popup functionality
-- `src/utils/google-sheets-api.test.js` - Unit tests for Google Sheets API utilities
-- `src/utils/order-parser.test.js` - Unit tests for order parsing utilities
-- `src/utils/storage.test.js` - Unit tests for storage utilities
-- `src/utils/dom-manipulator.test.js` - Unit tests for DOM manipulation utilities
+- `src/components/tagging-dialog.js` - JavaScript functionality for the tagging dialog
+- `src/components/tagging-dialog.test.js` - Unit tests for tagging dialog functionality
+- `src/utils/extension-loader.js` - Enhanced extension loader with order monitoring capabilities
+- `samples/amazon-com-gp-your-account-order-history` - Sample data for your-account order format
+- `samples/amazon-com-gp-css-order-history` - Sample data for css order format  
+- `samples/amazon-com-gp-legacy-order-history` - Sample data for legacy order format
 
 ### Notes
 
-- Unit tests should typically be placed alongside the code files they are testing (e.g., `MyComponent.tsx` and `MyComponent.test.tsx` in the same directory).
-- Use `npx jest [optional/path/to/test/file]` to run tests. Running without a path executes all tests found by the Jest configuration.
+- All "npm" commands must be prefixed with "mise exec node -- npm", e.g. "npm run build" -> "mise exec node -- npm run build"
+- Unit tests should be placed alongside the code files they are testing (e.g., `order-parser.js` and `order-parser.test.js` in the same directory)
+- Use `mise run test` to run tests. Running without a path executes all tests found by the Jest configuration
+- The sample data files contain real Amazon page structures that should be used to develop and test the selectors
+- Order "112-8383531-6014102" should be used for live testing to validate the implementation works with real Amazon data
+- Mock data should be created for unit tests to avoid dependencies on external services
+- All DOM manipulation should be designed to work across the three supported page formats (your-account, css, legacy)
 
 ## Tasks
 
@@ -37,13 +39,48 @@
   - [x] 1.5 Create basic extension loading and error handling
 
 - [ ] 2.0 **Content Script Implementation for Amazon Integration**
-  - [ ] 2.1 Implement order detection and parsing on Amazon order history page
-  - [ ] 2.2 Create button injection system for "Hide details" and "Hide order" buttons
-  - [ ] 2.3 Implement order element identification and hiding functionality
-  - [ ] 2.4 Add dynamic monitoring for newly loaded orders (pagination, infinite scroll)
-  - [ ] 2.5 Implement order restoration functionality when unhiding
-  - [ ] 2.6 Add visual styling to match Amazon's design language
-  - [ ] 2.7 Implement error handling for Amazon page structure changes
+  - [x] 2.1 **Order Detection and Parsing System** ✅
+    - [x] 2.1.1 Analyze sample data from all three supported page formats (your-account, css, legacy)
+    - [x] 2.1.2 Update OrderParser class with robust selectors for each page format
+    - [x] 2.1.3 Implement order element detection for dynamic content loading
+    - [x] 2.1.4 Add comprehensive order data extraction (ID, date, total, status, items)
+    - [x] 2.1.5 Create unit tests with mock data for each page format
+    - [ ] 2.1.6 Test with live order "112-8383531-6014102" for validation (requires live Amazon access)
+  - [ ] 2.2 **DOM Integration and Button Injection**
+    - [ ] 2.2.1 Design button placement strategy for each order format
+    - [ ] 2.2.2 Implement "Hide details" button injection with Amazon-style design
+    - [ ] 2.2.3 Implement "Hide order" button injection with Amazon-style design
+    - [ ] 2.2.4 Add proper event listeners for button interactions
+    - [ ] 2.2.5 Ensure buttons work across all supported page formats
+    - [ ] 2.2.6 Create unit tests for button injection and event handling
+  - [ ] 2.3 **Order Hiding and Showing Functionality**
+    - [ ] 2.3.1 Implement "Hide details" logic (hide product info, images, links)
+    - [ ] 2.3.2 Implement "Hide order" logic (remove entire order from view)
+    - [ ] 2.3.3 Create state management system for hidden orders
+    - [ ] 2.3.4 Implement toggle functionality for hide/show operations
+    - [ ] 2.3.5 Add visual feedback for hidden state (button text changes, styling)
+    - [ ] 2.3.6 Create unit tests for hiding/showing functionality
+  - [ ] 2.4 **Tagging Dialog System**
+    - [ ] 2.4.1 Design and implement tagging dialog HTML/CSS
+    - [ ] 2.4.2 Add tag input functionality with comma-separated support
+    - [ ] 2.4.3 Implement dialog positioning and Amazon-style theming
+    - [ ] 2.4.4 Add validation for tag input (length, format, etc.)
+    - [ ] 2.4.5 Integrate dialog with hiding operations
+    - [ ] 2.4.6 Create unit tests for tagging dialog functionality
+  - [ ] 2.5 **Dynamic Content Monitoring**
+    - [ ] 2.5.1 Implement MutationObserver for DOM changes
+    - [ ] 2.5.2 Handle pagination and infinite scroll scenarios
+    - [ ] 2.5.3 Apply hiding rules to newly loaded orders
+    - [ ] 2.5.4 Maintain hidden state across page navigation
+    - [ ] 2.5.5 Optimize performance for large order lists
+    - [ ] 2.5.6 Create unit tests for dynamic content handling
+  - [ ] 2.6 **Data Persistence and Sync Preparation**
+    - [ ] 2.6.1 Extend StorageManager for hidden order data
+    - [ ] 2.6.2 Implement local caching for hidden order preferences
+    - [ ] 2.6.3 Design data structure for hidden orders (order number, type, tags, user, timestamp)
+    - [ ] 2.6.4 Add methods for storing/retrieving hidden order data
+    - [ ] 2.6.5 Prepare data format for future Google Sheets integration
+    - [ ] 2.6.6 Create unit tests for storage functionality
 
 - [ ] 3.0 **Google Sheets API Integration & Authentication**
   - [ ] 3.1 Set up Google OAuth 2.0 authentication flow
