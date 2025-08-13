@@ -57,13 +57,13 @@
     - [x] 2.3.4 Implement toggle functionality for hide/show operations ✅
     - [x] 2.3.5 Add visual feedback for hidden state (button text changes, styling) ✅
     - [ ] 2.3.6 Create unit tests for hiding/showing functionality
-  - [ ] 2.4 **Tagging Dialog System**
-    - [ ] 2.4.1 Design and implement tagging dialog HTML/CSS
-    - [ ] 2.4.2 Add tag input functionality with comma-separated support
-    - [ ] 2.4.3 Implement dialog positioning and Amazon-style theming
-    - [ ] 2.4.4 Add validation for tag input (length, format, etc.)
-    - [ ] 2.4.5 Integrate dialog with hiding operations
-    - [ ] 2.4.6 Create unit tests for tagging dialog functionality
+  - [x] 2.4 **Tagging Dialog System** (Modified) ✅
+    - [x] 2.4.1 Design and implement tagging dialog HTML/CSS
+    - [x] 2.4.2 Add tag input functionality with comma-separated support
+    - [x] 2.4.3 Implement dialog positioning and Amazon-style theming
+    - [x] 2.4.4 Add validation for tag input (length, format, etc.)
+    - [x] 2.4.5 Modify hide operations to show tagging dialog instead of separate Tag & Hide button
+    - [ ] 2.4.6 Update unit tests for modified tagging dialog integration
   - [ ] 2.5 **Dynamic Content Monitoring**
     - [ ] 2.5.1 Implement MutationObserver for DOM changes
     - [ ] 2.5.2 Handle pagination and infinite scroll scenarios

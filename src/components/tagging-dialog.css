@@ -1,11 +1,117 @@
-/* Tagging Dialog Styles */
+/* Custom styling for inline tagging interface */
 
-.tagging-dialog {
-    /* TODO: Add dialog styling */
+/* Ensure the tagging interface has proper spacing and styling */
+#tagging-interface {
+    background: white;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    padding: 20px;
+    margin: 10px 0;
 }
 
-.tagging-dialog-overlay {
-    /* TODO: Add overlay styling */
+/* Style for tag items */
+.tag-item {
+    display: inline-block;
+    background: #e7f3ff;
+    color: #0066cc;
+    padding: 4px 8px;
+    margin: 2px 4px 2px 0;
+    border-radius: 12px;
+    font-size: 12px;
+    position: relative;
 }
 
-/* TODO: Add modal and form styling */
+.tag-item .remove-tag {
+    background: none;
+    border: none;
+    color: #666;
+    cursor: pointer;
+    font-size: 14px;
+    margin-left: 6px;
+    padding: 0;
+    line-height: 1;
+}
+
+.tag-item .remove-tag:hover {
+    color: #d32f2f;
+}
+
+/* Success and error message animations */
+@keyframes successSlideIn {
+    from {
+        opacity: 0;
+        transform: translateX(100%);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
+}
+
+@keyframes errorSlideIn {
+    from {
+        opacity: 0;
+        transform: translateX(100%);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
+}
+
+/* Success and error message styling */
+.tagging-success,
+.tagging-error {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    padding: 12px 20px;
+    border-radius: 6px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    z-index: 10001;
+    font-size: 14px;
+    max-width: 300px;
+    animation: successSlideIn 0.3s ease-out;
+}
+
+.tagging-success {
+    background: #4caf50;
+    color: white;
+}
+
+.tagging-error {
+    background: #d32f2f;
+    color: white;
+}
+
+/* Styling for tags displayed in delivery status when details are hidden */
+.archivaz-delivery-status-tags {
+    margin-top: 8px;
+    padding-top: 8px;
+    border-top: 1px solid #e7e7e7;
+}
+
+.archivaz-delivery-status-tags .archivaz-tags-label {
+    font-size: 12px;
+    color: #666;
+    font-weight: 500;
+    margin-right: 6px;
+}
+
+.archivaz-delivery-status-tags .archivaz-tags-list {
+    display: inline-block;
+    margin-top: 4px;
+}
+
+.archivaz-delivery-status-tag {
+    display: inline-block;
+    background: #e7f3ff;
+    color: #0066cc;
+    padding: 2px 6px;
+    margin: 2px 4px 2px 0;
+    border-radius: 8px;
+    font-size: 11px;
+    font-weight: 500;
+}

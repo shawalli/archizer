@@ -6,6 +6,7 @@ import { globalErrorHandler } from '../utils/error-handler.js';
 import { StorageManager } from '../utils/storage.js';
 import { OrderParser } from '../utils/order-parser.js';
 import { DOMManipulator } from '../utils/dom-manipulator.js';
+import { TaggingDialog } from '../components/tagging-dialog.js';
 
 console.log('🔧 Amazon Order Archiver content script loaded');
 
@@ -51,15 +52,21 @@ async function initializeContentScript() {
         domManipulator.setCallbacks(
             (orderId, type, orderData) => {
                 console.log(`Order ${orderId} ${type} hidden:`, orderData);
-                // TODO: Store hidden order data in storage
+                // Store hidden order data in storage
                 storage.storeHiddenOrder(orderId, type, orderData);
             },
             (orderId, type, orderData) => {
                 console.log(`Order ${orderId} ${type} shown:`, orderData);
-                // TODO: Remove hidden order data from storage
+                // Remove hidden order data from storage
                 storage.removeHiddenOrder(orderId, type);
             }
         );
+
+        // Initialize tagging dialog and wait for it to be fully ready
+        await initializeTaggingDialog();
+
+        // Debug: Check if TaggingDialog is now available
+        console.log('🔍 After initialization - TaggingDialog imported:', typeof TaggingDialog !== 'undefined');
 
         console.log('✅ Dependencies initialized:', { storage, orderParser, domManipulator });
 
@@ -71,6 +78,61 @@ async function initializeContentScript() {
     } catch (error) {
         globalErrorHandler.handleError(error, 'content-script-init', 'error');
         throw error;
+    }
+}
+
+/**
+ * Initialize the tagging dialog component
+ */
+async function initializeTaggingDialog() {
+    try {
+        console.log('🔧 Initializing tagging dialog...');
+
+        // Check if tagging interface HTML is already in the DOM
+        let taggingInterfaceElement = document.getElementById('tagging-interface');
+
+        if (!taggingInterfaceElement) {
+            // Load tagging interface HTML
+            const response = await fetch(chrome.runtime.getURL('components/tagging-dialog.html'));
+            const html = await response.text();
+
+            // Create a temporary container to parse the HTML
+            const tempContainer = document.createElement('div');
+            tempContainer.innerHTML = html;
+
+            // Extract the tagging interface element
+            taggingInterfaceElement = tempContainer.querySelector('#tagging-interface');
+
+            if (taggingInterfaceElement) {
+                // Append to the document body
+                document.body.appendChild(taggingInterfaceElement);
+                console.log('✅ Tagging interface HTML loaded and appended to DOM');
+            } else {
+                console.warn('⚠️ Could not find tagging interface element in HTML');
+                return;
+            }
+        }
+
+        // Load tagging interface CSS
+        if (!document.querySelector('link[href*="tagging-dialog.css"]')) {
+            const link = document.createElement('link');
+            link.rel = 'stylesheet';
+            link.href = chrome.runtime.getURL('components/tagging-dialog.css');
+            document.head.appendChild(link);
+            console.log('✅ Tagging interface CSS loaded');
+        }
+
+        // Create TaggingDialog instance using imported class
+        console.log('🔧 Creating TaggingDialog instance...');
+        const taggingDialog = new TaggingDialog();
+        window.taggingDialog = taggingDialog;
+        console.log('✅ TaggingDialog instance created and available globally');
+
+        console.log('✅ Tagging popup initialization completed');
+
+    } catch (error) {
+        console.error('❌ Error initializing tagging dialog:', error);
+        // Don't throw error - tagging dialog is optional
     }
 }
 

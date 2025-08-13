@@ -1,10 +1,54 @@
-<!-- Tagging Dialog HTML Structure -->
-<!-- Modal dialog for order tagging functionality -->
+<!-- Inline Tagging Interface -->
+<div id="tagging-interface" style="display: none;">
+    <div class="a-box-inner">
+        <div class="a-fixed-right-grid a-spacing-small">
+            <div class="a-fixed-right-grid-inner" style="padding-right: 220px;">
+                <div class="a-fixed-right-grid-col a-col-left" style="padding-right: 3.2%; float: left;">
+                    <!-- Existing Tags Section -->
+                    <div class="a-row a-spacing-top-base">
+                        <div id="existing-tags" class="a-spacing-top-micro">
+                            <span style="color: #6c757d; font-style: italic; font-size: 13px;">No tags yet</span>
+                        </div>
+                    </div>
 
-<div class="tagging-dialog-overlay" id="tagging-dialog-overlay">
-    <div class="tagging-dialog" id="tagging-dialog">
-        <!-- TODO: Implement dialog content -->
-        <h2>Tag Order</h2>
-        <p>Tagging dialog coming soon...</p>
+                    <!-- Add New Tag Section -->
+                    <div class="a-row a-spacing-top-small">
+                        <div class="a-spacing-top-micro">
+                            <div class="yohtmlc-item-level-connections">
+                                <div class="a-input-text-wrapper" style="display: inline-block; margin-right: 10px;">
+                                    <input type="text" id="new-tag-input" class="a-input-text a-width-full"
+                                        placeholder="Enter a new tag" maxlength="50" />
+                                </div>
+                                <button type="button" class="a-button a-button-primary a-button-small" id="add-tag-btn">
+                                    Add Tag
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Right Sidebar with Action Buttons -->
+                <div class="a-fixed-right-grid-col a-col-right"
+                    style="width: 220px; margin-right: -220px; float: left;">
+                    <ul class="a-unordered-list a-nostyle a-vertical">
+                        <div class="a-button-stack a-spacing-mini">
+                            <li class="a-list-item" style="margin-bottom: 4px;">
+                                <button type="button" class="a-button a-button-normal a-spacing-mini a-button-base"
+                                    id="tagging-cancel-btn"
+                                    style="width: 100%; background-color: #6c757d; border-color: #6c757d; color: white;">
+                                    Cancel
+                                </button>
+                            </li>
+                            <li class="a-list-item" style="margin-bottom: 4px;">
+                                <button type="button" class="a-button a-button-normal a-spacing-mini a-button-primary"
+                                    id="tagging-save-btn" style="width: 100%;">
+                                    Save & Hide
+                                </button>
+                            </li>
+                        </div>
+                    </ul>
+                </div>
+            </div>
+        </div>
     </div>
 </div>

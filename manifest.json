@@ -56,7 +56,8 @@
         {
             "resources": [
                 "components/tagging-dialog.html",
-                "components/tagging-dialog.css"
+                "components/tagging-dialog.css",
+                "components/tagging-dialog.js"
             ],
             "matches": [
                 "https://www.amazon.com/*"

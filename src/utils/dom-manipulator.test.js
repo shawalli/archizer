@@ -407,33 +407,81 @@ describe('DOMManipulator', () => {
             expect(mockShowEntireOrder).toHaveBeenCalledWith(orderId, mockButton);
         });
 
-        test('should call callbacks when orders are hidden/shown', () => {
+        test('should show tagging dialog when hiding order details', () => {
             const orderId = '123-4567890-1234567';
-            const mockHiddenCallback = jest.fn();
-            const mockShownCallback = jest.fn();
-
-            domManipulator.setCallbacks(mockHiddenCallback, mockShownCallback);
-
-            // Mock button info with proper structure
             const mockButton = {
                 textContent: 'Hide details',
                 setAttribute: jest.fn(),
                 classList: { add: jest.fn() }
             };
+
+            // Mock button info with proper structure
             domManipulator.injectedButtons.set(orderId, {
                 orderCard: mockOrderCard,
                 hideDetailsBtn: mockButton
             });
 
-            // Mock the extractOrderData method to return a simple object
-            jest.spyOn(domManipulator, 'extractOrderData').mockReturnValue({ orderId, test: 'data' });
-
-            // Mock querySelectorAll to return empty array to avoid complex DOM manipulation
-            mockOrderCard.querySelectorAll.mockReturnValue([]);
+            // Mock the showTaggingDialogForHide method
+            const mockShowTaggingDialogForHide = jest.fn();
+            domManipulator.showTaggingDialogForHide = mockShowTaggingDialogForHide;
 
             domManipulator.hideOrderDetails(orderId, mockButton);
 
-            expect(mockHiddenCallback).toHaveBeenCalledWith(orderId, 'details', { orderId, test: 'data' });
+            expect(mockShowTaggingDialogForHide).toHaveBeenCalledWith(orderId, mockButton, 'details');
+        });
+
+        test('should show tagging dialog when hiding entire order', () => {
+            const orderId = '123-4567890-1234567';
+            const mockButton = {
+                textContent: 'Hide order',
+                setAttribute: jest.fn(),
+                classList: { add: jest.fn() }
+            };
+
+            // Mock button info with proper structure
+            domManipulator.injectedButtons.set(orderId, {
+                orderCard: mockOrderCard,
+                hideOrderBtn: mockButton
+            });
+
+            // Mock the showTaggingDialogForHide method
+            const mockShowTaggingDialogForHide = jest.fn();
+            domManipulator.showTaggingDialogForHide = mockShowTaggingDialogForHide;
+
+            domManipulator.hideEntireOrder(orderId, mockButton);
+
+            expect(mockShowTaggingDialogForHide).toHaveBeenCalledWith(orderId, mockButton, 'order');
+        });
+
+        test('should perform hide operation after tagging', () => {
+            const orderId = '123-4567890-1234567';
+            const mockButton = {
+                textContent: 'Hide details',
+                setAttribute: jest.fn(),
+                classList: { add: jest.fn() }
+            };
+            const tagData = { tags: ['test'], notes: 'test note' };
+
+            // Mock the performHideOrderDetails method
+            const mockPerformHideOrderDetails = jest.fn();
+            domManipulator.performHideOrderDetails = mockPerformHideOrderDetails;
+
+            domManipulator.performHideOperation(orderId, mockButton, 'details', tagData);
+
+            expect(mockPerformHideOrderDetails).toHaveBeenCalledWith(orderId, mockButton, tagData);
+        });
+
+        test('should handle unknown hide type gracefully', () => {
+            const orderId = '123-4567890-1234567';
+            const mockButton = { textContent: 'Hide unknown' };
+
+            // Mock console.warn to avoid test output noise
+            const consoleSpy = jest.spyOn(console, 'warn').mockImplementation(() => { });
+
+            domManipulator.performHideOperation(orderId, mockButton, 'unknown');
+
+            expect(consoleSpy).toHaveBeenCalledWith('Unknown hide type: unknown');
+            consoleSpy.mockRestore();
         });
     });
 

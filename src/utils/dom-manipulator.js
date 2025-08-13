@@ -118,105 +118,143 @@ export class DOMManipulator {
     }
 
     /**
-     * Create Amazon-style buttons that match the existing pillbox button design
-     * @param {string} orderId - The order ID
-     * @returns {Object} Object containing the button container and buttons
+     * Create buttons for order actions (hide details, hide order)
+     * @param {string} orderId - Order ID to create buttons for
+     * @returns {Object} Object containing the created button elements
      */
     createButtons(orderId) {
-        // Create "Hide details" button as a list item
-        const hideDetailsLi = document.createElement('li');
-        hideDetailsLi.className = 'a-list-item';
+        try {
+            // Create container for the buttons
+            const buttonContainer = document.createElement('div');
+            buttonContainer.className = 'archivaz-button-container';
+            buttonContainer.style.cssText = `
+                margin-top: 8px;
+                padding: 8px 0;
+                border-top: 1px solid #e7e7e7;
+            `;
 
-        const hideDetailsBtn = document.createElement('button');
-        hideDetailsBtn.className = 'a-button a-button-normal a-spacing-mini a-button-base';
-        hideDetailsBtn.type = 'button'; // Prevent form submission
-        hideDetailsBtn.setAttribute('data-archivaz-type', 'hide-details');
-        hideDetailsBtn.setAttribute('data-archivaz-order-id', orderId);
-        hideDetailsBtn.setAttribute('aria-label', `Hide details for order ${orderId}`);
+            // Create unordered list for button layout
+            const buttonList = document.createElement('ul');
+            buttonList.className = 'a-unordered-list a-vertical a-spacing-mini';
+            buttonList.style.cssText = `
+                margin: 0;
+                padding: 0;
+                list-style: none;
+            `;
 
-        hideDetailsBtn.textContent = 'Hide details';
-        hideDetailsBtn.style.cssText = `
-            width: 100%;
-            height: 30px;
-            border: 1px solid #888c8c;
-            background-color: #7759b9;
-            color: #ffffff;
-            font-size: 14px;
-            font-weight: 500;
-            cursor: pointer;
-            transition: all 0.2s ease;
-        `;
+            // Create "Hide details" button
+            const hideDetailsLi = document.createElement('li');
+            hideDetailsLi.className = 'a-list-item';
+            hideDetailsLi.style.cssText = 'margin-bottom: 4px;';
 
-        // Add hover effects
-        hideDetailsBtn.addEventListener('mouseenter', () => {
-            hideDetailsBtn.style.backgroundColor = '#8a6bb9';
-            hideDetailsBtn.style.borderColor = '#7759b9';
-        });
-        hideDetailsBtn.addEventListener('mouseleave', () => {
-            hideDetailsBtn.style.backgroundColor = '#7759b9';
-            hideDetailsBtn.style.borderColor = '#888c8c';
-        });
+            const hideDetailsBtn = document.createElement('button');
+            hideDetailsBtn.className = 'a-button a-button-normal a-spacing-mini a-button-base';
+            hideDetailsBtn.type = 'button'; // Prevent form submission
+            hideDetailsBtn.setAttribute('data-archivaz-type', 'hide-details');
+            hideDetailsBtn.setAttribute('data-archivaz-order-id', orderId);
+            hideDetailsBtn.setAttribute('aria-label', `Hide details for order ${orderId}`);
+            hideDetailsBtn.style.cssText = `
+                width: 100%;
+                background-color: #7759b9;
+                border-color: #888c8c;
+                color: white;
+                font-size: 12px;
+                padding: 6px 12px;
+                border-radius: 4px;
+                cursor: pointer;
+                transition: all 0.2s ease;
+            `;
+            hideDetailsBtn.textContent = 'Hide details';
 
-        hideDetailsLi.appendChild(hideDetailsBtn);
+            // Add hover effects for hide details button
+            hideDetailsBtn.addEventListener('mouseenter', () => {
+                hideDetailsBtn.style.backgroundColor = '#8a6bb9';
+                hideDetailsBtn.style.borderColor = '#7759b9';
+            });
+            hideDetailsBtn.addEventListener('mouseleave', () => {
+                hideDetailsBtn.style.backgroundColor = '#7759b9';
+                hideDetailsBtn.style.borderColor = '#888c8c';
+            });
 
-        // Create "Hide order" button as a list item
-        const hideOrderLi = document.createElement('li');
-        hideOrderLi.className = 'a-list-item';
+            hideDetailsLi.appendChild(hideDetailsBtn);
 
-        const hideOrderBtn = document.createElement('button');
-        hideOrderBtn.className = 'a-button a-button-normal a-spacing-mini a-button-base';
-        hideOrderBtn.type = 'button'; // Prevent form submission
-        hideOrderBtn.setAttribute('data-archivaz-type', 'hide-order');
-        hideOrderBtn.setAttribute('data-archivaz-order-id', orderId);
-        hideOrderBtn.setAttribute('aria-label', `Hide entire order ${orderId}`);
+            // Create "Hide order" button with tagging option
+            const hideOrderLi = document.createElement('li');
+            hideOrderLi.className = 'a-list-item';
+            hideOrderLi.style.cssText = 'margin-bottom: 4px;';
 
-        hideOrderBtn.textContent = 'Hide order';
-        hideOrderBtn.style.cssText = `
-            width: 100%;
-            height: 30px;
-            border: 1px solid #888c8c;
-            background-color: #3665c3;
-            color: #ffffff;
-            font-size: 14px;
-            font-weight: 500;
-            cursor: pointer;
-            transition: all 0.2s ease;
-        `;
+            const hideOrderBtn = document.createElement('button');
+            hideOrderBtn.className = 'a-button a-button-normal a-spacing-mini a-button-base';
+            hideOrderBtn.type = 'button'; // Prevent form submission
+            hideOrderBtn.setAttribute('data-archivaz-type', 'hide-order');
+            hideOrderBtn.setAttribute('data-archivaz-order-id', orderId);
+            hideOrderBtn.setAttribute('aria-label', `Hide entire order ${orderId}`);
+            hideOrderBtn.style.cssText = `
+                width: 100%;
+                background-color: #3665c3;
+                border-color: #888c8c;
+                color: white;
+                font-size: 12px;
+                padding: 6px 12px;
+                border-radius: 4px;
+                cursor: pointer;
+                transition: all 0.2s ease;
+            `;
+            hideOrderBtn.textContent = 'Hide order';
 
-        // Add hover effects
-        hideOrderBtn.addEventListener('mouseenter', () => {
-            hideOrderBtn.style.backgroundColor = '#4a7bc3';
-            hideOrderBtn.style.borderColor = '#3665c3';
-        });
-        hideOrderBtn.addEventListener('mouseleave', () => {
-            hideOrderBtn.style.backgroundColor = '#3665c3';
-            hideOrderBtn.style.borderColor = '#888c8c';
-        });
+            // Add hover effects for hide order button
+            hideOrderBtn.addEventListener('mouseenter', () => {
+                hideOrderBtn.style.backgroundColor = '#4a7bc3';
+                hideOrderBtn.style.borderColor = '#3665c3';
+            });
+            hideOrderBtn.addEventListener('mouseleave', () => {
+                hideOrderBtn.style.backgroundColor = '#3665c3';
+                hideOrderBtn.style.borderColor = '#888c8c';
+            });
 
-        hideOrderLi.appendChild(hideOrderBtn);
+            hideOrderLi.appendChild(hideOrderBtn);
 
-        // Add click event listeners
-        hideDetailsBtn.addEventListener('click', (event) => {
-            event.preventDefault();
-            event.stopPropagation();
-            // Get the current button type from the data attribute
-            const buttonType = hideDetailsBtn.getAttribute('data-archivaz-type');
-            this.handleButtonClick(buttonType, orderId, hideDetailsBtn);
-        });
 
-        hideOrderBtn.addEventListener('click', (event) => {
-            event.preventDefault();
-            event.stopPropagation();
-            // Get the current button type from the data attribute
-            const buttonType = hideOrderBtn.getAttribute('data-archivaz-type');
-            this.handleButtonClick(buttonType, orderId, hideOrderBtn);
-        });
 
-        return { hideDetailsLi, hideOrderLi, hideDetailsBtn, hideOrderBtn };
+            // Add all buttons to the list
+            buttonList.appendChild(hideDetailsLi);
+            buttonList.appendChild(hideOrderLi);
+
+            // Add the list to the container
+            buttonContainer.appendChild(buttonList);
+
+            // Add click event listeners
+            hideDetailsBtn.addEventListener('click', (event) => {
+                event.preventDefault();
+                event.stopPropagation();
+                const buttonType = hideDetailsBtn.getAttribute('data-archivaz-type');
+                this.handleButtonClick(buttonType, orderId, hideDetailsBtn);
+            });
+
+            hideOrderBtn.addEventListener('click', (event) => {
+                event.preventDefault();
+                event.stopPropagation();
+                const buttonType = hideOrderBtn.getAttribute('data-archivaz-type');
+                this.handleButtonClick(buttonType, orderId, hideOrderBtn);
+            });
+
+
+
+            return {
+                buttonContainer,
+                hideDetailsLi,
+                hideOrderLi,
+                hideDetailsBtn,
+                hideOrderBtn
+            };
+        } catch (error) {
+            console.error(`Error creating buttons for order ${orderId}:`, error);
+            return null;
+        }
     }
 
     /**
-     * Handle button click events
+     * Handle button click events for different button types
      * @param {string} buttonType - Type of button clicked
      * @param {string} orderId - Order ID associated with the button
      * @param {Element} button - The button element that was clicked
@@ -232,6 +270,7 @@ export class DOMManipulator {
                 case 'hide-order':
                     this.hideEntireOrder(orderId, button);
                     break;
+
                 case 'show-details':
                     this.showOrderDetails(orderId, button);
                     break;
@@ -247,11 +286,232 @@ export class DOMManipulator {
     }
 
     /**
-     * Hide order details (product info, images, links)
+     * Show the tagging dialog for an order
+     * @param {string} orderId - Order ID to tag
+     * @param {Element} button - The button that was clicked
+     */
+    showTaggingDialog(orderId, button) {
+        try {
+            // Get order data from the OrderParser
+            const orderData = this.getOrderData(orderId);
+            if (!orderData) {
+                console.warn(`No order data found for order ${orderId}`);
+                return;
+            }
+
+            // Check if tagging dialog exists and is available
+            if (typeof window.TaggingDialog === 'undefined') {
+                console.warn('TaggingDialog not available, falling back to regular hide');
+                this.hideEntireOrder(orderId, button);
+                return;
+            }
+
+            // Get the global tagging dialog instance
+            const taggingDialog = window.taggingDialog;
+            if (!taggingDialog) {
+                console.warn('TaggingDialog instance not available, falling back to regular hide');
+                this.hideEntireOrder(orderId, button);
+                return;
+            }
+
+            // Prepare order data for the dialog
+            const dialogData = {
+                orderNumber: orderId,
+                orderDate: orderData.orderDate || 'Unknown',
+                tags: orderData.tags || [],
+                notes: orderData.notes || ''
+            };
+
+            // Open the tagging dialog
+            taggingDialog.open(dialogData);
+
+            // Listen for tags saved event
+            const handleTagsSaved = (event) => {
+                const tagData = event.detail;
+                console.log('Tags saved for order:', tagData);
+
+                // Store the tag data
+                this.storeOrderTags(orderId, tagData);
+
+                // Now hide the order with the tags
+                this.hideEntireOrder(orderId, button, tagData);
+
+                // Remove the event listener
+                document.removeEventListener('tagsSaved', handleTagsSaved);
+            };
+
+            document.addEventListener('tagsSaved', handleTagsSaved);
+
+        } catch (error) {
+            console.error(`Error showing tagging dialog for order ${orderId}:`, error);
+            // Fallback to regular hide
+            this.hideEntireOrder(orderId, button);
+        }
+    }
+
+    /**
+     * Show tagging dialog for hiding operations (details or entire order)
+     * @param {string} orderId - Order ID to hide
+     * @param {Element} button - The button that was clicked
+     * @param {string} hideType - Type of hiding operation ('details' or 'order')
+     */
+    showTaggingDialogForHide(orderId, button, hideType) {
+        try {
+            console.log(`🔍 showTaggingDialogForHide called for order ${orderId}, hideType: ${hideType}`);
+
+            // Get order data from the OrderParser
+            const orderData = this.getOrderData(orderId);
+            if (!orderData) {
+                console.warn(`No order data found for order ${orderId}`);
+                return;
+            }
+
+            // Get the global tagging dialog instance
+            const taggingDialog = window.taggingDialog;
+            if (!taggingDialog) {
+                console.warn('TaggingDialog instance not available - popup cannot be shown');
+                return;
+            }
+
+            // Prepare order data for the dialog
+            const dialogData = {
+                orderNumber: orderId,
+                orderDate: orderData.orderDate || 'Unknown',
+                tags: orderData.tags || [],
+                notes: orderData.notes || ''
+            };
+
+            // Find the order card that contains this button
+            const orderCard = button.closest('.order-card, .js-order-card, [data-order-id]');
+            if (!orderCard) {
+                console.warn('Could not find order card for button');
+                return;
+            }
+
+            // Open the tagging dialog with order card reference
+            taggingDialog.open(dialogData, orderCard);
+
+            // Listen for tags saved event
+            const handleTagsSaved = (event) => {
+                const tagData = event.detail;
+                console.log('Tags saved for order:', tagData);
+
+                // Store the tag data
+                this.storeOrderTags(orderId, tagData);
+
+                // Now perform the hide operation with the tags
+                this.performHideOperation(orderId, button, hideType, tagData);
+
+                // Remove the event listener
+                document.removeEventListener('tagsSaved', handleTagsSaved);
+            };
+
+            document.addEventListener('tagsSaved', handleTagsSaved);
+
+        } catch (error) {
+            console.error(`Error showing tagging dialog for order ${orderId}:`, error);
+            // Don't fallback to hiding - just log the error
+        }
+    }
+
+    /**
+     * Perform the actual hide operation after tagging
+     * @param {string} orderId - Order ID to hide
+     * @param {Element} button - The button that was clicked
+     * @param {string} hideType - Type of hiding operation ('details' or 'order')
+     * @param {Object} tagData - Optional tag data if order was tagged before hiding
+     */
+    performHideOperation(orderId, button, hideType, tagData = null) {
+        try {
+            switch (hideType) {
+                case 'details':
+                    this.performHideOrderDetails(orderId, button, tagData);
+                    break;
+                case 'order':
+                    this.performHideEntireOrder(orderId, button, tagData);
+                    break;
+                default:
+                    console.warn(`Unknown hide type: ${hideType}`);
+            }
+        } catch (error) {
+            console.error(`Error performing hide operation for order ${orderId}:`, error);
+        }
+    }
+
+    /**
+     * Get order data from the OrderParser
+     * @param {string} orderId - Order ID to get data for
+     * @returns {Object|null} Order data or null if not found
+     */
+    getOrderData(orderId) {
+        try {
+            console.log(`🔍 Getting order data for order ID: ${orderId}`);
+
+            if (!this.orderParser) {
+                console.warn('OrderParser not available');
+                return null;
+            }
+
+            // Find the order card for this order ID
+            const orderCards = this.orderParser.findOrderCards();
+            console.log(`🔍 Found ${orderCards.length} order cards`);
+
+            for (const orderCard of orderCards) {
+                console.log(`🔍 Processing order card:`, orderCard);
+                const extractedData = this.orderParser.parseOrderCard(orderCard);
+                console.log(`🔍 Extracted data:`, extractedData);
+
+                if (extractedData && extractedData.orderNumber === orderId) {
+                    console.log(`✅ Found matching order data for ${orderId}`);
+                    return extractedData;
+                }
+            }
+
+            console.log(`❌ No matching order data found for ${orderId}`);
+            return null;
+        } catch (error) {
+            console.error(`Error getting order data for ${orderId}:`, error);
+            return null;
+        }
+    }
+
+    /**
+     * Store order tags in storage
+     * @param {string} orderId - Order ID
+     * @param {Object} tagData - Tag data to store
+     */
+    storeOrderTags(orderId, tagData) {
+        try {
+            // Store in localStorage for now (will be replaced with proper storage manager)
+            const storageKey = `archivaz_order_tags_${orderId}`;
+            localStorage.setItem(storageKey, JSON.stringify(tagData));
+            console.log(`Stored tags for order ${orderId}:`, tagData);
+        } catch (error) {
+            console.error(`Error storing tags for order ${orderId}:`, error);
+        }
+    }
+
+    /**
+     * Show tagging dialog for hiding order details
      * @param {string} orderId - Order ID to hide details for
      * @param {Element} button - The button that was clicked
      */
     hideOrderDetails(orderId, button) {
+        try {
+            // Show tagging dialog first, then hide details after tags are saved
+            this.showTaggingDialogForHide(orderId, button, 'details');
+        } catch (error) {
+            console.error(`Error showing tagging dialog for order ${orderId}:`, error);
+        }
+    }
+
+    /**
+     * Actually hide order details (product info, images, links) - called after tagging
+     * @param {string} orderId - Order ID to hide details for
+     * @param {Element} button - The button that was clicked
+     * @param {Object} tagData - Optional tag data if order was tagged before hiding
+     */
+    performHideOrderDetails(orderId, button, tagData = null) {
         try {
             const buttonInfo = this.injectedButtons.get(orderId);
             if (!buttonInfo) {
@@ -373,6 +633,11 @@ export class DOMManipulator {
                         hiddenElements.splice(index, 1);
                         totalHidden--;
                     }
+
+                    // Add tags below the delivery status if available
+                    if (tagData && tagData.tags && tagData.tags.length > 0) {
+                        this.addTagsToDeliveryStatus(leftColumn, tagData.tags);
+                    }
                 }
             }
 
@@ -427,6 +692,100 @@ export class DOMManipulator {
         }
 
         return hiddenElements;
+    }
+
+    /**
+     * Add tags below the delivery status in the preserved left column
+     * @param {Element} leftColumn - The left column element containing delivery status
+     * @param {Array} tags - Array of tag strings to display
+     */
+    addTagsToDeliveryStatus(leftColumn, tags) {
+        try {
+            // Check if tags are already displayed
+            if (leftColumn.querySelector('.archivaz-delivery-status-tags')) {
+                return;
+            }
+
+            // Create tags container
+            const tagsContainer = document.createElement('div');
+            tagsContainer.className = 'archivaz-delivery-status-tags';
+            tagsContainer.style.cssText = `
+                margin-top: 8px;
+                padding-top: 8px;
+                border-top: 1px solid #e7e7e7;
+            `;
+
+            // Create tags label
+            const tagsLabel = document.createElement('span');
+            tagsLabel.className = 'archivaz-tags-label';
+            tagsLabel.textContent = 'Tags: ';
+            tagsLabel.style.cssText = `
+                font-size: 12px;
+                color: #666;
+                font-weight: 500;
+                margin-right: 6px;
+            `;
+
+            tagsContainer.appendChild(tagsLabel);
+
+            // Create tags list
+            const tagsList = document.createElement('div');
+            tagsList.className = 'archivaz-tags-list';
+            tagsList.style.cssText = `
+                display: inline-block;
+                margin-top: 4px;
+            `;
+
+            // Add each tag
+            tags.forEach(tag => {
+                const tagElement = document.createElement('span');
+                tagElement.className = 'archivaz-delivery-status-tag';
+                tagElement.textContent = tag;
+                tagElement.style.cssText = `
+                    display: inline-block;
+                    background: #e7f3ff;
+                    color: #0066cc;
+                    padding: 2px 6px;
+                    margin: 2px 4px 2px 0;
+                    border-radius: 8px;
+                    font-size: 11px;
+                    font-weight: 500;
+                `;
+                tagsList.appendChild(tagElement);
+            });
+
+            tagsContainer.appendChild(tagsList);
+
+            // Insert tags after the last row in the left column
+            const lastRow = leftColumn.querySelector('.a-row:last-child');
+            if (lastRow) {
+                lastRow.parentNode.insertBefore(tagsContainer, lastRow.nextSibling);
+            } else {
+                // Fallback: append to the end of the left column
+                leftColumn.appendChild(tagsContainer);
+            }
+
+            console.log(`Added ${tags.length} tags to delivery status for order`);
+
+        } catch (error) {
+            console.error('Error adding tags to delivery status:', error);
+        }
+    }
+
+    /**
+     * Remove tags from the delivery status when showing details
+     * @param {Element} orderCard - The order card element
+     */
+    removeTagsFromDeliveryStatus(orderCard) {
+        try {
+            const tagsContainer = orderCard.querySelector('.archivaz-delivery-status-tags');
+            if (tagsContainer) {
+                tagsContainer.remove();
+                console.log('Removed tags from delivery status');
+            }
+        } catch (error) {
+            console.error('Error removing tags from delivery status:', error);
+        }
     }
 
     /**
@@ -697,6 +1056,9 @@ export class DOMManipulator {
             orderCard.classList.remove('archivaz-details-hidden');
             orderCard.style.opacity = '';
 
+            // Remove tags from delivery status if they were added
+            this.removeTagsFromDeliveryStatus(orderCard);
+
             // Remove from hidden state tracking
             this.hiddenOrders.delete(`${orderId}-details`);
 
@@ -714,11 +1076,26 @@ export class DOMManipulator {
     }
 
     /**
-     * Hide entire order from view
+     * Show tagging dialog for hiding entire order
      * @param {string} orderId - Order ID to hide
      * @param {Element} button - The button that was clicked
      */
-    hideEntireOrder(orderId, button) {
+    hideEntireOrder(orderId, button, tagData = null) {
+        try {
+            // Show tagging dialog first, then hide order after tags are saved
+            this.showTaggingDialogForHide(orderId, button, 'order');
+        } catch (error) {
+            console.error(`Error showing tagging dialog for order ${orderId}:`, error);
+        }
+    }
+
+    /**
+     * Actually hide entire order - called after tagging
+     * @param {string} orderId - Order ID to hide
+     * @param {Element} button - The button that was clicked
+     * @param {Object} tagData - Optional tag data if order was tagged before hiding
+     */
+    performHideEntireOrder(orderId, button, tagData = null) {
         try {
             const buttonInfo = this.injectedButtons.get(orderId);
             if (!buttonInfo) {
@@ -732,12 +1109,18 @@ export class DOMManipulator {
             const originalDisplay = window.getComputedStyle(orderCard).display;
             orderCard.setAttribute('data-archivaz-original-display', originalDisplay);
 
+            // Store tag data if provided
+            if (tagData) {
+                orderCard.setAttribute('data-archivaz-tags', JSON.stringify(tagData));
+                console.log(`Stored tag data for order ${orderId}:`, tagData);
+            }
+
             // Hide the entire order card with smooth transition
             orderCard.classList.add('archivaz-order-hidden');
             orderCard.style.display = 'none';
 
             // Add a placeholder or indicator that an order was hidden
-            this.addHiddenOrderIndicator(orderCard, orderId);
+            this.addHiddenOrderIndicator(orderCard, orderId, tagData);
 
             // Update button text and type
             button.textContent = 'Show order';
@@ -750,10 +1133,15 @@ export class DOMManipulator {
             // Notify callback
             if (this.onOrderHidden) {
                 const orderData = this.extractOrderData(orderCard, orderId);
+                // Include tag data in the callback
+                if (tagData) {
+                    orderData.tags = tagData.tags;
+                    orderData.notes = tagData.notes;
+                }
                 this.onOrderHidden(orderId, 'order', orderData);
             }
 
-            console.log(`Hidden entire order ${orderId}`);
+            console.log(`Hidden entire order ${orderId}${tagData ? ' with tags' : ''}`);
 
         } catch (error) {
             console.error(`Error hiding order ${orderId}:`, error);
@@ -764,22 +1152,58 @@ export class DOMManipulator {
      * Add a visual indicator that an order was hidden
      * @param {Element} orderCard - The order card element
      * @param {string} orderId - The order ID
+     * @param {Object} tagData - Optional tag data to display
      */
-    addHiddenOrderIndicator(orderCard, orderId) {
+    addHiddenOrderIndicator(orderCard, orderId, tagData = null) {
         try {
             // Create a hidden order indicator
             const indicator = document.createElement('div');
             indicator.className = 'archivaz-hidden-order-indicator';
             indicator.setAttribute('data-archivaz-order-id', orderId);
-            indicator.innerHTML = `
+
+            // Create indicator content with optional tag display
+            let indicatorContent = `
                 <div class="archivaz-hidden-order-content">
                     <span class="archivaz-hidden-order-icon">📦</span>
                     <span class="archivaz-hidden-order-text">Order ${orderId} is hidden</span>
+            `;
+
+            // Add tag information if available
+            if (tagData && tagData.tags && tagData.tags.length > 0) {
+                indicatorContent += `
+                    <div class="archivaz-hidden-order-tags">
+                        <span class="archivaz-tags-label">Tags:</span>
+                        <div class="archivaz-tags-list">
+                `;
+
+                tagData.tags.forEach(tag => {
+                    indicatorContent += `<span class="archivaz-tag">${this.escapeHtml(tag)}</span>`;
+                });
+
+                indicatorContent += `
+                        </div>
+                    </div>
+                `;
+            }
+
+            // Add notes if available
+            if (tagData && tagData.notes && tagData.notes.trim()) {
+                indicatorContent += `
+                    <div class="archivaz-hidden-order-notes">
+                        <span class="archivaz-notes-label">Notes:</span>
+                        <span class="archivaz-notes-text">${this.escapeHtml(tagData.notes)}</span>
+                    </div>
+                `;
+            }
+
+            indicatorContent += `
                     <button class="archivaz-show-order-btn" data-archivaz-order-id="${orderId}">
                         Show Order
                     </button>
                 </div>
             `;
+
+            indicator.innerHTML = indicatorContent;
 
             // Add click handler to the show order button
             const showOrderBtn = indicator.querySelector('.archivaz-show-order-btn');
@@ -801,6 +1225,17 @@ export class DOMManipulator {
         } catch (error) {
             console.error(`Error adding hidden order indicator for ${orderId}:`, error);
         }
+    }
+
+    /**
+     * Escape HTML to prevent XSS
+     * @param {string} text - Text to escape
+     * @returns {string} Escaped text
+     */
+    escapeHtml(text) {
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
     }
 
     /**
