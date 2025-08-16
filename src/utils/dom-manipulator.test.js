@@ -195,15 +195,11 @@ describe('DOMManipulator', () => {
             const buttons = domManipulator.createButtons(orderId);
 
             expect(buttons.hideDetailsLi).toBeDefined();
-            expect(buttons.hideOrderLi).toBeDefined();
             expect(buttons.hideDetailsBtn).toBeDefined();
-            expect(buttons.hideOrderBtn).toBeDefined();
 
             // Check button attributes
             expect(buttons.hideDetailsBtn.setAttribute).toHaveBeenCalledWith('data-archivaz-type', 'hide-details');
             expect(buttons.hideDetailsBtn.setAttribute).toHaveBeenCalledWith('data-archivaz-order-id', orderId);
-            expect(buttons.hideOrderBtn.setAttribute).toHaveBeenCalledWith('data-archivaz-type', 'hide-order');
-            expect(buttons.hideOrderBtn.setAttribute).toHaveBeenCalledWith('data-archivaz-order-id', orderId);
         });
 
         test('should add event listeners to buttons', () => {
@@ -211,7 +207,6 @@ describe('DOMManipulator', () => {
             const buttons = domManipulator.createButtons(orderId);
 
             expect(buttons.hideDetailsBtn.addEventListener).toHaveBeenCalledWith('click', expect.any(Function));
-            expect(buttons.hideOrderBtn.addEventListener).toHaveBeenCalledWith('click', expect.any(Function));
         });
 
         test('should add hover effects to buttons', () => {
@@ -220,8 +215,6 @@ describe('DOMManipulator', () => {
 
             expect(buttons.hideDetailsBtn.addEventListener).toHaveBeenCalledWith('mouseenter', expect.any(Function));
             expect(buttons.hideDetailsBtn.addEventListener).toHaveBeenCalledWith('mouseleave', expect.any(Function));
-            expect(buttons.hideOrderBtn.addEventListener).toHaveBeenCalledWith('mouseenter', expect.any(Function));
-            expect(buttons.hideOrderBtn.addEventListener).toHaveBeenCalledWith('mouseleave', expect.any(Function));
         });
     });
 
@@ -245,7 +238,7 @@ describe('DOMManipulator', () => {
             const result = domManipulator.injectButtons(mockOrderCard, orderId);
 
             expect(result).toBe(true);
-            expect(mockContainer.appendChild).toHaveBeenCalledTimes(2);
+            expect(mockContainer.appendChild).toHaveBeenCalledTimes(1);
         });
 
         test('should inject buttons into css format container', () => {
@@ -260,7 +253,7 @@ describe('DOMManipulator', () => {
             const result = domManipulator.injectButtons(mockOrderCard, orderId);
 
             expect(result).toBe(true);
-            expect(mockContainer.appendChild).toHaveBeenCalledTimes(2);
+            expect(mockContainer.appendChild).toHaveBeenCalledTimes(1);
         });
 
         test('should create new container for your-account format if needed', () => {
@@ -309,7 +302,7 @@ describe('DOMManipulator', () => {
             const result = domManipulator.injectButtons(mockOrderCard, orderId);
 
             expect(result).toBe(true);
-            expect(mockOrderCard.appendChild).toHaveBeenCalledTimes(2);
+            expect(mockOrderCard.appendChild).toHaveBeenCalledTimes(1);
         });
 
         test('should track injected buttons correctly', () => {
@@ -344,24 +337,7 @@ describe('DOMManipulator', () => {
             expect(mockHideOrderDetails).toHaveBeenCalledWith(orderId, mockButton);
         });
 
-        test('should handle hide-order button click', () => {
-            const orderId = '123-4567890-1234567';
-            const mockButton = { textContent: 'Hide order' };
 
-            // Mock button info
-            domManipulator.injectedButtons.set(orderId, {
-                orderCard: mockOrderCard,
-                hideOrderBtn: mockButton
-            });
-
-            // Mock the hideEntireOrder method to avoid complex DOM manipulation
-            const mockHideEntireOrder = jest.fn();
-            domManipulator.hideEntireOrder = mockHideEntireOrder;
-
-            domManipulator.handleButtonClick('hide-order', orderId, mockButton);
-
-            expect(mockHideEntireOrder).toHaveBeenCalledWith(orderId, mockButton);
-        });
 
         test('should handle show-details button click', () => {
             const orderId = '123-4567890-1234567';
@@ -385,27 +361,7 @@ describe('DOMManipulator', () => {
             expect(mockShowOrderDetails).toHaveBeenCalledWith(orderId, mockButton);
         });
 
-        test('should handle show-order button click', () => {
-            const orderId = '123-4567890-1234567';
-            const mockButton = { textContent: 'Show order' };
 
-            // Mock button info
-            domManipulator.injectedButtons.set(orderId, {
-                orderCard: mockOrderCard,
-                hideOrderBtn: mockButton
-            });
-
-            // Add hidden state
-            domManipulator.hiddenOrders.add(`${orderId}-order`);
-
-            // Mock the showEntireOrder method to avoid complex DOM manipulation
-            const mockShowEntireOrder = jest.fn();
-            domManipulator.showEntireOrder = mockShowEntireOrder;
-
-            domManipulator.handleButtonClick('show-order', orderId, mockButton);
-
-            expect(mockShowEntireOrder).toHaveBeenCalledWith(orderId, mockButton);
-        });
 
         test('should show tagging dialog when hiding order details', () => {
             const orderId = '123-4567890-1234567';
@@ -427,31 +383,10 @@ describe('DOMManipulator', () => {
 
             domManipulator.hideOrderDetails(orderId, mockButton);
 
-            expect(mockShowTaggingDialogForHide).toHaveBeenCalledWith(orderId, mockButton, 'details');
+            expect(mockShowTaggingDialogForHide).toHaveBeenCalledWith(orderId, mockButton);
         });
 
-        test('should show tagging dialog when hiding entire order', () => {
-            const orderId = '123-4567890-1234567';
-            const mockButton = {
-                textContent: 'Hide order',
-                setAttribute: jest.fn(),
-                classList: { add: jest.fn() }
-            };
 
-            // Mock button info with proper structure
-            domManipulator.injectedButtons.set(orderId, {
-                orderCard: mockOrderCard,
-                hideOrderBtn: mockButton
-            });
-
-            // Mock the showTaggingDialogForHide method
-            const mockShowTaggingDialogForHide = jest.fn();
-            domManipulator.showTaggingDialogForHide = mockShowTaggingDialogForHide;
-
-            domManipulator.hideEntireOrder(orderId, mockButton);
-
-            expect(mockShowTaggingDialogForHide).toHaveBeenCalledWith(orderId, mockButton, 'order');
-        });
 
         test('should perform hide operation after tagging', () => {
             const orderId = '123-4567890-1234567';
@@ -462,25 +397,30 @@ describe('DOMManipulator', () => {
             };
             const tagData = { tags: ['test'], notes: 'test note' };
 
+            // Set up button info in injected buttons map
+            domManipulator.injectedButtons.set(orderId, {
+                orderCard: mockOrderCard,
+                hideDetailsBtn: mockButton
+            });
+
             // Mock the performHideOrderDetails method
             const mockPerformHideOrderDetails = jest.fn();
             domManipulator.performHideOrderDetails = mockPerformHideOrderDetails;
 
-            domManipulator.performHideOperation(orderId, mockButton, 'details', tagData);
+            domManipulator.performHideOperation(orderId, tagData);
 
             expect(mockPerformHideOrderDetails).toHaveBeenCalledWith(orderId, mockButton, tagData);
         });
 
-        test('should handle unknown hide type gracefully', () => {
+        test('should handle missing button info gracefully', () => {
             const orderId = '123-4567890-1234567';
-            const mockButton = { textContent: 'Hide unknown' };
 
             // Mock console.warn to avoid test output noise
             const consoleSpy = jest.spyOn(console, 'warn').mockImplementation(() => { });
 
-            domManipulator.performHideOperation(orderId, mockButton, 'unknown');
+            domManipulator.performHideOperation(orderId, null);
 
-            expect(consoleSpy).toHaveBeenCalledWith('Unknown hide type: unknown');
+            expect(consoleSpy).toHaveBeenCalledWith(`No button info found for order ${orderId}`);
             consoleSpy.mockRestore();
         });
     });
@@ -489,20 +429,17 @@ describe('DOMManipulator', () => {
         test('should remove buttons correctly', () => {
             const orderId = '123-4567890-1234567';
             const mockHideDetailsLi = { remove: jest.fn() };
-            const mockHideOrderLi = { remove: jest.fn() };
 
             // Mock button info
             domManipulator.injectedButtons.set(orderId, {
                 orderCard: mockOrderCard,
-                hideDetailsLi: mockHideDetailsLi,
-                hideOrderLi: mockHideOrderLi
+                hideDetailsLi: mockHideDetailsLi
             });
 
             const result = domManipulator.removeButtons(orderId);
 
             expect(result).toBe(true);
             expect(mockHideDetailsLi.remove).toHaveBeenCalled();
-            expect(mockHideOrderLi.remove).toHaveBeenCalled();
             expect(domManipulator.injectedButtons.has(orderId)).toBe(false);
         });
 
@@ -520,13 +457,10 @@ describe('DOMManipulator', () => {
             const orderId = '123-4567890-1234567';
 
             expect(domManipulator.areDetailsHidden(orderId)).toBe(false);
-            expect(domManipulator.isOrderHidden(orderId)).toBe(false);
 
             domManipulator.hiddenOrders.add(`${orderId}-details`);
-            domManipulator.hiddenOrders.add(`${orderId}-order`);
 
             expect(domManipulator.areDetailsHidden(orderId)).toBe(true);
-            expect(domManipulator.isOrderHidden(orderId)).toBe(true);
         });
 
         test('should get all hidden orders', () => {
@@ -534,11 +468,11 @@ describe('DOMManipulator', () => {
             const orderId2 = '987-6543210-7654321';
 
             domManipulator.hiddenOrders.add(`${orderId1}-details`);
-            domManipulator.hiddenOrders.add(`${orderId2}-order`);
+            domManipulator.hiddenOrders.add(`${orderId2}-details`);
 
             const hiddenOrders = domManipulator.getHiddenOrders();
             expect(hiddenOrders).toContain(`${orderId1}-details`);
-            expect(hiddenOrders).toContain(`${orderId2}-order`);
+            expect(hiddenOrders).toContain(`${orderId2}-details`);
         });
     });
 

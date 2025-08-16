@@ -46,13 +46,11 @@
   - [x] 2.2 **DOM Integration and Button Injection** ✅
     - [x] 2.2.1 Design button placement strategy for each order format
     - [x] 2.2.2 Implement "Hide details" button injection with Amazon-style design ✅
-    - [x] 2.2.3 Implement "Hide order" button injection with Amazon-style design
     - [x] 2.2.4 Add proper event listeners for button interactions ✅
     - [x] 2.2.5 Ensure buttons work across all supported page formats ✅
     - [x] 2.2.6 Create unit tests for button injection and event handling ✅
   - [x] 2.3 **Order Hiding and Showing Functionality** ✅
     - [x] 2.3.1 Implement "Hide details" logic (hide product info, images, links, return/replace text, auto-delivery text, and Amazon action buttons) ✅
-    - [x] 2.3.2 Implement "Hide order" logic (remove entire order from view) ✅
     - [x] 2.3.3 Create state management system for hidden orders ✅
     - [x] 2.3.4 Implement toggle functionality for hide/show operations ✅
     - [x] 2.3.5 Add visual feedback for hidden state (button text changes, styling) ✅
@@ -72,33 +70,33 @@
     - [ ] 2.5.5 Optimize performance for large order lists
     - [ ] 2.5.6 Create unit tests for dynamic content handling
   - [ ] 2.6 **Data Persistence and Sync Preparation**
-    - [ ] 2.6.1 Extend StorageManager for hidden order data
-    - [ ] 2.6.2 Implement local caching for hidden order preferences
-    - [ ] 2.6.3 Design data structure for hidden orders (order number, type, tags, user, timestamp)
-    - [ ] 2.6.4 Add methods for storing/retrieving hidden order data
+    - [ ] 2.6.1 Extend StorageManager for hidden order details data
+    - [ ] 2.6.2 Implement local caching for hidden order details preferences
+    - [ ] 2.6.3 Design data structure for hidden order details (order number, tags, user, timestamp)
+    - [ ] 2.6.4 Add methods for storing/retrieving hidden order details data
     - [ ] 2.6.5 Prepare data format for future Google Sheets integration
     - [ ] 2.6.6 Create unit tests for storage functionality
 
 - [ ] 3.0 **Google Sheets API Integration & Authentication**
   - [ ] 3.1 Set up Google OAuth 2.0 authentication flow
   - [ ] 3.2 Implement Google Sheets API client with Apps Script web app integration
-  - [ ] 3.3 Create CRUD operations for hidden orders (add, remove, get, update)
+  - [ ] 3.3 Create CRUD operations for hidden order details (add, remove, get, update)
   - [ ] 3.4 Implement data synchronization between local cache and Google Sheets
   - [ ] 3.5 Add error handling for API failures and network issues
   - [ ] 3.6 Implement retry logic and offline fallback mechanisms
 
 - [ ] 4.0 **Extension Popup Interface Development**
   - [ ] 4.1 Design and implement popup HTML structure with pagination
-  - [ ] 4.2 Create hidden orders list display with order metadata (state, number, price, date, tags, user)
+  - [ ] 4.2 Create hidden order details list display with order metadata (number, price, date, tags, user)
   - [ ] 4.3 Implement tag filtering and user filtering functionality
   - [ ] 4.4 Add visual tag indicators (colored badges/icons) for better UX
-  - [ ] 4.5 Implement "Unhide" functionality with order restoration
+  - [ ] 4.5 Implement "Show Details" functionality with order details restoration
   - [ ] 4.6 Add loading states and error messages for better user feedback
   - [ ] 4.7 Implement responsive design for various popup sizes
 
 - [ ] 5.0 **Data Management & State Persistence**
   - [ ] 5.1 Implement local storage for user preferences and tag configurations
-  - [ ] 5.2 Create data models for hidden orders and user settings
+  - [ ] 5.2 Create data models for hidden order details and user settings
   - [ ] 5.3 Implement caching system for Google Sheets data to improve performance
   - [ ] 5.4 Add data validation and sanitization for order information
   - [ ] 5.5 Implement conflict resolution for concurrent modifications
@@ -124,6 +122,7 @@
 - Implement robust CSS selectors for order element identification
 - Add fallback mechanisms for Amazon UI changes
 - Ensure minimal impact on page performance
+- Focus on hiding order details (product info, images, links) rather than entire orders
 
 ### Testing Strategy
 - Unit tests for all utility functions and components
