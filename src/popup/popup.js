@@ -1,8 +1,201 @@
 // Popup JavaScript for Amazon Order Archiver
-// Handles popup interface logic and order management
+// Handles popup interface logic, navigation, and settings management
 
 console.log('Amazon Order Archiver popup script loaded');
 
-// TODO: Implement popup functionality
-// TODO: Implement order management
-// TODO: Implement tag filtering and user filtering
+// Simple storage manager for popup (since we can't use ES6 imports in popup HTML)
+class PopupStorageManager {
+    constructor() {
+        this.prefix = 'amazon_archiver_';
+    }
+
+    async get(key) {
+        try {
+            const result = await chrome.storage.local.get(this.prefix + key);
+            return result[this.prefix + key] || null;
+        } catch (error) {
+            console.error('Error getting from storage:', error);
+            return null;
+        }
+    }
+
+    async set(key, value) {
+        try {
+            await chrome.storage.local.set({ [this.prefix + key]: value });
+        } catch (error) {
+            console.error('Error setting storage:', error);
+            throw error;
+        }
+    }
+
+    async remove(key) {
+        try {
+            await chrome.storage.local.remove(this.prefix + key);
+        } catch (error) {
+            console.error('Error removing from storage:', error);
+        }
+    }
+}
+
+class PopupManager {
+    constructor() {
+        this.storage = new PopupStorageManager();
+        this.currentView = 'main';
+        this.init();
+    }
+
+    async init() {
+        this.setupEventListeners();
+        await this.loadUserSettings();
+        this.showView('main');
+    }
+
+    setupEventListeners() {
+        // Settings button click
+        const settingsBtn = document.getElementById('settings-btn');
+        if (settingsBtn) {
+            settingsBtn.addEventListener('click', () => this.showView('settings'));
+        }
+
+        // Back button click
+        const backBtn = document.getElementById('back-btn');
+        if (backBtn) {
+            backBtn.addEventListener('click', () => this.showView('main'));
+        }
+
+        // Save username button click
+        const saveUsernameBtn = document.getElementById('save-username');
+        if (saveUsernameBtn) {
+            saveUsernameBtn.addEventListener('click', () => this.saveUsername());
+        }
+
+        // Username input enter key
+        const usernameInput = document.getElementById('username');
+        if (usernameInput) {
+            usernameInput.addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') {
+                    this.saveUsername();
+                }
+            });
+        }
+    }
+
+    showView(viewName) {
+        const mainView = document.getElementById('main-view');
+        const settingsView = document.getElementById('settings-view');
+
+        if (viewName === 'main') {
+            mainView.classList.remove('hidden');
+            settingsView.classList.add('hidden');
+            this.currentView = 'main';
+        } else if (viewName === 'settings') {
+            mainView.classList.add('hidden');
+            settingsView.classList.remove('hidden');
+            this.currentView = 'settings';
+        }
+    }
+
+    async loadUserSettings() {
+        try {
+            const username = await this.storage.get('username');
+            const usernameInput = document.getElementById('username');
+            if (usernameInput && username) {
+                usernameInput.value = username;
+            }
+        } catch (error) {
+            console.error('Error loading user settings:', error);
+        }
+    }
+
+    async saveUsername() {
+        try {
+            const usernameInput = document.getElementById('username');
+            const username = usernameInput.value.trim();
+
+            if (!username) {
+                this.showMessage('Username cannot be empty', 'error');
+                return;
+            }
+
+            await this.storage.set('username', username);
+            this.showMessage('Username saved successfully!', 'success');
+
+            // Update the save button text temporarily
+            const saveBtn = document.getElementById('save-username');
+            if (saveBtn) {
+                const originalText = saveBtn.textContent;
+                saveBtn.textContent = 'Saved!';
+                saveBtn.style.background = '#28a745';
+
+                setTimeout(() => {
+                    saveBtn.textContent = originalText;
+                    saveBtn.style.background = '';
+                }, 2000);
+            }
+        } catch (error) {
+            console.error('Error saving username:', error);
+            this.showMessage('Error saving username', 'error');
+        }
+    }
+
+    showMessage(message, type = 'info') {
+        // Create a temporary message element
+        const messageEl = document.createElement('div');
+        messageEl.className = `message message-${type}`;
+        messageEl.textContent = message;
+
+        // Style the message
+        messageEl.style.cssText = `
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 12px 16px;
+            border-radius: 6px;
+            color: white;
+            font-size: 14px;
+            font-weight: 500;
+            z-index: 1000;
+            animation: slideIn 0.3s ease;
+        `;
+
+        // Set background color based on type
+        if (type === 'success') {
+            messageEl.style.background = '#28a745';
+        } else if (type === 'error') {
+            messageEl.style.background = '#dc3545';
+        } else {
+            messageEl.style.background = '#17a2b8';
+        }
+
+        // Add to body
+        document.body.appendChild(messageEl);
+
+        // Remove after 3 seconds
+        setTimeout(() => {
+            if (messageEl.parentNode) {
+                messageEl.parentNode.removeChild(messageEl);
+            }
+        }, 3000);
+    }
+}
+
+// Initialize popup when DOM is loaded
+document.addEventListener('DOMContentLoaded', () => {
+    new PopupManager();
+});
+
+// Add CSS animation for message
+const style = document.createElement('style');
+style.textContent = `
+    @keyframes slideIn {
+        from {
+            transform: translateX(100%);
+            opacity: 0;
+        }
+        to {
+            transform: translateX(0);
+            opacity: 1;
+        }
+    }
+`;
+document.head.appendChild(style);
