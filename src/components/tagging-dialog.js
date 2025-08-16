@@ -527,12 +527,6 @@ export class TaggingDialog {
     }
 
     saveTags() {
-        // Validate tags
-        if (this.tags.length === 0) {
-            this.showError('Please add at least one tag');
-            return;
-        }
-
         // Validate individual tags
         for (const tag of this.tags) {
             const validationResult = this.validateTag(tag);

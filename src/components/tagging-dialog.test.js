@@ -424,14 +424,6 @@ describe('TaggingDialog', () => {
     });
 
     describe('Form Validation', () => {
-        test('should require at least one tag', () => {
-            const result = taggingDialog.saveTags();
-            expect(result).toBeUndefined(); // saveTags doesn't return anything, but should show error
-
-            // Check that validation prevents saving
-            expect(taggingDialog.getValidationStatus().canSave).toBe(false);
-        });
-
         test('should validate all tags before saving', () => {
             // Add an invalid tag
             taggingDialog.tags = ['a']; // Too short
