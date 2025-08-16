@@ -24,6 +24,59 @@ export class StorageManager {
     async clear() {
         await chrome.storage.local.clear();
     }
+
+    /**
+     * Store hidden order data
+     * @param {string} orderId - Order ID
+     * @param {string} type - Type of hiding (e.g., 'details', 'order')
+     * @param {Object} orderData - Order data to store
+     */
+    async storeHiddenOrder(orderId, type, orderData) {
+        try {
+            const key = `hidden_order_${orderId}_${type}`;
+            await this.set(key, {
+                orderId,
+                type,
+                orderData,
+                timestamp: new Date().toISOString()
+            });
+            console.log(`Stored hidden order ${orderId} (${type}):`, orderData);
+        } catch (error) {
+            console.error(`Error storing hidden order ${orderId}:`, error);
+        }
+    }
+
+    /**
+     * Remove hidden order data
+     * @param {string} orderId - Order ID
+     * @param {string} type - Type of hiding (e.g., 'details', 'order')
+     */
+    async removeHiddenOrder(orderId, type) {
+        try {
+            const key = `hidden_order_${orderId}_${type}`;
+            await this.remove(key);
+            console.log(`Removed hidden order ${orderId} (${type})`);
+        } catch (error) {
+            console.error(`Error removing hidden order ${orderId}:`, error);
+        }
+    }
+
+    /**
+     * Get hidden order data
+     * @param {string} orderId - Order ID
+     * @param {string} type - Type of hiding (e.g., 'details', 'order')
+     * @returns {Object|null} Hidden order data or null if not found
+     */
+    async getHiddenOrder(orderId, type) {
+        try {
+            const key = `hidden_order_${orderId}_${type}`;
+            const data = await this.get(key);
+            return data;
+        } catch (error) {
+            console.error(`Error getting hidden order ${orderId}:`, error);
+            return null;
+        }
+    }
 }
 
 // TODO: Implement user preferences storage

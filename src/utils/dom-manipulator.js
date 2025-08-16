@@ -241,12 +241,15 @@ export class DOMManipulator {
                 return;
             }
 
+            // Get stored tags if available
+            const storedTags = this.getOrderTags(orderId);
+
             // Prepare order data for the dialog
             const dialogData = {
                 orderNumber: orderId,
                 orderDate: orderData.orderDate || 'Unknown',
-                tags: orderData.tags || [],
-                notes: orderData.notes || ''
+                tags: storedTags ? storedTags.tags || [] : (orderData.tags || []),
+                notes: storedTags ? storedTags.notes || '' : (orderData.notes || '')
             };
 
             // Open the tagging dialog
@@ -294,12 +297,15 @@ export class DOMManipulator {
                 return;
             }
 
+            // Get stored tags if available
+            const storedTags = this.getOrderTags(orderId);
+
             // Prepare order data for the dialog
             const dialogData = {
                 orderNumber: orderId,
                 orderDate: orderData.orderDate || 'Unknown',
-                tags: orderData.tags || [],
-                notes: orderData.notes || ''
+                tags: storedTags ? storedTags.tags || [] : (orderData.tags || []),
+                notes: storedTags ? storedTags.notes || '' : (orderData.notes || '')
             };
 
             // Find the order card that contains this button
@@ -342,6 +348,8 @@ export class DOMManipulator {
      */
     performHideOperation(orderId, tagData = null) {
         try {
+            console.log('🔍 performHideOperation called with:', { orderId, tagData });
+
             // Get the button from the injected buttons map
             const buttonInfo = this.injectedButtons.get(orderId);
             if (!buttonInfo || !buttonInfo.hideDetailsBtn) {
@@ -349,6 +357,14 @@ export class DOMManipulator {
                 return;
             }
 
+            // If no tag data provided, try to retrieve stored tags
+            if (!tagData) {
+                console.log('🔍 No tagData provided, retrieving from storage...');
+                tagData = this.getOrderTags(orderId);
+                console.log('🔍 Retrieved tagData from storage:', tagData);
+            }
+
+            console.log('🔍 Calling performHideOrderDetails with:', { orderId, button: buttonInfo.hideDetailsBtn, tagData });
             this.performHideOrderDetails(orderId, buttonInfo.hideDetailsBtn, tagData);
         } catch (error) {
             console.error(`Error performing hide operation for order ${orderId}:`, error);
@@ -409,6 +425,27 @@ export class DOMManipulator {
     }
 
     /**
+     * Retrieve order tags from storage
+     * @param {string} orderId - Order ID
+     * @returns {Object|null} Tag data or null if not found
+     */
+    getOrderTags(orderId) {
+        try {
+            const storageKey = `archivaz_order_tags_${orderId}`;
+            const storedData = localStorage.getItem(storageKey);
+            if (storedData) {
+                const tagData = JSON.parse(storedData);
+                console.log(`Retrieved tags for order ${orderId}:`, tagData);
+                return tagData;
+            }
+            return null;
+        } catch (error) {
+            console.error(`Error retrieving tags for order ${orderId}:`, error);
+            return null;
+        }
+    }
+
+    /**
      * Show tagging dialog for hiding order details
      * @param {string} orderId - Order ID to hide details for
      * @param {Element} button - The button that was clicked
@@ -430,6 +467,8 @@ export class DOMManipulator {
      */
     performHideOrderDetails(orderId, button, tagData = null) {
         try {
+            console.log('🔍 performHideOrderDetails called with:', { orderId, button, tagData });
+
             const buttonInfo = this.injectedButtons.get(orderId);
             if (!buttonInfo) {
                 console.warn(`No button info found for order ${orderId}`);
@@ -437,6 +476,7 @@ export class DOMManipulator {
             }
 
             const orderCard = buttonInfo.orderCard;
+            console.log('🔍 Order card found:', orderCard);
 
             // Enhanced selectors for different page formats to hide product details
             const selectorsToHide = [
@@ -537,25 +577,43 @@ export class DOMManipulator {
 
             // Special handling: Preserve the delivery status column (left column) in the delivery-box
             const deliveryBox = orderCard.querySelector('.delivery-box');
+            console.log('🔍 Looking for delivery-box:', deliveryBox);
+
             if (deliveryBox) {
                 const leftColumn = deliveryBox.querySelector('.a-fixed-right-grid-col.a-col-left');
-                if (leftColumn && leftColumn.classList.contains('archivaz-hidden-details')) {
-                    // Restore the left column if it was hidden - it contains essential delivery status
-                    leftColumn.classList.remove('archivaz-hidden-details');
-                    leftColumn.style.display = leftColumn.getAttribute('data-archivaz-original-display') || 'block';
+                console.log('🔍 Looking for left column:', leftColumn);
 
-                    // Remove from hidden elements array
-                    const index = hiddenElements.indexOf(leftColumn);
-                    if (index > -1) {
-                        hiddenElements.splice(index, 1);
-                        totalHidden--;
+                if (leftColumn) {
+                    // Check if left column was hidden and needs restoration
+                    if (leftColumn.classList.contains('archivaz-hidden-details')) {
+                        console.log('🔍 Left column was hidden, restoring it...');
+                        // Restore the left column if it was hidden - it contains essential delivery status
+                        leftColumn.classList.remove('archivaz-hidden-details');
+                        leftColumn.style.display = leftColumn.getAttribute('data-archivaz-original-display') || 'block';
+
+                        // Remove from hidden elements array
+                        const index = hiddenElements.indexOf(leftColumn);
+                        if (index > -1) {
+                            hiddenElements.splice(index, 1);
+                            totalHidden--;
+                        }
+                    } else {
+                        console.log('🔍 Left column is already visible, no restoration needed');
                     }
 
-                    // Add tags below the delivery status if available
+                    // Always add tags below the delivery status if available (regardless of whether column was hidden)
+                    console.log('🔍 Checking if tags should be added:', { tagData, hasTags: tagData && tagData.tags && tagData.tags.length > 0 });
                     if (tagData && tagData.tags && tagData.tags.length > 0) {
+                        console.log('✅ Adding tags to delivery status:', tagData.tags);
                         this.addTagsToDeliveryStatus(leftColumn, tagData.tags);
+                    } else {
+                        console.log('⚠️ No tags to add or tagData is missing');
                     }
+                } else {
+                    console.log('⚠️ Left column not found');
                 }
+            } else {
+                console.log('⚠️ No delivery-box found in order card');
             }
 
             // Update button text and type
@@ -618,8 +676,11 @@ export class DOMManipulator {
      */
     addTagsToDeliveryStatus(leftColumn, tags) {
         try {
+            console.log('🔍 addTagsToDeliveryStatus called with:', { leftColumn, tags });
+
             // Check if tags are already displayed
             if (leftColumn.querySelector('.archivaz-delivery-status-tags')) {
+                console.log('⚠️ Tags already displayed, skipping');
                 return;
             }
 
@@ -627,9 +688,8 @@ export class DOMManipulator {
             const tagsContainer = document.createElement('div');
             tagsContainer.className = 'archivaz-delivery-status-tags';
             tagsContainer.style.cssText = `
-                margin-top: 8px;
-                padding-top: 8px;
-                border-top: 1px solid #e7e7e7;
+                margin-top: 4px;
+                padding-top: 0;
             `;
 
             // Create tags label
@@ -641,6 +701,8 @@ export class DOMManipulator {
                 color: #666;
                 font-weight: 500;
                 margin-right: 6px;
+                display: block;
+                margin-bottom: 4px;
             `;
 
             tagsContainer.appendChild(tagsLabel);
@@ -649,8 +711,8 @@ export class DOMManipulator {
             const tagsList = document.createElement('div');
             tagsList.className = 'archivaz-tags-list';
             tagsList.style.cssText = `
-                display: inline-block;
-                margin-top: 4px;
+                display: block;
+                margin-top: 2px;
             `;
 
             // Add each tag
@@ -662,24 +724,38 @@ export class DOMManipulator {
                     display: inline-block;
                     background: #e7f3ff;
                     color: #0066cc;
-                    padding: 2px 6px;
+                    padding: 3px 8px;
                     margin: 2px 4px 2px 0;
-                    border-radius: 8px;
+                    border-radius: 12px;
                     font-size: 11px;
                     font-weight: 500;
+                    border: 1px solid #cce7ff;
                 `;
                 tagsList.appendChild(tagElement);
             });
 
             tagsContainer.appendChild(tagsList);
 
-            // Insert tags after the last row in the left column
-            const lastRow = leftColumn.querySelector('.a-row:last-child');
-            if (lastRow) {
-                lastRow.parentNode.insertBefore(tagsContainer, lastRow.nextSibling);
+            // Insert tags directly below the delivery status text
+            const deliveryStatusText = leftColumn.querySelector('.yohtmlc-shipment-status-secondaryText');
+            console.log('🔍 Looking for delivery status text:', deliveryStatusText);
+
+            if (deliveryStatusText) {
+                // Insert tags right after the delivery status text
+                deliveryStatusText.parentNode.insertBefore(tagsContainer, deliveryStatusText.nextSibling);
+                console.log('✅ Tags inserted after delivery status text');
             } else {
-                // Fallback: append to the end of the left column
-                leftColumn.appendChild(tagsContainer);
+                console.log('⚠️ Delivery status text not found, using fallback positioning');
+                // Fallback: insert after the last row in the left column
+                const lastRow = leftColumn.querySelector('.a-row:last-child');
+                if (lastRow) {
+                    lastRow.parentNode.insertBefore(tagsContainer, lastRow.nextSibling);
+                    console.log('✅ Tags inserted after last row (fallback)');
+                } else {
+                    // Final fallback: append to the end of the left column
+                    leftColumn.appendChild(tagsContainer);
+                    console.log('✅ Tags appended to end of left column (final fallback)');
+                }
             }
 
             console.log(`Added ${tags.length} tags to delivery status for order`);

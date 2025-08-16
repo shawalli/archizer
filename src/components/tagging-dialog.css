@@ -88,9 +88,8 @@
 
 /* Styling for tags displayed in delivery status when details are hidden */
 .archivaz-delivery-status-tags {
-    margin-top: 8px;
-    padding-top: 8px;
-    border-top: 1px solid #e7e7e7;
+    margin-top: 4px;
+    padding-top: 0;
 }
 
 .archivaz-delivery-status-tags .archivaz-tags-label {
@@ -98,20 +97,23 @@
     color: #666;
     font-weight: 500;
     margin-right: 6px;
+    display: inline-block;
+    margin-bottom: 4px;
 }
 
 .archivaz-delivery-status-tags .archivaz-tags-list {
     display: inline-block;
-    margin-top: 4px;
+    margin-top: 2px;
 }
 
 .archivaz-delivery-status-tag {
     display: inline-block;
     background: #e7f3ff;
     color: #0066cc;
-    padding: 2px 6px;
+    padding: 3px 8px;
     margin: 2px 4px 2px 0;
-    border-radius: 8px;
+    border-radius: 12px;
     font-size: 11px;
     font-weight: 500;
+    border: 1px solid #cce7ff;
 }
