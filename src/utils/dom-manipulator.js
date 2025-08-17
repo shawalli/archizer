@@ -747,18 +747,52 @@ export class DOMManipulator {
                 padding-top: 0;
             `;
 
-            // Create tags label (only if we have tags)
-            if (tags && tags.length > 0) {
-                const tagsLabel = document.createElement('span');
-                tagsLabel.className = 'archivaz-tags-label';
-                tagsLabel.textContent = 'Tags: ';
-                tagsLabel.style.cssText = `
-                    font-size: 12px;
+            // Create hidden by section if username is available
+            if (username) {
+                // Add empty row for spacing
+                const emptyRow = document.createElement('div');
+                emptyRow.className = 'a-row a-spacing-top-mini';
+                emptyRow.style.cssText = `
+                    height: 36px;
+                `;
+                tagsContainer.appendChild(emptyRow);
+
+                const hiddenBySection = document.createElement('div');
+                hiddenBySection.style.cssText = `
+                    margin-bottom: 4px;
+                `;
+
+                const hiddenByLabel = document.createElement('span');
+                hiddenByLabel.textContent = 'Hidden by: ';
+                hiddenByLabel.style.cssText = `
+                    font-size: 14px;
                     color: #666;
                     font-weight: 500;
                     margin-right: 6px;
-                    display: block;
-                    margin-bottom: 4px;
+                `;
+
+                const usernameElement = document.createElement('span');
+                usernameElement.textContent = `@${username}`;
+                usernameElement.style.cssText = `
+                    font-size: 14px;
+                    color: #0066cc;
+                    font-weight: 600;
+                `;
+
+                hiddenBySection.appendChild(hiddenByLabel);
+                hiddenBySection.appendChild(usernameElement);
+                tagsContainer.appendChild(hiddenBySection);
+            }
+
+            // Create tags label (only if we have tags)
+            if (tags && tags.length > 0) {
+                const tagsLabel = document.createElement('span');
+                tagsLabel.textContent = '';
+                tagsLabel.style.cssText = `
+                    font-size: 14px;
+                    color: #666;
+                    font-weight: 500;
+                    margin-right: 6px;
                 `;
                 tagsContainer.appendChild(tagsLabel);
             }
@@ -767,34 +801,9 @@ export class DOMManipulator {
             const tagsList = document.createElement('div');
             tagsList.className = 'archivaz-tags-list';
             tagsList.style.cssText = `
-                display: block;
-                margin-top: 2px;
+                display: inline-block;
+                margin-top: 0;
             `;
-
-            // Add username tag first if available
-            if (username) {
-                console.log(`🔍 Creating username element with: "${username}"`);
-                const usernameElement = document.createElement('span');
-                usernameElement.className = 'archivaz-username-tag';
-                usernameElement.textContent = `@${username}`;
-                console.log(`🔍 Username element created with text: "${usernameElement.textContent}"`);
-
-                usernameElement.style.cssText = `
-                    display: inline-block;
-                    background: #e8f5e8;
-                    color: #2d5a2d;
-                    padding: 3px 8px;
-                    margin: 2px 4px 2px 0;
-                    border-radius: 12px;
-                    font-size: 11px;
-                    font-weight: 500;
-                    border: 1px solid #c8e6c8;
-                `;
-                tagsList.appendChild(usernameElement);
-                console.log(`🔍 Username element added to tagsList`);
-            } else {
-                console.log(`🔍 No username provided, skipping username element creation`);
-            }
 
             // Add each tag
             if (tags && tags.length > 0) {
@@ -809,7 +818,7 @@ export class DOMManipulator {
                         padding: 3px 8px;
                         margin: 2px 4px 2px 0;
                         border-radius: 12px;
-                        font-size: 11px;
+                        font-size: 14px;
                         font-weight: 500;
                         border: 1px solid #cce7ff;
                     `;
