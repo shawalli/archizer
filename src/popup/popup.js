@@ -70,6 +70,23 @@ class PopupManager {
             saveUsernameBtn.addEventListener('click', () => this.saveUsername());
         }
 
+        // Resync button click
+        const resyncBtn = document.getElementById('resync-btn');
+        if (resyncBtn) {
+            resyncBtn.addEventListener('click', () => this.showResyncDialog());
+        }
+
+        // Resync dialog buttons
+        const resyncConfirmBtn = document.getElementById('resync-confirm');
+        if (resyncConfirmBtn) {
+            resyncConfirmBtn.addEventListener('click', () => this.executeResync());
+        }
+
+        const resyncCancelBtn = document.getElementById('resync-cancel');
+        if (resyncCancelBtn) {
+            resyncCancelBtn.addEventListener('click', () => this.hideResyncDialog());
+        }
+
         // Username input enter key
         const usernameInput = document.getElementById('username');
         if (usernameInput) {
@@ -265,6 +282,103 @@ class PopupManager {
                 messageEl.parentNode.removeChild(messageEl);
             }
         }, 3000);
+    }
+
+    showResyncDialog() {
+        const dialog = document.getElementById('resync-dialog');
+        if (dialog) {
+            dialog.classList.remove('hidden');
+        }
+    }
+
+    hideResyncDialog() {
+        const dialog = document.getElementById('resync-dialog');
+        if (dialog) {
+            dialog.classList.add('hidden');
+        }
+    }
+
+    async executeResync() {
+        try {
+            console.log('🔄 Starting resync process...');
+
+            // Clear all hidden order data from storage
+            await this.clearAllHiddenOrders();
+
+            // Send message to content script to restore all hidden orders
+            const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+            if (tab && tab.url && tab.url.includes('amazon.com')) {
+                try {
+                    const response = await chrome.tabs.sendMessage(tab.id, { action: 'resync-orders' });
+                    if (response && response.success) {
+                        console.log(`✅ Content script restored ${response.restoredCount} hidden orders`);
+                    } else {
+                        console.warn('⚠️ Content script resync response:', response);
+                    }
+                } catch (error) {
+                    console.warn('⚠️ Could not communicate with content script (may not be on orders page):', error);
+                }
+            }
+
+            // Hide the dialog
+            this.hideResyncDialog();
+
+            // Show success message
+            this.showMessage('Orders resynced successfully! All hidden order data has been cleared.', 'success');
+
+            // Reload the hidden orders list (should now be empty)
+            await this.loadHiddenOrders();
+
+            console.log('✅ Resync completed successfully');
+        } catch (error) {
+            console.error('❌ Error during resync:', error);
+            this.showMessage('Error during resync process', 'error');
+        }
+    }
+
+    async clearAllHiddenOrders() {
+        try {
+            console.log('🗑️ Clearing all hidden orders...');
+
+            // Get all storage data
+            const allData = await chrome.storage.local.get(null);
+            const keysToRemove = [];
+
+            // Find all keys that start with our hidden order prefix
+            for (const key of Object.keys(allData)) {
+                if (key.startsWith('amazon_archiver_hidden_order_')) {
+                    keysToRemove.push(key);
+                }
+            }
+
+            // Remove all hidden order keys
+            if (keysToRemove.length > 0) {
+                await chrome.storage.local.remove(keysToRemove);
+                console.log(`🗑️ Removed ${keysToRemove.length} hidden order entries from Chrome storage`);
+            } else {
+                console.log('ℹ️ No hidden orders found to remove from Chrome storage');
+            }
+
+            // Also clear all localStorage tag data
+            try {
+                let localStorageCleared = 0;
+                for (let i = 0; i < localStorage.length; i++) {
+                    const key = localStorage.key(i);
+                    if (key && key.startsWith('archivaz_order_tags_')) {
+                        localStorage.removeItem(key);
+                        localStorageCleared++;
+                    }
+                }
+                console.log(`🗑️ Cleared ${localStorageCleared} localStorage tag entries`);
+            } catch (error) {
+                console.warn('⚠️ Could not clear localStorage:', error);
+            }
+
+            return keysToRemove.length;
+        } catch (error) {
+            console.error('❌ Error clearing hidden orders:', error);
+            throw error;
+        }
     }
 }
 

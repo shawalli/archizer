@@ -66,6 +66,55 @@ export class StorageManager {
     }
 
     /**
+     * Clear all storage data for a specific order
+     * This is more thorough than removeHiddenOrder and clears any related data
+     * @param {string} orderId - Order ID to clear all data for
+     */
+    async clearAllOrderData(orderId) {
+        try {
+            console.log(`🗑️ Clearing all storage data for order ${orderId}...`);
+
+            // Get all storage data
+            const allData = await chrome.storage.local.get(null);
+            const keysToRemove = [];
+
+            // Find all keys that contain this order ID
+            for (const key of Object.keys(allData)) {
+                if (key.includes(orderId) && key.startsWith(this.prefix)) {
+                    keysToRemove.push(key);
+                    console.log(`🔍 Found Chrome storage key to remove: ${key}`);
+                }
+            }
+
+            // Remove all found Chrome storage keys
+            if (keysToRemove.length > 0) {
+                await chrome.storage.local.remove(keysToRemove);
+                console.log(`✅ Cleared ${keysToRemove.length} Chrome storage keys for order ${orderId}`);
+            } else {
+                console.log(`ℹ️ No Chrome storage keys found for order ${orderId}`);
+            }
+
+            // Also clear localStorage tags for this order
+            try {
+                const localStorageKey = `archivaz_order_tags_${orderId}`;
+                if (localStorage.getItem(localStorageKey)) {
+                    localStorage.removeItem(localStorageKey);
+                    console.log(`🗑️ Cleared localStorage key: ${localStorageKey}`);
+                } else {
+                    console.log(`ℹ️ No localStorage key found: ${localStorageKey}`);
+                }
+            } catch (error) {
+                console.warn(`⚠️ Could not clear localStorage for order ${orderId}:`, error);
+            }
+
+            return keysToRemove.length;
+        } catch (error) {
+            console.error(`❌ Error clearing order data for ${orderId}:`, error);
+            throw error;
+        }
+    }
+
+    /**
      * Get hidden order data
      * @param {string} orderId - Order ID
      * @param {string} type - Type of hiding (e.g., 'details', 'order')

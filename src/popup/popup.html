@@ -62,7 +62,23 @@
 
             <div class="settings-section">
                 <h2>General</h2>
-                <p>More settings coming soon...</p>
+                <div class="form-group">
+                    <button id="resync-btn" class="resync-btn">Resync Orders</button>
+                    <p class="resync-description">Reset extension order data and reload from database</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Resync Confirmation Dialog -->
+    <div id="resync-dialog" class="dialog-overlay hidden">
+        <div class="dialog-content">
+            <h2>Confirm Resync</h2>
+            <p>This will reset your extension order data and reload it from the database.</p>
+            <p><strong>Warning:</strong> All hidden order information will be cleared.</p>
+            <div class="dialog-buttons">
+                <button id="resync-confirm" class="btn-danger">I Understand</button>
+                <button id="resync-cancel" class="btn-secondary">Go Back</button>
             </div>
         </div>
     </div>

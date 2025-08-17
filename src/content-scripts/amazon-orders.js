@@ -81,6 +81,22 @@ async function initializeContentScript() {
 
         console.log('✅ Content script functionality initialized');
 
+        // Set up message listener for popup communication
+        chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+            if (message.action === 'resync-orders') {
+                console.log('🔄 Received resync request from popup');
+                try {
+                    const restoredCount = domManipulator.restoreAllHiddenOrders();
+                    sendResponse({ success: true, restoredCount });
+                    console.log(`✅ Resync completed, restored ${restoredCount} orders`);
+                } catch (error) {
+                    console.error('❌ Error during resync:', error);
+                    sendResponse({ success: false, error: error.message });
+                }
+                return true; // Keep message channel open for async response
+            }
+        });
+
     } catch (error) {
         globalErrorHandler.handleError(error, 'content-script-init', 'error');
         throw error;

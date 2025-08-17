@@ -1649,4 +1649,125 @@ export class DOMManipulator {
         console.log(`🔍 Current orderUsernames map:`, Array.from(this.orderUsernames.entries()));
         return username;
     }
+
+    /**
+     * Restore all hidden orders to their original state
+     * This is called during resync to clear all hidden order data
+     */
+    async restoreAllHiddenOrders() {
+        try {
+            console.log('🔄 Restoring all hidden orders to original state...');
+
+            // Find all order cards that are currently hidden
+            const hiddenOrderCards = document.querySelectorAll('.order-card.archivaz-details-hidden');
+            console.log(`🔍 Found ${hiddenOrderCards.length} hidden order cards to restore`);
+
+            let restoredCount = 0;
+
+            // First, restore any currently hidden orders
+            for (const orderCard of hiddenOrderCards) {
+                try {
+                    // Get the order ID for this card
+                    const orderId = orderCard.querySelector('[data-archivaz-order-id]')?.getAttribute('data-archivaz-order-id');
+
+                    // Remove hidden state from order card
+                    orderCard.classList.remove('archivaz-details-hidden');
+                    orderCard.style.opacity = '';
+
+                    // Find and update the hide/show button
+                    const button = orderCard.querySelector('button[data-archivaz-type="show-details"]');
+                    if (button) {
+                        button.textContent = 'Hide details';
+                        button.setAttribute('data-archivaz-type', 'hide-details');
+                        button.classList.remove('archivaz-details-hidden');
+                    }
+
+                    // Remove tags container if it exists
+                    this.removeTagsFromDeliveryStatus(orderCard);
+
+                    // Show all hidden detail elements
+                    const hiddenElements = orderCard.querySelectorAll('.archivaz-hidden-details');
+                    hiddenElements.forEach(element => {
+                        // Remove hidden class
+                        element.classList.remove('archivaz-hidden-details');
+
+                        // Restore original display
+                        const originalDisplay = element.getAttribute('data-archivaz-original-display');
+                        if (originalDisplay) {
+                            element.style.display = originalDisplay;
+                            element.removeAttribute('data-archivaz-original-display');
+                        } else {
+                            element.style.display = '';
+                        }
+                    });
+
+                    // Remove from hidden state tracking
+                    if (orderId) {
+                        this.hiddenOrders.delete(`${orderId}-details`);
+
+                        // Also clear any stored tag data for this order
+                        if (this.storage) {
+                            try {
+                                // Use the more thorough method to clear all order data
+                                const clearedKeys = await this.storage.clearAllOrderData(orderId);
+                                console.log(`🗑️ Cleared ${clearedKeys} storage keys for order ${orderId}`);
+                            } catch (error) {
+                                console.warn(`⚠️ Could not clear stored data for order ${orderId}:`, error);
+                            }
+                        }
+                    }
+
+                    restoredCount++;
+
+                } catch (error) {
+                    console.error('Error restoring individual order card:', error);
+                }
+            }
+
+            // Now clear ALL stored data for any orders that might have data from previous sessions
+            if (this.storage) {
+                try {
+                    console.log('🔄 Clearing all stored order data from previous sessions...');
+
+                    // Get all Chrome storage data
+                    const allData = await chrome.storage.local.get(null);
+                    const keysToRemove = [];
+
+                    // Find all keys that contain order data
+                    for (const key of Object.keys(allData)) {
+                        if (key.startsWith('amazon_archiver_hidden_order_')) {
+                            keysToRemove.push(key);
+                        }
+                    }
+
+                    // Remove all found keys
+                    if (keysToRemove.length > 0) {
+                        await chrome.storage.local.remove(keysToRemove);
+                        console.log(`🗑️ Cleared ${keysToRemove.length} Chrome storage keys from previous sessions`);
+                    }
+
+                    // Also clear all localStorage tag data
+                    let localStorageCleared = 0;
+                    for (let i = 0; i < localStorage.length; i++) {
+                        const key = localStorage.key(i);
+                        if (key && key.startsWith('archivaz_order_tags_')) {
+                            localStorage.removeItem(key);
+                            localStorageCleared++;
+                        }
+                    }
+                    console.log(`🗑️ Cleared ${localStorageCleared} localStorage tag entries from previous sessions`);
+
+                } catch (error) {
+                    console.warn('⚠️ Could not clear all stored data:', error);
+                }
+            }
+
+            console.log(`✅ Successfully restored ${restoredCount} hidden order cards and cleared all stored data`);
+            return restoredCount;
+
+        } catch (error) {
+            console.error('❌ Error restoring all hidden orders:', error);
+            throw error;
+        }
+    }
 }
