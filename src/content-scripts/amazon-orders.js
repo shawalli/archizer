@@ -68,11 +68,11 @@ async function initializeContentScript() {
             }
         );
 
-        // Initialize tagging dialog and wait for it to be fully ready
+        // Initialize tagging dialog manager and wait for it to be fully ready
         await initializeTaggingDialog();
 
-        // Debug: Check if TaggingDialog is now available
-        console.log('🔍 After initialization - TaggingDialog imported:', typeof TaggingDialog !== 'undefined');
+        // Debug: Check if TaggingDialogManager is now available
+        console.log('🔍 After initialization - TaggingDialogManager imported:', typeof TaggingDialogManager !== 'undefined');
 
         console.log('✅ Dependencies initialized:', { storage, orderParser, domManipulator });
 
@@ -115,42 +115,112 @@ async function initializeTaggingDialog() {
 
         if (!taggingInterfaceElement) {
             // Load tagging interface HTML
-            const response = await fetch(chrome.runtime.getURL('components/tagging-dialog.html'));
-            const html = await response.text();
+            console.log('🔍 Tagging interface not found, attempting to load HTML...');
+            const htmlUrl = chrome.runtime.getURL('components/tagging-dialog.html');
+            console.log('🔍 HTML URL:', htmlUrl);
 
-            // Create a temporary container to parse the HTML
-            const tempContainer = document.createElement('div');
-            tempContainer.innerHTML = html;
+            try {
+                const response = await fetch(htmlUrl);
+                console.log('🔍 Fetch response status:', response.status);
 
-            // Extract the tagging interface element
-            taggingInterfaceElement = tempContainer.querySelector('#tagging-interface');
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
 
-            if (taggingInterfaceElement) {
-                // Append to the document body
-                document.body.appendChild(taggingInterfaceElement);
-                console.log('✅ Tagging interface HTML loaded and appended to DOM');
-            } else {
-                console.warn('⚠️ Could not find tagging interface element in HTML');
+                const html = await response.text();
+                console.log('🔍 HTML content length:', html.length);
+                console.log('🔍 HTML preview:', html.substring(0, 200) + '...');
+
+                // Create a temporary container to parse the HTML
+                const tempContainer = document.createElement('div');
+                tempContainer.innerHTML = html;
+
+                // Extract the tagging interface element
+                taggingInterfaceElement = tempContainer.querySelector('#tagging-interface');
+                console.log('🔍 Found tagging interface element:', taggingInterfaceElement);
+
+                if (taggingInterfaceElement) {
+                    // Append to the document body
+                    document.body.appendChild(taggingInterfaceElement);
+                    console.log('✅ Tagging interface HTML loaded and appended to DOM');
+                } else {
+                    console.warn('⚠️ Could not find tagging interface element in HTML');
+                    console.warn('⚠️ Available elements in temp container:', tempContainer.children);
+
+                    // FALLBACK: Create a basic tagging interface if HTML loading fails
+                    console.log('🔧 Creating fallback tagging interface...');
+                    const fallbackInterface = document.createElement('div');
+                    fallbackInterface.id = 'tagging-interface';
+                    fallbackInterface.style.display = 'none';
+                    fallbackInterface.innerHTML = `
+                        <div class="a-box-inner">
+                            <div class="a-fixed-right-grid a-spacing-small">
+                                <div class="a-fixed-right-grid-inner" style="padding-right: 220px;">
+                                    <div class="a-fixed-right-grid-col a-col-left" style="padding-right: 3.2%; float: left;">
+                                        <div class="a-row a-spacing-top-base">
+                                            <div id="existing-tags" class="a-spacing-top-micro">
+                                                <span style="color: #6c757d; font-style: italic; font-size: 13px;">No tags yet</span>
+                                            </div>
+                                        </div>
+                                        <div class="a-row a-spacing-top-small">
+                                            <div class="a-spacing-top-micro">
+                                                <div class="yohtmlc-item-level-connections">
+                                                    <div class="a-input-text-wrapper" style="display: inline-block; margin-right: 10px;">
+                                                        <input type="text" id="new-tag-input" class="a-input-text a-width-full" placeholder="Enter a new tag" maxlength="50" />
+                                                    </div>
+                                                    <button type="button" class="a-button a-button-primary a-button-small" id="add-tag-btn">Add Tag</button>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="a-fixed-right-grid-col a-col-right" style="width: 220px; margin-right: -220px; float: left;">
+                                        <ul class="a-unordered-list a-nostyle a-vertical">
+                                            <div class="a-button-stack a-spacing-mini">
+                                                <li class="a-list-item" style="margin-bottom: 4px;">
+                                                    <button type="button" class="a-button a-button-normal a-spacing-mini a-button-base" id="tagging-cancel-btn" style="width: 100%; background-color: #6c757d; border-color: #6c757d; color: white;">Cancel</button>
+                                                </li>
+                                                <li class="a-list-item" style="margin-bottom: 4px;">
+                                                    <button type="button" class="a-button a-button-normal a-spacing-mini a-button-primary" id="tagging-save-btn" style="width: 100%;">Save & Hide</button>
+                                                </li>
+                                            </div>
+                                        </ul>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+
+                    document.body.appendChild(fallbackInterface);
+                    taggingInterfaceElement = fallbackInterface;
+                    console.log('✅ Fallback tagging interface created and appended to DOM');
+                }
+            } catch (fetchError) {
+                console.error('❌ Error fetching tagging interface HTML:', fetchError);
                 return;
             }
         }
 
         // Load tagging interface CSS
         if (!document.querySelector('link[href*="tagging-dialog.css"]')) {
-            const link = document.createElement('link');
-            link.rel = 'stylesheet';
-            link.href = chrome.runtime.getURL('components/tagging-dialog.css');
-            document.head.appendChild(link);
-            console.log('✅ Tagging interface CSS loaded');
+            try {
+                const link = document.createElement('link');
+                link.rel = 'stylesheet';
+                link.href = chrome.runtime.getURL('components/tagging-dialog.css');
+                document.head.appendChild(link);
+                console.log('✅ Tagging interface CSS loaded');
+            } catch (cssError) {
+                console.warn('⚠️ Could not load external CSS, using inline styles');
+                // CSS loading failed, but we can continue with inline styles
+            }
         }
 
-        // Create TaggingDialog instance using imported class
-        console.log('🔧 Creating TaggingDialog instance...');
-        const taggingDialog = new TaggingDialog();
-        window.taggingDialog = taggingDialog;
-        console.log('✅ TaggingDialog instance created and available globally');
+        // Create TaggingDialogManager instance using imported class
+        console.log('🔧 Creating TaggingDialogManager instance...');
+        const taggingDialogManager = new TaggingDialogManager();
+        window.taggingDialogManager = taggingDialogManager;
+        console.log('✅ TaggingDialogManager instance created and available globally');
 
-        console.log('✅ Tagging popup initialization completed');
+        console.log('✅ Tagging dialog manager initialization completed');
 
     } catch (error) {
         console.error('❌ Error initializing tagging dialog:', error);
@@ -201,7 +271,20 @@ async function startOrderArchivingSystem(orderParser, domManipulator, storage) {
         orderParser.startObserving(
             // onOrderDetected callback
             (orderCard) => {
-                console.log('🆕 New order detected:', orderCard);
+                console.log('🆕 New order detected:', orderParser);
+
+                // Check if this order card has already been processed
+                if (orderCard.hasAttribute('data-archivaz-processed')) {
+                    console.log('⚠️ New order already processed, skipping');
+                    return;
+                }
+
+                // Check if this order card already has buttons
+                if (orderCard.querySelector('.archivaz-button-container')) {
+                    console.log('⚠️ New order already has buttons, skipping');
+                    return;
+                }
+
                 processOrderCard(orderCard, orderParser, domManipulator);
             },
             // onOrderRemoved callback
@@ -220,6 +303,19 @@ async function startOrderArchivingSystem(orderParser, domManipulator, storage) {
             // onOrderDetected callback
             (orderCard) => {
                 console.log('🆕 DOM: New order detected:', orderCard);
+
+                // Check if this order card has already been processed
+                if (orderCard.hasAttribute('data-archivaz-processed')) {
+                    console.log('⚠️ DOM: New order already processed, skipping');
+                    return;
+                }
+
+                // Check if this order card already has buttons
+                if (orderCard.querySelector('.archivaz-button-container')) {
+                    console.log('⚠️ DOM: New order already has buttons, skipping');
+                    return;
+                }
+
                 processOrderCard(orderCard, orderParser, domManipulator);
             },
             // onOrderRemoved callback
@@ -250,6 +346,12 @@ function processOrderCard(orderCard, orderParser, domManipulator) {
     try {
         console.log('🔧 Processing order card:', orderCard);
 
+        // Check if this order card has already been processed
+        if (orderCard.hasAttribute('data-archivaz-processed')) {
+            console.log(`⚠️ Order card already processed, skipping`);
+            return;
+        }
+
         // Extract order ID from the card
         const orderId = domManipulator.getOrderIdFromElement(orderCard);
 
@@ -265,6 +367,10 @@ function processOrderCard(orderCard, orderParser, domManipulator) {
             console.log(`Buttons already exist for order ${orderId}`);
             return;
         }
+
+        // Mark this order card as processed BEFORE injecting buttons
+        orderCard.setAttribute('data-archivaz-processed', 'true');
+        console.log(`✅ Marked order card as processed for order ${orderId}`);
 
         // Inject buttons into the order card
         const success = domManipulator.injectButtons(orderCard, orderId);
@@ -293,13 +399,37 @@ async function processExistingOrders(orderParser, domManipulator) {
         const orderCards = orderParser.findOrderCards();
         console.log(`Found ${orderCards.length} existing order cards`);
 
+        // Track processed order IDs to avoid duplicates
+        const processedOrderIds = new Set();
+        const processedOrderCards = new Set();
+
         // Process each order card
         orderCards.forEach((orderCard, index) => {
             console.log(`Processing existing order ${index + 1}/${orderCards.length}`);
+
+            // Check if this order card has already been processed
+            if (processedOrderCards.has(orderCard)) {
+                console.log(`⚠️ Order card already processed, skipping`);
+                return;
+            }
+
+            // Extract order ID first to check for duplicates
+            const orderId = domManipulator.getOrderIdFromElement(orderCard);
+
+            if (orderId && processedOrderIds.has(orderId)) {
+                console.log(`⚠️ Skipping duplicate order ${orderId} (already processed)`);
+                return;
+            }
+
+            if (orderId) {
+                processedOrderIds.add(orderId);
+            }
+
+            processedOrderCards.add(orderCard);
             processOrderCard(orderCard, orderParser, domManipulator);
         });
 
-        console.log(`✅ Processed ${orderCards.length} existing orders`);
+        console.log(`✅ Processed ${orderCards.length} existing orders (${processedOrderIds.size} unique order IDs, ${processedOrderCards.size} unique order cards)`);
 
     } catch (error) {
         console.error('❌ Error processing existing orders:', error);

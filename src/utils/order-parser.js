@@ -361,9 +361,51 @@ export class OrderParser {
                 }
             }
 
-            // Look for order number in any text content
+            // Look for order number in specific order header elements first
+            // This is more targeted than searching all text content
+            const orderHeaderSelectors = [
+                '.order-header',
+                '.order-header__header-list',
+                '.yohtmlc-order-id',
+                '[data-testid*="order-id"]',
+                '[data-testid*="order-number"]'
+            ];
+
+            for (const selector of orderHeaderSelectors) {
+                const headerElement = orderCard.querySelector(selector);
+                if (headerElement) {
+                    const orderNumberMatch = headerElement.textContent.match(/\b\d{3}-\d{7}-\d{7}\b/);
+                    if (orderNumberMatch) {
+                        console.log(`🔍 Found order number in ${selector}: ${orderNumberMatch[0]}`);
+                        return orderNumberMatch[0];
+                    }
+                }
+            }
+
+            // Look for order number in the specific order card's direct text content
+            // But be more careful about scope - only look in the main order content areas
+            const mainContentSelectors = [
+                '.a-box-group',
+                '.order-header',
+                '.delivery-box'
+            ];
+
+            for (const selector of mainContentSelectors) {
+                const contentElement = orderCard.querySelector(selector);
+                if (contentElement) {
+                    const orderNumberMatch = contentElement.textContent.match(/\b\d{3}-\d{7}-\d{7}\b/);
+                    if (orderNumberMatch) {
+                        console.log(`🔍 Found order number in ${selector}: ${orderNumberMatch[0]}`);
+                        return orderNumberMatch[0];
+                    }
+                }
+            }
+
+            // As a last resort, look for order number in the entire order card
+            // But add a warning that this might be unreliable
             const orderNumberMatch = orderCard.textContent.match(/\b\d{3}-\d{7}-\d{7}\b/);
             if (orderNumberMatch) {
+                console.warn(`⚠️ Found order number in entire order card text (may be unreliable): ${orderNumberMatch[0]}`);
                 return orderNumberMatch[0];
             }
 

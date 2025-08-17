@@ -126,9 +126,18 @@ export class DOMManipulator {
      */
     createButtons(orderId) {
         try {
+            console.log(`🔧 Creating buttons for order ${orderId}`);
+
+            // Check if buttons already exist for this order
+            if (this.injectedButtons.has(orderId)) {
+                console.warn(`⚠️ Buttons already exist for order ${orderId}, skipping creation`);
+                return null;
+            }
+
             // Create container for the buttons
             const buttonContainer = document.createElement('div');
             buttonContainer.className = 'archivaz-button-container';
+            buttonContainer.setAttribute('data-archivaz-order-id', orderId);
             buttonContainer.style.cssText = `
                 margin-top: 8px;
                 padding: 8px 0;
@@ -190,9 +199,44 @@ export class DOMManipulator {
             hideDetailsBtn.addEventListener('click', (event) => {
                 event.preventDefault();
                 event.stopPropagation();
+
+                // CRITICAL: Ensure this button click only affects the specific order
+                const clickedOrderId = hideDetailsBtn.getAttribute('data-archivaz-order-id');
+                if (clickedOrderId !== orderId) {
+                    console.error(`❌ Button click order ID mismatch: expected ${orderId}, got ${clickedOrderId}`);
+                    return;
+                }
+
+                // CRITICAL: Verify the button is in the correct order card
+                const orderCard = hideDetailsBtn.closest('.order-card');
+                if (!orderCard) {
+                    console.error(`❌ Button not found within an order card`);
+                    return;
+                }
+
+                const orderCardOrderId = orderCard.querySelector('.yohtmlc-order-id span.a-color-secondary[dir="ltr"]')?.textContent;
+                if (orderCardOrderId !== orderId) {
+                    console.error(`❌ Order card order ID mismatch: expected ${orderId}, got ${orderCardOrderId}`);
+                    return;
+                }
+
+                // Add debugging to track button clicks
+                console.log(`🔍 Button clicked:`, {
+                    button: hideDetailsBtn,
+                    orderId: orderId,
+                    buttonType: hideDetailsBtn.getAttribute('data-archivaz-type'),
+                    buttonClasses: hideDetailsBtn.className,
+                    buttonText: hideDetailsBtn.textContent,
+                    buttonParent: hideDetailsBtn.parentElement,
+                    orderCard: orderCard,
+                    orderCardOrderId: orderCardOrderId
+                });
+
                 const buttonType = hideDetailsBtn.getAttribute('data-archivaz-type');
                 this.handleButtonClick(buttonType, orderId, hideDetailsBtn);
             });
+
+            console.log(`✅ Buttons created successfully for order ${orderId}`);
 
             return {
                 buttonContainer,
@@ -244,60 +288,18 @@ export class DOMManipulator {
     }
 
     /**
-     * Show the tagging dialog for an order
-     * @param {string} orderId - Order ID to tag
-     */
-    showTaggingDialog(orderId) {
-        try {
-            // Get order data from the OrderParser
-            const orderData = this.getOrderData(orderId);
-            if (!orderData) {
-                console.warn(`No order data found for order ${orderId}`);
-                return;
-            }
-
-            // Get stored tags if available
-            const storedTags = this.getOrderTags(orderId);
-
-            // Prepare order data for the dialog
-            const dialogData = {
-                orderNumber: orderId,
-                orderDate: orderData.orderDate || 'Unknown',
-                tags: storedTags ? storedTags.tags || [] : (orderData.tags || []),
-                notes: storedTags ? storedTags.notes || '' : (orderData.notes || '')
-            };
-
-            // Open the tagging dialog
-            taggingDialog.open(dialogData);
-
-            // Listen for tags saved event
-            const handleTagsSaved = (event) => {
-                const tagData = event.detail;
-                console.log('Tags saved for order:', tagData);
-
-                // Store the tag data
-                this.storeOrderTags(orderId, tagData);
-
-                // Remove the event listener
-                document.removeEventListener('tagsSaved', handleTagsSaved);
-            };
-
-            document.addEventListener('tagsSaved', handleTagsSaved);
-
-        } catch (error) {
-            console.error(`Error showing tagging dialog for order ${orderId}:`, error);
-        }
-    }
-
-    /**
      * Show tagging dialog for hiding operations
      * @param {string} orderId - Order ID to hide
      * @param {Element} button - The button that was clicked
      * @param {StorageManager} storage - Storage manager instance
      */
-    showTaggingDialogForHide(orderId, button, storage) {
+    async showTaggingDialogForHide(orderId, button, storage) {
         try {
             console.log(`🔍 showTaggingDialogForHide called for order ${orderId}`);
+            console.log(`🔍 Current time: ${new Date().toISOString()}`);
+            console.log(`🔍 Button clicked:`, button);
+            console.log(`🔍 Button text: "${button.textContent}"`);
+            console.log(`🔍 Button classes: "${button.className}"`);
 
             // Get order data from the OrderParser
             const orderData = this.getOrderData(orderId);
@@ -306,10 +308,10 @@ export class DOMManipulator {
                 return;
             }
 
-            // Get the global tagging dialog instance
-            const taggingDialog = window.taggingDialog;
-            if (!taggingDialog) {
-                console.warn('TaggingDialog instance not available - popup cannot be shown');
+            // Get the global tagging dialog manager instance
+            const taggingDialogManager = window.taggingDialogManager;
+            if (!taggingDialogManager) {
+                console.warn('TaggingDialogManager instance not available - popup cannot be shown');
                 return;
             }
 
@@ -331,13 +333,33 @@ export class DOMManipulator {
                 return;
             }
 
-            // Open the tagging dialog with order card reference
-            taggingDialog.open(dialogData, orderCard);
+            // Open the tagging dialog using the manager
+            const dialogOpened = taggingDialogManager.openDialog(dialogData, orderCard);
+            if (!dialogOpened) {
+                console.warn(`Failed to open tagging dialog for order ${orderId}`);
+                return;
+            }
 
-            // Listen for tags saved event
+            console.log(`🔍 Tagging dialog opened for order ${orderId}`);
+            console.log(`🔍 Dialog data:`, dialogData);
+
+            // Create a unique event listener for this order
             const handleTagsSaved = async (event) => {
+                console.log(`🔍 EVENT RECEIVED: ${event.type} for order ${orderId}`);
+                console.log(`🔍 Event detail:`, event.detail);
+                console.log(`🔍 Event target:`, event.target);
+                console.log(`🔍 Event currentTarget:`, event.currentTarget);
+
                 const tagData = event.detail;
-                console.log('Tags saved for order:', tagData);
+                console.log(`🔍 Tags saved event received for order ${orderId}:`, tagData);
+
+                // CRITICAL: Verify this event is for the correct order
+                if (tagData.orderNumber !== orderId) {
+                    console.warn(`⚠️ Tags saved event for wrong order: expected ${orderId}, got ${tagData.orderNumber}`);
+                    return;
+                }
+
+                console.log(`✅ Tags saved for order ${orderId}:`, tagData);
 
                 // Store the tag data
                 this.storeOrderTags(orderId, tagData);
@@ -356,14 +378,43 @@ export class DOMManipulator {
                 }
 
                 // Remove the event listener
-                document.removeEventListener('tagsSaved', handleTagsSaved);
+                this.removeExistingTagsSavedListener(orderId);
             };
 
-            document.addEventListener('tagsSaved', handleTagsSaved);
+            // Store the event listener reference for this order
+            this.tagsSavedListeners = this.tagsSavedListeners || new Map();
+            this.tagsSavedListeners.set(orderId, handleTagsSaved);
+
+            // Add the event listener for the order-specific event
+            const eventName = `tagsSaved-${orderId}`;
+            document.addEventListener(eventName, handleTagsSaved);
+            console.log(`✅ Added ${eventName} event listener for order ${orderId}`);
+
+            // DEBUG: Log all current event listeners
+            console.log(`🔍 Current tagsSavedListeners map:`, Array.from(this.tagsSavedListeners.keys()));
+            console.log(`🔍 Total event listeners registered: ${this.tagsSavedListeners.size}`);
+            console.log(`🔍 Event listener function:`, handleTagsSaved.toString().substring(0, 100) + '...');
 
         } catch (error) {
             console.error(`Error showing tagging dialog for order ${orderId}:`, error);
             // Don't fallback to hiding - just log the error
+        }
+    }
+
+    /**
+     * Remove existing tagsSaved event listener for a specific order
+     * @param {string} orderId - Order ID to remove listener for
+     */
+    removeExistingTagsSavedListener(orderId) {
+        if (this.tagsSavedListeners && this.tagsSavedListeners.has(orderId)) {
+            const existingListener = this.tagsSavedListeners.get(orderId);
+            const eventName = `tagsSaved-${orderId}`;
+            document.removeEventListener(eventName, existingListener);
+            this.tagsSavedListeners.delete(orderId);
+            console.log(`🗑️ Removed existing ${eventName} event listener for order ${orderId}`);
+            console.log(`🔍 Remaining event listeners:`, Array.from(this.tagsSavedListeners.keys()));
+        } else {
+            console.log(`🔍 No existing event listener found for order ${orderId}`);
         }
     }
 
@@ -375,7 +426,17 @@ export class DOMManipulator {
      */
     async performHideOperation(orderId, tagData = null, username = null) {
         try {
-            console.log('🔍 performHideOperation called with:', { orderId, tagData, username });
+            console.log(`🔍 performHideOperation called with:`, { orderId, tagData, username });
+
+            // IMPORTANT: This function should ONLY be called when the user explicitly clicks "Save & Hide"
+            // in the tagging dialog, NOT automatically when the dialog opens
+
+            // DEBUG: Check if this order is already hidden
+            if (this.hiddenOrders.has(`${orderId}-details`)) {
+                console.warn(`⚠️ Order ${orderId} is already hidden - this indicates incorrect flow!`);
+                console.warn(`⚠️ Current hidden orders:`, Array.from(this.hiddenOrders));
+                return;
+            }
 
             // Get the button from the injected buttons map
             const buttonInfo = this.injectedButtons.get(orderId);
@@ -430,14 +491,44 @@ export class DOMManipulator {
             const orderCards = this.orderParser.findOrderCards();
             console.log(`🔍 Found ${orderCards.length} order cards`);
 
+            // First, try to find the order card that actually contains this order ID
+            // This is more reliable than parsing all cards
+            let targetOrderCard = null;
+
             for (const orderCard of orderCards) {
-                console.log(`🔍 Processing order card:`, orderCard);
-                const extractedData = this.orderParser.parseOrderCard(orderCard);
-                console.log(`🔍 Extracted data:`, extractedData);
+                // Check if this order card actually contains the target order ID
+                const cardText = orderCard.textContent;
+                if (cardText.includes(orderId)) {
+                    targetOrderCard = orderCard;
+                    console.log(`✅ Found order card containing order ID ${orderId}`);
+                    break;
+                }
+            }
+
+            if (!targetOrderCard) {
+                console.warn(`⚠️ Could not find order card containing order ID ${orderId}`);
+                // Fall back to the old method
+                for (const orderCard of orderCards) {
+                    console.log(`🔍 Processing order card:`, orderCard);
+                    const extractedData = this.orderParser.parseOrderCard(orderCard);
+                    console.log(`🔍 Extracted data:`, extractedData);
+
+                    if (extractedData && extractedData.orderNumber === orderId) {
+                        console.log(`✅ Found matching order data for ${orderId}`);
+                        return extractedData;
+                    }
+                }
+            } else {
+                // Parse only the target order card
+                console.log(`🔍 Parsing target order card for order ID ${orderId}:`, targetOrderCard);
+                const extractedData = this.orderParser.parseOrderCard(targetOrderCard);
+                console.log(`🔍 Extracted data from target card:`, extractedData);
 
                 if (extractedData && extractedData.orderNumber === orderId) {
                     console.log(`✅ Found matching order data for ${orderId}`);
                     return extractedData;
+                } else {
+                    console.warn(`⚠️ Order number mismatch: expected ${orderId}, got ${extractedData?.orderNumber}`);
                 }
             }
 
@@ -494,6 +585,11 @@ export class DOMManipulator {
      */
     async hideOrderDetails(orderId, button, storage) {
         try {
+            console.log(`🔍 hideOrderDetails called for order ${orderId} - opening tagging dialog only`);
+
+            // IMPORTANT: Do NOT hide the order yet - just show the tagging dialog
+            // The order will only be hidden when the user clicks "Save & Hide" in the dialog
+
             // Show tagging dialog first, then hide details after tags are saved
             this.showTaggingDialogForHide(orderId, button, storage);
         } catch (error) {
@@ -519,6 +615,25 @@ export class DOMManipulator {
 
             const orderCard = buttonInfo.orderCard;
             console.log('🔍 Order card found:', orderCard);
+            console.log('🔍 Order card outerHTML preview:', orderCard.outerHTML.substring(0, 200) + '...');
+            console.log('🔍 Order card classes:', orderCard.className);
+            console.log('🔍 Order card ID:', orderCard.id);
+
+            // CRITICAL CHECK: Prevent hiding if order is already hidden
+            if (orderCard.classList.contains('archivaz-details-hidden')) {
+                console.warn(`⚠️ Order ${orderId} is already hidden - this indicates a duplicate operation or incorrect flow`);
+                console.warn(`⚠️ The order should NOT be hidden until the user clicks "Save & Hide" in the tagging dialog`);
+                return;
+            }
+
+            // Check if this order is already being processed
+            if (orderCard.hasAttribute('data-archivaz-hiding')) {
+                console.warn(`⚠️ Order ${orderId} is already being hidden, skipping duplicate operation`);
+                return;
+            }
+
+            // Mark this order as being hidden to prevent duplicate operations
+            orderCard.setAttribute('data-archivaz-hiding', 'true');
 
             // Enhanced selectors for different page formats to hide product details
             const selectorsToHide = [
@@ -550,10 +665,17 @@ export class DOMManipulator {
             selectorsToHide.forEach(selector => {
                 try {
                     const elements = orderCard.querySelectorAll(selector);
+                    console.log(`🔍 Selector "${selector}" found ${elements.length} elements in order ${orderId}`);
                     elements.forEach(element => {
                         // Skip if already hidden or if it's our injected buttons
                         if (element.classList.contains('archivaz-hidden-details') ||
                             element.closest('.archivaz-button-container')) {
+                            return;
+                        }
+
+                        // Verify the element is within the order card boundaries
+                        if (!this.isElementWithinOrderCard(element, orderCard)) {
+                            console.warn(`⚠️ Element outside order card boundaries in order ${orderId}:`, element);
                             return;
                         }
 
@@ -567,6 +689,7 @@ export class DOMManipulator {
 
                         hiddenElements.push(element);
                         totalHidden++;
+                        console.log(`🔍 Hidden element with selector "${selector}" in order ${orderId}:`, element);
                     });
                 } catch (selectorError) {
                     // Continue with next selector if one fails
@@ -589,11 +712,18 @@ export class DOMManipulator {
 
             // Handle order-item containers intelligently to preserve essential status
             const orderItemElements = orderCard.querySelectorAll('.order-item');
+            console.log(`🔍 Found ${orderItemElements.length} order-item elements in order ${orderId}`);
 
             orderItemElements.forEach((element) => {
                 // Skip if already hidden or if it's our injected buttons
                 if (element.classList.contains('archivaz-hidden-details') ||
                     element.closest('.archivaz-button-container')) {
+                    return;
+                }
+
+                // Verify the element is within the order card boundaries
+                if (!this.isElementWithinOrderCard(element, orderCard)) {
+                    console.warn(`⚠️ Order-item element outside order card boundaries in order ${orderId}:`, element);
                     return;
                 }
 
@@ -614,6 +744,7 @@ export class DOMManipulator {
 
                     hiddenElements.push(element);
                     totalHidden++;
+                    console.log(`🔍 Hidden order-item element in order ${orderId}:`, element);
                 }
             });
 
@@ -679,11 +810,34 @@ export class DOMManipulator {
                 this.onOrderHidden(orderId, 'details', orderData);
             }
 
+            // Clean up processing flag
+            orderCard.removeAttribute('data-archivaz-hiding');
+
             console.log(`Hidden ${totalHidden} detail elements for order ${orderId}`);
 
         } catch (error) {
             console.error(`Error hiding details for order ${orderId}:`, error);
+            // Clean up processing flag on error
+            if (orderCard) {
+                orderCard.removeAttribute('data-archivaz-hiding');
+            }
         }
+    }
+
+    /**
+     * Verify that an element is properly contained within the order card boundaries
+     * @param {Element} element - The element to check
+     * @param {Element} orderCard - The order card that should contain the element
+     * @returns {boolean} True if the element is properly contained within the order card
+     */
+    isElementWithinOrderCard(element, orderCard) {
+        // Check if the element is the order card itself
+        if (element === orderCard) {
+            return true;
+        }
+
+        // Check if the element is a descendant of the order card
+        return orderCard.contains(element);
     }
 
     /**
@@ -693,6 +847,9 @@ export class DOMManipulator {
      */
     hideAdditionalOrderElements(orderCard) {
         const hiddenElements = [];
+        const orderId = this.getOrderIdFromElement(orderCard) || 'unknown';
+
+        console.log(`🔍 hideAdditionalOrderElements called for order ${orderId}`);
 
         try {
             // Find and hide return/replace text
@@ -711,6 +868,7 @@ export class DOMManipulator {
             console.error('Error hiding additional order elements:', error);
         }
 
+        console.log(`🔍 hideAdditionalOrderElements completed for order ${orderId}, hidden ${hiddenElements.length} elements`);
         return hiddenElements;
     }
 
@@ -880,6 +1038,11 @@ export class DOMManipulator {
      * @param {Array} hiddenElements - Array to store hidden elements
      */
     findAndHideTextElements(container, textToFind, hiddenElements) {
+        const orderId = this.getOrderIdFromElement(container) || 'unknown';
+        console.log(`🔍 findAndHideTextElements called for order ${orderId}, container:`, container);
+        console.log(`🔍 Container classes:`, container.className);
+        console.log(`🔍 Container ID:`, container.id);
+
         // Walk through all text nodes and their parent elements
         const walker = document.createTreeWalker(
             container,
@@ -894,11 +1057,19 @@ export class DOMManipulator {
             textNodes.push(node);
         }
 
+        console.log(`🔍 TreeWalker found ${textNodes.length} text nodes in order ${orderId}`);
+
         textNodes.forEach(textNode => {
             const text = textNode.textContent.trim();
             if (text && textToFind.some(searchText => text.includes(searchText))) {
                 const parentElement = textNode.parentElement;
                 if (parentElement && !parentElement.classList.contains('archivaz-hidden-details')) {
+                    // Verify the element is within the order card boundaries
+                    if (!this.isElementWithinOrderCard(parentElement, container)) {
+                        console.warn(`⚠️ Element outside order card boundaries in order ${orderId}:`, parentElement);
+                        return;
+                    }
+
                     // Also check if this element has specific classes that indicate essential status
                     // Check the parent element and all its ancestors for essential classes
                     let hasEssentialClass = false;
@@ -925,6 +1096,7 @@ export class DOMManipulator {
                     parentElement.style.display = 'none';
 
                     hiddenElements.push(parentElement);
+                    console.log(`🔍 Hidden text element in order ${orderId}: "${text}"`, parentElement);
                 }
             }
         });
@@ -936,6 +1108,9 @@ export class DOMManipulator {
  * @param {Array} hiddenElements - Array to store hidden elements
  */
     findAndHideActionButtons(container, hiddenElements) {
+        const orderId = this.getOrderIdFromElement(container) || 'unknown';
+        console.log(`🔍 findAndHideActionButtons called for order ${orderId}, container:`, container);
+
         // Common Amazon action button text patterns - expanded list
         // Excluding essential order header links that should remain visible
         const buttonTexts = [
@@ -983,6 +1158,8 @@ export class DOMManipulator {
             }
         });
 
+        console.log(`🔍 Found ${allButtons.size} total buttons in order ${orderId}`);
+
         allButtons.forEach(button => {
             // Skip if it's our extension button
             if (button.hasAttribute('data-archivaz-type')) {
@@ -991,6 +1168,12 @@ export class DOMManipulator {
 
             // Skip if already hidden
             if (button.classList.contains('archivaz-hidden-details')) {
+                return;
+            }
+
+            // Verify the button is within the order card boundaries
+            if (!this.isElementWithinOrderCard(button, container)) {
+                console.warn(`⚠️ Button outside order card boundaries in order ${orderId}:`, button);
                 return;
             }
 
@@ -1007,21 +1190,29 @@ export class DOMManipulator {
                 button.style.display = 'none';
 
                 hiddenElements.push(button);
-                console.log(`Hidden button: "${buttonText}" with classes: ${button.className}`);
+                console.log(`🔍 Hidden button in order ${orderId}: "${buttonText}" with classes: ${button.className}`);
             }
         });
 
         // Also look for button containers that might contain action buttons
         const buttonContainers = container.querySelectorAll('.a-box-group, .order-actions, .a-unordered-list, .a-fixed-right-grid-col');
-        buttonContainers.forEach(container => {
+        console.log(`🔍 Found ${buttonContainers.length} button containers in order ${orderId}`);
+
+        buttonContainers.forEach(buttonContainer => {
             // Skip containers that contain essential order header information
-            if (this.isEssentialOrderHeader(container)) {
+            if (this.isEssentialOrderHeader(buttonContainer)) {
+                return;
+            }
+
+            // Verify the container is within the order card boundaries
+            if (!this.isElementWithinOrderCard(buttonContainer, container)) {
+                console.warn(`⚠️ Button container outside order card boundaries in order ${orderId}:`, buttonContainer);
                 return;
             }
 
             // Only hide containers that don't contain our extension buttons
-            if (!container.querySelector('[data-archivaz-type]')) {
-                const buttonsInContainer = container.querySelectorAll('button, .a-button, .a-button-normal, .a-link-normal');
+            if (!buttonContainer.querySelector('[data-archivaz-type]')) {
+                const buttonsInContainer = buttonContainer.querySelectorAll('button, .a-button, .a-button-normal, .a-link-normal');
                 let hasVisibleButtons = false;
 
                 buttonsInContainer.forEach(btn => {
@@ -1032,13 +1223,14 @@ export class DOMManipulator {
 
                 // If the container only has action buttons (no extension buttons), hide it
                 if (hasVisibleButtons) {
-                    const originalDisplay = window.getComputedStyle(container).display;
-                    container.setAttribute('data-archivaz-original-display', originalDisplay);
+                    const originalDisplay = window.getComputedStyle(buttonContainer).display;
+                    buttonContainer.setAttribute('data-archivaz-original-display', originalDisplay);
 
-                    container.classList.add('archivaz-hidden-details');
-                    container.style.display = 'none';
+                    buttonContainer.classList.add('archivaz-hidden-details');
+                    buttonContainer.style.display = 'none';
 
-                    hiddenElements.push(container);
+                    hiddenElements.push(buttonContainer);
+                    console.log(`🔍 Hidden button container in order ${orderId}:`, buttonContainer);
                 }
             }
         });
@@ -1220,6 +1412,14 @@ export class DOMManipulator {
                 console.log(`Buttons already injected for order ${orderId}`);
                 return true;
             }
+
+            // Check if this order card already has buttons
+            if (orderCard.querySelector('.archivaz-button-container')) {
+                console.warn(`⚠️ Order card already has buttons for order ${orderId}, skipping injection`);
+                return true;
+            }
+
+            console.log(`🔧 Injecting buttons for order ${orderId}`);
 
             // Create buttons
             const { hideDetailsLi, hideDetailsBtn } = this.createButtons(orderId);
@@ -1616,6 +1816,26 @@ export class DOMManipulator {
             this.removeButtons(orderId);
         }
 
+        // Remove all tagsSaved event listeners
+        if (this.tagsSavedListeners) {
+            for (const [orderId, listener] of this.tagsSavedListeners) {
+                const eventName = `tagsSaved-${orderId}`;
+                document.removeEventListener(eventName, listener);
+                console.log(`🗑️ Cleaned up ${eventName} event listener for order ${orderId}`);
+            }
+            this.tagsSavedListeners.clear();
+        }
+
+        // Clean up tagging dialog manager if available
+        if (window.taggingDialogManager && typeof window.taggingDialogManager.cleanup === 'function') {
+            try {
+                window.taggingDialogManager.cleanup();
+                console.log('✅ TaggingDialogManager cleanup completed');
+            } catch (error) {
+                console.warn('⚠️ Error cleaning up TaggingDialogManager:', error);
+            }
+        }
+
         this.injectedButtons.clear();
         this.hiddenOrders.clear();
         this.orderUsernames.clear();
@@ -1770,4 +1990,69 @@ export class DOMManipulator {
             throw error;
         }
     }
+
+    /**
+     * Handle tagging dialog cancellation or closure
+     * @param {string} orderId - Order ID that was cancelled
+     */
+    handleTaggingDialogCancelled(orderId) {
+        console.log(`🚫 Tagging dialog cancelled for order ${orderId}`);
+
+        // Remove the event listener
+        this.removeExistingTagsSavedListener(orderId);
+
+        // Close the dialog using the manager if available
+        if (window.taggingDialogManager && typeof window.taggingDialogManager.closeDialog === 'function') {
+            try {
+                window.taggingDialogManager.closeDialog(orderId);
+                console.log(`✅ Tagging dialog closed for order ${orderId}`);
+            } catch (error) {
+                console.warn(`⚠️ Error closing tagging dialog for order ${orderId}:`, error);
+            }
+        }
+    }
+
+    /**
+     * Show a user-friendly message when trying to open a dialog while another is open
+     * @param {string} orderId - Order ID that was attempted to be opened
+     */
+    showDialogAlreadyOpenMessage(orderId) {
+        // Create a temporary message element
+        const messageDiv = document.createElement('div');
+        messageDiv.className = 'archivaz-dialog-message';
+        messageDiv.style.cssText = `
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+            border-radius: 4px;
+            padding: 12px 16px;
+            font-size: 14px;
+            font-weight: 500;
+            z-index: 10000;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+            max-width: 300px;
+        `;
+        messageDiv.innerHTML = `
+            <div style="display: flex; align-items: center; gap: 8px;">
+                <span style="font-size: 16px;">⚠️</span>
+                <span>Please close the existing tagging dialog before opening another one.</span>
+            </div>
+        `;
+
+        // Add to page
+        document.body.appendChild(messageDiv);
+
+        // Remove after 4 seconds
+        setTimeout(() => {
+            if (messageDiv.parentNode) {
+                messageDiv.parentNode.removeChild(messageDiv);
+            }
+        }, 4000);
+
+        console.log(`📢 Shown dialog already open message for order ${orderId}`);
+    }
+
 }

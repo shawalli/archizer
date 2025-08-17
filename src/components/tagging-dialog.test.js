@@ -503,8 +503,8 @@ describe('TaggingDialog', () => {
             // Get the actual event that was dispatched
             const dispatchedEvent = mockDispatchEvent.mock.calls[0][0];
 
-            // Verify event properties
-            expect(dispatchedEvent.type).toBe('tagsSaved');
+            // Verify event properties - now using order-specific event name
+            expect(dispatchedEvent.type).toBe('tagsSaved-123-4567890-1234567');
             expect(dispatchedEvent.detail.orderNumber).toBe('123-4567890-1234567');
             expect(dispatchedEvent.detail.tags).toEqual(['electronics']);
         });
