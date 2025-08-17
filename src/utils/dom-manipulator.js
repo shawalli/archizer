@@ -2013,6 +2013,143 @@ export class DOMManipulator {
     }
 
     /**
+     * Restore hidden orders from storage and hide them on the page
+     * @param {StorageManager} storage - The storage manager instance
+     * @returns {number} Number of orders successfully restored
+     */
+    async restoreHiddenOrdersFromStorage(storage) {
+        try {
+            console.log('🔄 Restoring hidden orders from storage...');
+
+            if (!storage) {
+                console.warn('No storage manager provided for restoration');
+                return 0;
+            }
+
+            // Get all hidden orders from storage
+            const hiddenOrders = await storage.getAllHiddenOrders();
+            console.log(`Found ${hiddenOrders.length} hidden orders in storage`);
+
+            if (hiddenOrders.length === 0) {
+                console.log('ℹ️ No hidden orders to restore');
+                return 0;
+            }
+
+            let restoredCount = 0;
+
+            // Process each hidden order
+            for (const hiddenOrder of hiddenOrders) {
+                try {
+                    const { orderId, type, orderData, username } = hiddenOrder;
+                    console.log(`🔄 Restoring hidden order ${orderId} (${type}) for user ${username}`);
+
+                    // Find the order card on the page
+                    const orderCard = this.findOrderCardById(orderId);
+
+                    if (!orderCard) {
+                        console.log(`⚠️ Order card for ${orderId} not found on page, skipping restoration`);
+                        continue;
+                    }
+
+                    // Check if order is already hidden
+                    if (orderCard.classList.contains('archivaz-details-hidden')) {
+                        console.log(`ℹ️ Order ${orderId} is already hidden, skipping restoration`);
+                        continue;
+                    }
+
+                    // Ensure buttons are injected for this order (needed for performHideOrderDetails)
+                    if (!this.injectedButtons.has(orderId)) {
+                        console.log(`🔧 Injecting buttons for order ${orderId} during restoration`);
+                        const success = this.injectButtons(orderCard, orderId);
+                        if (!success) {
+                            console.warn(`⚠️ Failed to inject buttons for order ${orderId}, skipping restoration`);
+                            continue;
+                        }
+                    }
+
+                    // Mark the order card as processed to prevent duplicate processing
+                    if (!orderCard.hasAttribute('data-archivaz-processed')) {
+                        orderCard.setAttribute('data-archivaz-processed', 'true');
+                        console.log(`🔧 Marked order card as processed for order ${orderId} during restoration`);
+                    }
+
+                    // Get stored tags for this order
+                    let tagData = null;
+                    try {
+                        tagData = await storage.getOrderTags(orderId);
+                    } catch (error) {
+                        console.warn(`⚠️ Could not retrieve tags for order ${orderId}:`, error);
+                    }
+
+                    // Set username for this order
+                    if (username) {
+                        this.setUsernameForOrder(orderId, username);
+                    }
+
+                    // Hide the order details
+                    await this.performHideOrderDetails(orderId, null, tagData);
+
+                    restoredCount++;
+                    console.log(`✅ Successfully restored hidden order ${orderId}`);
+
+                } catch (error) {
+                    console.error(`❌ Error restoring hidden order ${hiddenOrder.orderId}:`, error);
+                }
+            }
+
+            console.log(`✅ Restored ${restoredCount} hidden orders from storage`);
+            return restoredCount;
+
+        } catch (error) {
+            console.error('❌ Error restoring hidden orders from storage:', error);
+            return 0;
+        }
+    }
+
+    /**
+     * Find an order card element by order ID
+     * @param {string} orderId - The order ID to search for
+     * @returns {Element|null} The order card element or null if not found
+     */
+    findOrderCardById(orderId) {
+        try {
+            // Try multiple selectors to find the order card
+            const selectors = [
+                `.order-card[data-order-id*="${orderId}"]`,
+                `.js-order-card[data-order-id*="${orderId}"]`,
+                `[data-order-id*="${orderId}"]`,
+                `.a-box-group:has([data-order-id*="${orderId}"])`,
+                `.a-section:has([data-order-id*="${orderId}"])`
+            ];
+
+            for (const selector of selectors) {
+                try {
+                    const element = document.querySelector(selector);
+                    if (element) {
+                        return element;
+                    }
+                } catch (error) {
+                    // Some selectors might not be supported in all browsers
+                    continue;
+                }
+            }
+
+            // Fallback: search by text content
+            const allOrderCards = document.querySelectorAll('.order-card, .js-order-card, .a-box-group, .a-section');
+            for (const card of allOrderCards) {
+                if (card.textContent.includes(orderId)) {
+                    return card;
+                }
+            }
+
+            return null;
+        } catch (error) {
+            console.error(`Error finding order card for ${orderId}:`, error);
+            return null;
+        }
+    }
+
+    /**
      * Handle tagging dialog cancellation or closure
      * @param {string} orderId - Order ID that was cancelled
      */

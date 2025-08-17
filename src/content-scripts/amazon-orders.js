@@ -328,6 +328,9 @@ async function startOrderArchivingSystem(orderParser, domManipulator, storage) {
         // Process existing orders on the page
         await processExistingOrders(orderParser, domManipulator);
 
+        // Restore hidden orders from storage
+        await domManipulator.restoreHiddenOrdersFromStorage(storage);
+
         console.log('✅ Order archiving system started successfully');
 
     } catch (error) {
@@ -436,6 +439,8 @@ async function processExistingOrders(orderParser, domManipulator) {
         throw error;
     }
 }
+
+
 
 // Cleanup function for when the content script is unloaded
 window.addEventListener('beforeunload', () => {
