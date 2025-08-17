@@ -318,7 +318,7 @@ describe('DOMManipulator', () => {
     });
 
     describe('Button Event Handling', () => {
-        test('should handle hide-details button click', () => {
+        test('should handle hide-details button click', async () => {
             const orderId = '123-4567890-1234567';
             const mockButton = { textContent: 'Hide details' };
 
@@ -332,12 +332,14 @@ describe('DOMManipulator', () => {
             const mockHideOrderDetails = jest.fn();
             domManipulator.hideOrderDetails = mockHideOrderDetails;
 
-            domManipulator.handleButtonClick('hide-details', orderId, mockButton);
+            // Mock storage
+            const mockStorage = { get: jest.fn() };
+            domManipulator.setStorage(mockStorage);
 
-            expect(mockHideOrderDetails).toHaveBeenCalledWith(orderId, mockButton);
+            await domManipulator.handleButtonClick('hide-details', orderId, mockButton);
+
+            expect(mockHideOrderDetails).toHaveBeenCalledWith(orderId, mockButton, mockStorage);
         });
-
-
 
         test('should handle show-details button click', () => {
             const orderId = '123-4567890-1234567';
@@ -361,8 +363,6 @@ describe('DOMManipulator', () => {
             expect(mockShowOrderDetails).toHaveBeenCalledWith(orderId, mockButton);
         });
 
-
-
         test('should show tagging dialog when hiding order details', () => {
             const orderId = '123-4567890-1234567';
             const mockButton = {
@@ -381,21 +381,22 @@ describe('DOMManipulator', () => {
             const mockShowTaggingDialogForHide = jest.fn();
             domManipulator.showTaggingDialogForHide = mockShowTaggingDialogForHide;
 
-            domManipulator.hideOrderDetails(orderId, mockButton);
+            // Mock storage
+            const mockStorage = { get: jest.fn() };
 
-            expect(mockShowTaggingDialogForHide).toHaveBeenCalledWith(orderId, mockButton);
+            domManipulator.hideOrderDetails(orderId, mockButton, mockStorage);
+
+            expect(mockShowTaggingDialogForHide).toHaveBeenCalledWith(orderId, mockButton, mockStorage);
         });
 
-
-
-        test('should perform hide operation after tagging', () => {
+        test('should perform hide operation after tagging', async () => {
             const orderId = '123-4567890-1234567';
-            const mockButton = {
-                textContent: 'Hide details',
-                setAttribute: jest.fn(),
-                classList: { add: jest.fn() }
-            };
             const tagData = { tags: ['test'], notes: 'test note' };
+            const mockButton = {
+                classList: { add: jest.fn() },
+                setAttribute: jest.fn(),
+                textContent: 'Hide details'
+            };
 
             // Set up button info in injected buttons map
             domManipulator.injectedButtons.set(orderId, {
@@ -407,7 +408,7 @@ describe('DOMManipulator', () => {
             const mockPerformHideOrderDetails = jest.fn();
             domManipulator.performHideOrderDetails = mockPerformHideOrderDetails;
 
-            domManipulator.performHideOperation(orderId, tagData);
+            await domManipulator.performHideOperation(orderId, tagData);
 
             expect(mockPerformHideOrderDetails).toHaveBeenCalledWith(orderId, mockButton, tagData);
         });
@@ -453,26 +454,30 @@ describe('DOMManipulator', () => {
     });
 
     describe('Order State Management', () => {
-        test('should track hidden order states correctly', () => {
-            const orderId = '123-4567890-1234567';
+        it('should track hidden order states correctly', () => {
+            domManipulator.hiddenOrders.add('order1-details');
+            domManipulator.hiddenOrders.add('order2-order');
 
-            expect(domManipulator.areDetailsHidden(orderId)).toBe(false);
-
-            domManipulator.hiddenOrders.add(`${orderId}-details`);
-
-            expect(domManipulator.areDetailsHidden(orderId)).toBe(true);
+            expect(domManipulator.areDetailsHidden('order1')).toBe(true);
+            expect(domManipulator.areDetailsHidden('order2')).toBe(false);
         });
 
-        test('should get all hidden orders', () => {
-            const orderId1 = '123-4567890-1234567';
-            const orderId2 = '987-6543210-7654321';
-
-            domManipulator.hiddenOrders.add(`${orderId1}-details`);
-            domManipulator.hiddenOrders.add(`${orderId2}-details`);
+        it('should get all hidden orders', () => {
+            domManipulator.hiddenOrders.add('order1-details');
+            domManipulator.hiddenOrders.add('order2-order');
 
             const hiddenOrders = domManipulator.getHiddenOrders();
-            expect(hiddenOrders).toContain(`${orderId1}-details`);
-            expect(hiddenOrders).toContain(`${orderId2}-details`);
+            expect(hiddenOrders).toContain('order1-details');
+            expect(hiddenOrders).toContain('order2-order');
+        });
+
+        it('should set and get username for orders', () => {
+            domManipulator.setUsernameForOrder('order1', 'TestUser');
+            domManipulator.setUsernameForOrder('order2', 'AnotherUser');
+
+            expect(domManipulator.getUsernameForOrder('order1')).toBe('TestUser');
+            expect(domManipulator.getUsernameForOrder('order2')).toBe('AnotherUser');
+            expect(domManipulator.getUsernameForOrder('order3')).toBe('Unknown User');
         });
     });
 

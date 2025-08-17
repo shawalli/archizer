@@ -47,6 +47,7 @@ class PopupManager {
     async init() {
         this.setupEventListeners();
         await this.loadUserSettings();
+        await this.loadHiddenOrders();
         this.showView('main');
     }
 
@@ -104,6 +105,94 @@ class PopupManager {
             }
         } catch (error) {
             console.error('Error loading user settings:', error);
+        }
+    }
+
+    async loadHiddenOrders() {
+        try {
+            const hiddenOrders = await this.getAllHiddenOrders();
+            this.displayHiddenOrders(hiddenOrders);
+        } catch (error) {
+            console.error('Error loading hidden orders:', error);
+        }
+    }
+
+    async getAllHiddenOrders() {
+        try {
+            const allData = await chrome.storage.local.get(null);
+            const hiddenOrders = [];
+
+            for (const [key, value] of Object.entries(allData)) {
+                if (key.startsWith('amazon_archiver_hidden_order_') && value) {
+                    hiddenOrders.push(value);
+                }
+            }
+
+            return hiddenOrders;
+        } catch (error) {
+            console.error('Error getting all hidden orders:', error);
+            return [];
+        }
+    }
+
+    displayHiddenOrders(hiddenOrders) {
+        const container = document.getElementById('hidden-orders-list');
+        if (!container) return;
+
+        if (hiddenOrders.length === 0) {
+            container.innerHTML = '<p class="no-orders-message">No hidden orders found.</p>';
+            return;
+        }
+
+        const ordersHTML = hiddenOrders.map(order => {
+            const orderData = order.orderData || {};
+            const tags = orderData.tags || [];
+            const tagsHTML = tags.map(tag =>
+                `<span class="tag">${tag}</span>`
+            ).join('');
+
+            const usernameHTML = order.username ?
+                `<span class="username-tag">@${order.username}</span>` : '';
+
+            return `
+                <div class="hidden-order-item">
+                    <div style="font-weight: bold; margin-bottom: 5px;">Order #${order.orderId}</div>
+                    <div style="font-size: 12px; color: #666; margin-bottom: 5px;">
+                        ${orderData.orderDate || 'Date unknown'} - ${orderData.orderTotal || 'Total unknown'}
+                    </div>
+                    <div style="margin-bottom: 5px;">
+                        ${usernameHTML}
+                        ${tagsHTML}
+                    </div>
+                    <button class="unhide-btn" data-order-id="${order.orderId}" data-type="${order.type}">Unhide</button>
+                </div>
+            `;
+        }).join('');
+
+        container.innerHTML = ordersHTML;
+
+        // Add event listeners for unhide buttons
+        container.querySelectorAll('.unhide-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                const orderId = e.target.dataset.orderId;
+                const type = e.target.dataset.type;
+                this.unhideOrder(orderId, type);
+            });
+        });
+    }
+
+    async unhideOrder(orderId, type) {
+        try {
+            // Remove from storage
+            await this.storage.remove(`hidden_order_${orderId}_${type}`);
+
+            // Reload hidden orders
+            await this.loadHiddenOrders();
+
+            this.showMessage('Order unhidden successfully!', 'success');
+        } catch (error) {
+            console.error('Error unhiding order:', error);
+            this.showMessage('Error unhiding order', 'error');
         }
     }
 

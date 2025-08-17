@@ -48,12 +48,18 @@ async function initializeContentScript() {
         // Set up integration between DOM manipulator and OrderParser
         domManipulator.setOrderParser(orderParser);
 
+        // Set up storage instance for DOM manipulator
+        domManipulator.setStorage(storage);
+
         // Set up callbacks for order state changes
         domManipulator.setCallbacks(
-            (orderId, type, orderData) => {
-                console.log(`Order ${orderId} ${type} hidden:`, orderData);
+            async (orderId, type, orderData) => {
+                console.log(`🔧 CALLBACK: Order ${orderId} ${type} hidden:`, orderData);
+
                 // Store hidden order data in storage
-                storage.storeHiddenOrder(orderId, type, orderData);
+                console.log(`🔧 CALLBACK: About to store hidden order data for order ${orderId}`);
+                await storage.storeHiddenOrder(orderId, type, orderData);
+                console.log(`🔧 CALLBACK: Hidden order data stored for order ${orderId}`);
             },
             (orderId, type, orderData) => {
                 console.log(`Order ${orderId} ${type} shown:`, orderData);

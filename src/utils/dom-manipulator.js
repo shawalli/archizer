@@ -7,11 +7,13 @@ export class DOMManipulator {
     constructor() {
         this.injectedButtons = new Map(); // Track injected buttons by order ID
         this.hiddenOrders = new Set(); // Track hidden order IDs
+        this.orderUsernames = new Map(); // Track usernames for hidden orders
         this.observer = null;
         this.isObserving = false;
         this.orderParser = null; // Reference to OrderParser for data extraction
         this.onOrderHidden = null; // Callback when orders are hidden
         this.onOrderShown = null; // Callback when orders are shown
+        this.storage = null; // Storage manager instance
     }
 
     /**
@@ -204,18 +206,31 @@ export class DOMManipulator {
     }
 
     /**
+     * Set storage manager instance
+     * @param {StorageManager} storage - Storage manager instance
+     */
+    setStorage(storage) {
+        this.storage = storage;
+        console.log('🔧 Storage manager set for DOM manipulator');
+    }
+
+    /**
      * Handle button click events for different button types
      * @param {string} buttonType - Type of button clicked
      * @param {string} orderId - Order ID associated with the button
      * @param {Element} button - The button element that was clicked
      */
-    handleButtonClick(buttonType, orderId, button) {
+    async handleButtonClick(buttonType, orderId, button) {
         try {
             console.log(`Button clicked: ${buttonType} for order ${orderId}`);
 
             switch (buttonType) {
                 case 'hide-details':
-                    this.hideOrderDetails(orderId, button);
+                    if (this.storage) {
+                        await this.hideOrderDetails(orderId, button, this.storage);
+                    } else {
+                        console.error('No storage manager available');
+                    }
                     break;
                 case 'show-details':
                     this.showOrderDetails(orderId, button);
@@ -278,8 +293,9 @@ export class DOMManipulator {
      * Show tagging dialog for hiding operations
      * @param {string} orderId - Order ID to hide
      * @param {Element} button - The button that was clicked
+     * @param {StorageManager} storage - Storage manager instance
      */
-    showTaggingDialogForHide(orderId, button) {
+    showTaggingDialogForHide(orderId, button, storage) {
         try {
             console.log(`🔍 showTaggingDialogForHide called for order ${orderId}`);
 
@@ -319,15 +335,25 @@ export class DOMManipulator {
             taggingDialog.open(dialogData, orderCard);
 
             // Listen for tags saved event
-            const handleTagsSaved = (event) => {
+            const handleTagsSaved = async (event) => {
                 const tagData = event.detail;
                 console.log('Tags saved for order:', tagData);
 
                 // Store the tag data
                 this.storeOrderTags(orderId, tagData);
 
-                // Now perform the hide operation with the tags
-                this.performHideOperation(orderId, tagData);
+                // Get username from storage and pass it to performHideOperation
+                try {
+                    const username = await storage.get('username') || 'Unknown User';
+                    console.log(`🔧 Retrieved username from storage: "${username}" for order ${orderId}`);
+
+                    // Now perform the hide operation with the username
+                    await this.performHideOperation(orderId, tagData, username);
+                } catch (error) {
+                    console.error(`Error getting username for order ${orderId}:`, error);
+                    // Fallback to hiding without username
+                    await this.performHideOperation(orderId, tagData, 'Unknown User');
+                }
 
                 // Remove the event listener
                 document.removeEventListener('tagsSaved', handleTagsSaved);
@@ -345,16 +371,27 @@ export class DOMManipulator {
      * Perform the actual hide operation after tagging
      * @param {string} orderId - Order ID to hide
      * @param {Object} tagData - Optional tag data if order was tagged before hiding
+     * @param {string} username - Username for the order (optional, will use stored if not provided)
      */
-    performHideOperation(orderId, tagData = null) {
+    async performHideOperation(orderId, tagData = null, username = null) {
         try {
-            console.log('🔍 performHideOperation called with:', { orderId, tagData });
+            console.log('🔍 performHideOperation called with:', { orderId, tagData, username });
 
             // Get the button from the injected buttons map
             const buttonInfo = this.injectedButtons.get(orderId);
             if (!buttonInfo || !buttonInfo.hideDetailsBtn) {
                 console.warn(`No button info found for order ${orderId}`);
                 return;
+            }
+
+            // Set username if provided, otherwise use stored username
+            if (username) {
+                console.log(`🔧 Setting provided username: "${username}" for order ${orderId}`);
+                this.setUsernameForOrder(orderId, username);
+            } else {
+                console.log(`🔧 No username provided, using stored username for order ${orderId}`);
+                const storedUsername = this.getUsernameForOrder(orderId);
+                console.log(`🔧 Stored username for order ${orderId}: "${storedUsername}"`);
             }
 
             // If no tag data provided, try to retrieve stored tags
@@ -364,7 +401,11 @@ export class DOMManipulator {
                 console.log('🔍 Retrieved tagData from storage:', tagData);
             }
 
-            console.log('🔍 Calling performHideOrderDetails with:', { orderId, button: buttonInfo.hideDetailsBtn, tagData });
+            // Verify username is set before proceeding
+            const finalUsername = this.getUsernameForOrder(orderId);
+            console.log(`🔧 Final username verification for order ${orderId}: "${finalUsername}"`);
+
+            console.log('🔍 Calling performHideOrderDetails with:', { orderId, button: buttonInfo.hideDetailsBtn, tagData, username: finalUsername });
             this.performHideOrderDetails(orderId, buttonInfo.hideDetailsBtn, tagData);
         } catch (error) {
             console.error(`Error performing hide operation for order ${orderId}:`, error);
@@ -449,11 +490,12 @@ export class DOMManipulator {
      * Show tagging dialog for hiding order details
      * @param {string} orderId - Order ID to hide details for
      * @param {Element} button - The button that was clicked
+     * @param {StorageManager} storage - Storage manager instance
      */
-    hideOrderDetails(orderId, button) {
+    async hideOrderDetails(orderId, button, storage) {
         try {
             // Show tagging dialog first, then hide details after tags are saved
-            this.showTaggingDialogForHide(orderId, button);
+            this.showTaggingDialogForHide(orderId, button, storage);
         } catch (error) {
             console.error(`Error showing tagging dialog for order ${orderId}:`, error);
         }
@@ -601,14 +643,17 @@ export class DOMManipulator {
                         console.log('🔍 Left column is already visible, no restoration needed');
                     }
 
-                    // Always add tags below the delivery status if available (regardless of whether column was hidden)
-                    console.log('🔍 Checking if tags should be added:', { tagData, hasTags: tagData && tagData.tags && tagData.tags.length > 0 });
-                    if (tagData && tagData.tags && tagData.tags.length > 0) {
-                        console.log('✅ Adding tags to delivery status:', tagData.tags);
-                        this.addTagsToDeliveryStatus(leftColumn, tagData.tags);
-                    } else {
-                        console.log('⚠️ No tags to add or tagData is missing');
-                    }
+                    // Always add tags and username below the delivery status if available
+                    console.log('🔍 Checking if tags/username should be added:', { tagData, hasTags: tagData && tagData.tags && tagData.tags.length > 0 });
+
+                    // Get username from stored data and pass it to the method
+                    const username = this.getUsernameForOrder(orderId);
+                    console.log(`🔍 Username for order ${orderId}: "${username}" (from stored data)`);
+                    console.log(`🔍 Current orderUsernames map:`, Array.from(this.orderUsernames.entries()));
+
+                    const tags = tagData && tagData.tags ? tagData.tags : [];
+                    console.log(`🔍 About to call addTagsToDeliveryStatus with username: "${username}"`);
+                    this.addTagsToDeliveryStatus(leftColumn, tags, username);
                 } else {
                     console.log('⚠️ Left column not found');
                 }
@@ -670,19 +715,29 @@ export class DOMManipulator {
     }
 
     /**
-     * Add tags below the delivery status in the preserved left column
+     * Add tags and username below the delivery status in the preserved left column
      * @param {Element} leftColumn - The left column element containing delivery status
      * @param {Array} tags - Array of tag strings to display
+     * @param {string} username - Username to display
      */
-    addTagsToDeliveryStatus(leftColumn, tags) {
+    addTagsToDeliveryStatus(leftColumn, tags, username = null) {
         try {
-            console.log('🔍 addTagsToDeliveryStatus called with:', { leftColumn, tags });
+            console.log('🔍 addTagsToDeliveryStatus called with:', { leftColumn, tags, username });
+            console.log(`🔍 Username parameter received: "${username}"`);
 
-            // Check if tags are already displayed
+            // Check if tags container already exists
             if (leftColumn.querySelector('.archivaz-delivery-status-tags')) {
-                console.log('⚠️ Tags already displayed, skipping');
+                console.log('⚠️ Tags container already displayed, skipping');
                 return;
             }
+
+            // Only create container if we have tags or username to show
+            if ((!tags || tags.length === 0) && !username) {
+                console.log('⚠️ No tags or username to display, skipping');
+                return;
+            }
+
+            console.log(`🔍 Creating tags container with username: "${username}"`);
 
             // Create tags container
             const tagsContainer = document.createElement('div');
@@ -692,20 +747,21 @@ export class DOMManipulator {
                 padding-top: 0;
             `;
 
-            // Create tags label
-            const tagsLabel = document.createElement('span');
-            tagsLabel.className = 'archivaz-tags-label';
-            tagsLabel.textContent = 'Tags: ';
-            tagsLabel.style.cssText = `
-                font-size: 12px;
-                color: #666;
-                font-weight: 500;
-                margin-right: 6px;
-                display: block;
-                margin-bottom: 4px;
-            `;
-
-            tagsContainer.appendChild(tagsLabel);
+            // Create tags label (only if we have tags)
+            if (tags && tags.length > 0) {
+                const tagsLabel = document.createElement('span');
+                tagsLabel.className = 'archivaz-tags-label';
+                tagsLabel.textContent = 'Tags: ';
+                tagsLabel.style.cssText = `
+                    font-size: 12px;
+                    color: #666;
+                    font-weight: 500;
+                    margin-right: 6px;
+                    display: block;
+                    margin-bottom: 4px;
+                `;
+                tagsContainer.appendChild(tagsLabel);
+            }
 
             // Create tags list
             const tagsList = document.createElement('div');
@@ -715,24 +771,51 @@ export class DOMManipulator {
                 margin-top: 2px;
             `;
 
-            // Add each tag
-            tags.forEach(tag => {
-                const tagElement = document.createElement('span');
-                tagElement.className = 'archivaz-delivery-status-tag';
-                tagElement.textContent = tag;
-                tagElement.style.cssText = `
+            // Add username tag first if available
+            if (username) {
+                console.log(`🔍 Creating username element with: "${username}"`);
+                const usernameElement = document.createElement('span');
+                usernameElement.className = 'archivaz-username-tag';
+                usernameElement.textContent = `@${username}`;
+                console.log(`🔍 Username element created with text: "${usernameElement.textContent}"`);
+
+                usernameElement.style.cssText = `
                     display: inline-block;
-                    background: #e7f3ff;
-                    color: #0066cc;
+                    background: #e8f5e8;
+                    color: #2d5a2d;
                     padding: 3px 8px;
                     margin: 2px 4px 2px 0;
                     border-radius: 12px;
                     font-size: 11px;
                     font-weight: 500;
-                    border: 1px solid #cce7ff;
+                    border: 1px solid #c8e6c8;
                 `;
-                tagsList.appendChild(tagElement);
-            });
+                tagsList.appendChild(usernameElement);
+                console.log(`🔍 Username element added to tagsList`);
+            } else {
+                console.log(`🔍 No username provided, skipping username element creation`);
+            }
+
+            // Add each tag
+            if (tags && tags.length > 0) {
+                tags.forEach(tag => {
+                    const tagElement = document.createElement('span');
+                    tagElement.className = 'archivaz-delivery-status-tag';
+                    tagElement.textContent = tag;
+                    tagElement.style.cssText = `
+                        display: inline-block;
+                        background: #e7f3ff;
+                        color: #0066cc;
+                        padding: 3px 8px;
+                        margin: 2px 4px 2px 0;
+                        border-radius: 12px;
+                        font-size: 11px;
+                        font-weight: 500;
+                        border: 1px solid #cce7ff;
+                    `;
+                    tagsList.appendChild(tagElement);
+                });
+            }
 
             tagsContainer.appendChild(tagsList);
 
@@ -1526,7 +1609,35 @@ export class DOMManipulator {
 
         this.injectedButtons.clear();
         this.hiddenOrders.clear();
+        this.orderUsernames.clear();
 
         console.log('DOMManipulator: Cleanup completed');
+    }
+
+    /**
+     * Set username for a specific order
+     * @param {string} orderId - Order ID
+     * @param {string} username - Username for the order
+     */
+    setUsernameForOrder(orderId, username) {
+        console.log(`🔧 setUsernameForOrder called: orderId="${orderId}", username="${username}"`);
+        console.log(`🔧 Before setting - orderUsernames map:`, Array.from(this.orderUsernames.entries()));
+
+        this.orderUsernames.set(orderId, username);
+
+        console.log(`🔧 After setting - orderUsernames map:`, Array.from(this.orderUsernames.entries()));
+        console.log(`🔧 Set username for order ${orderId}: ${username}`);
+    }
+
+    /**
+     * Get username for a specific order
+     * @param {string} orderId - Order ID
+     * @returns {string} Username for the order or 'Unknown User' if not found
+     */
+    getUsernameForOrder(orderId) {
+        const username = this.orderUsernames.get(orderId) || 'Unknown User';
+        console.log(`🔍 getUsernameForOrder called: orderId="${orderId}", returned username="${username}"`);
+        console.log(`🔍 Current orderUsernames map:`, Array.from(this.orderUsernames.entries()));
+        return username;
     }
 }

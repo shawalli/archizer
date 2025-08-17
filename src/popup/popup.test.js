@@ -18,20 +18,20 @@ global.chrome = mockChrome;
 const createMockElement = (id, tagName = 'div') => {
     const element = document.createElement(tagName);
     element.id = id;
-    
+
     // Create a proper mock for classList
     const classListMock = {
         add: jest.fn(),
         remove: jest.fn(),
         contains: jest.fn()
     };
-    
+
     // Override the classList property
     Object.defineProperty(element, 'classList', {
         value: classListMock,
         writable: false
     });
-    
+
     element.value = '';
     element.textContent = '';
     element.style = {
@@ -47,15 +47,15 @@ const setupMockDOM = () => {
     // Create main view
     const mainView = createMockElement('main-view');
     const settingsView = createMockElement('settings-view');
-    
+
     // Create buttons
     const settingsBtn = createMockElement('settings-btn', 'button');
     const backBtn = createMockElement('back-btn', 'button');
     const saveUsernameBtn = createMockElement('save-username', 'button');
-    
+
     // Create input
     const usernameInput = createMockElement('username', 'input');
-    
+
     // Add to document
     document.body.appendChild(mainView);
     document.body.appendChild(settingsView);
@@ -63,7 +63,7 @@ const setupMockDOM = () => {
     document.body.appendChild(backBtn);
     document.body.appendChild(saveUsernameBtn);
     document.body.appendChild(usernameInput);
-    
+
     return {
         mainView,
         settingsView,
@@ -191,14 +191,14 @@ class PopupManager {
 
             await this.storage.set('username', username);
             this.showMessage('Username saved successfully!', 'success');
-            
+
             // Update the save button text temporarily
             const saveBtn = document.getElementById('save-username');
             if (saveBtn) {
                 const originalText = saveBtn.textContent;
                 saveBtn.textContent = 'Saved!';
                 saveBtn.style.background = '#28a745';
-                
+
                 setTimeout(() => {
                     saveBtn.textContent = originalText;
                     saveBtn.style.background = '';
@@ -215,7 +215,7 @@ class PopupManager {
         const messageEl = document.createElement('div');
         messageEl.className = `message message-${type}`;
         messageEl.textContent = message;
-        
+
         // Style the message
         messageEl.style.cssText = `
             position: fixed;
@@ -268,8 +268,8 @@ describe('PopupStorageManager', () => {
     describe('get', () => {
         it('should retrieve data from Chrome storage with prefix', async () => {
             const mockData = { key: 'value' };
-            mockChrome.storage.local.get.mockResolvedValue({ 
-                'amazon_archiver_test-key': mockData 
+            mockChrome.storage.local.get.mockResolvedValue({
+                'amazon_archiver_test-key': mockData
             });
 
             const result = await storageManager.get('test-key');
@@ -344,10 +344,10 @@ describe('PopupManager', () => {
     beforeEach(() => {
         // Setup mock DOM
         mockElements = setupMockDOM();
-        
+
         // Clear all mocks
         jest.clearAllMocks();
-        
+
         // Mock setTimeout
         jest.useFakeTimers();
     });
@@ -355,7 +355,7 @@ describe('PopupManager', () => {
     afterEach(() => {
         // Clean up DOM
         document.body.innerHTML = '';
-        
+
         // Restore timers
         jest.useRealTimers();
     });
@@ -363,7 +363,7 @@ describe('PopupManager', () => {
     describe('constructor', () => {
         it('should initialize with storage manager and main view', () => {
             popupManager = new PopupManager();
-            
+
             expect(popupManager.storage).toBeInstanceOf(PopupStorageManager);
             expect(popupManager.currentView).toBe('main');
         });
@@ -458,7 +458,7 @@ describe('PopupManager', () => {
 
         it('should show error message for empty username', async () => {
             mockElements.usernameInput.value = '   ';
-            
+
             // Mock showMessage method
             const showMessageSpy = jest.spyOn(popupManager, 'showMessage');
 
@@ -472,7 +472,7 @@ describe('PopupManager', () => {
             const testUsername = 'testuser';
             mockElements.usernameInput.value = testUsername;
             mockChrome.storage.local.set.mockResolvedValue();
-            
+
             // Mock showMessage method
             const showMessageSpy = jest.spyOn(popupManager, 'showMessage');
 
@@ -485,7 +485,7 @@ describe('PopupManager', () => {
 
             // Fast-forward timers to test reset
             jest.advanceTimersByTime(2000);
-            
+
             expect(mockElements.saveUsernameBtn.textContent).toBe('');
             expect(mockElements.saveUsernameBtn.style.background).toBe('');
         });
@@ -494,7 +494,7 @@ describe('PopupManager', () => {
             const testUsername = 'testuser';
             mockElements.usernameInput.value = testUsername;
             mockChrome.storage.local.set.mockRejectedValue(new Error('Storage error'));
-            
+
             // Mock showMessage method
             const showMessageSpy = jest.spyOn(popupManager, 'showMessage');
 
@@ -517,7 +517,7 @@ describe('PopupManager', () => {
             popupManager.showMessage(message, 'success');
 
             expect(document.body.children.length).toBe(initialBodyChildren + 1);
-            
+
             const messageEl = document.body.lastElementChild;
             expect(messageEl.textContent).toBe(message);
             expect(messageEl.className).toBe('message message-success');
@@ -566,7 +566,7 @@ describe('PopupManager', () => {
         it('should navigate to settings when settings button is clicked', () => {
             // Get the click handler function that was registered
             const clickHandler = mockElements.settingsBtn.addEventListener.mock.calls[0][1];
-            
+
             // Call the handler directly
             clickHandler();
 
@@ -580,7 +580,7 @@ describe('PopupManager', () => {
 
             // Get the click handler function that was registered
             const clickHandler = mockElements.backBtn.addEventListener.mock.calls[0][1];
-            
+
             // Call the handler directly
             clickHandler();
 
@@ -594,7 +594,7 @@ describe('PopupManager', () => {
 
             // Get the click handler function that was registered
             const clickHandler = mockElements.saveUsernameBtn.addEventListener.mock.calls[0][1];
-            
+
             // Call the handler directly
             await clickHandler();
 
@@ -610,10 +610,10 @@ describe('PopupManager', () => {
 
             // Get the keypress handler function that was registered
             const keypressHandler = mockElements.usernameInput.addEventListener.mock.calls[0][1];
-            
+
             // Create a mock event with Enter key
             const mockEvent = { key: 'Enter' };
-            
+
             // Call the handler directly
             await keypressHandler(mockEvent);
 
@@ -628,10 +628,10 @@ describe('PopupManager', () => {
 
             // Get the keypress handler function that was registered
             const keypressHandler = mockElements.usernameInput.addEventListener.mock.calls[0][1];
-            
+
             // Create a mock event with a different key
             const mockEvent = { key: 'a' };
-            
+
             // Call the handler directly
             await keypressHandler(mockEvent);
 

@@ -33,11 +33,15 @@ export class StorageManager {
      */
     async storeHiddenOrder(orderId, type, orderData) {
         try {
+            // Get username from storage
+            const username = await this.get('username') || 'Unknown User';
+
             const key = `hidden_order_${orderId}_${type}`;
             await this.set(key, {
                 orderId,
                 type,
                 orderData,
+                username,
                 timestamp: new Date().toISOString()
             });
             console.log(`Stored hidden order ${orderId} (${type}):`, orderData);
@@ -75,6 +79,28 @@ export class StorageManager {
         } catch (error) {
             console.error(`Error getting hidden order ${orderId}:`, error);
             return null;
+        }
+    }
+
+    /**
+     * Get all hidden orders from storage
+     * @returns {Array} Array of all hidden order data
+     */
+    async getAllHiddenOrders() {
+        try {
+            const allData = await chrome.storage.local.get(null);
+            const hiddenOrders = [];
+
+            for (const [key, value] of Object.entries(allData)) {
+                if (key.startsWith(this.prefix + 'hidden_order_') && value) {
+                    hiddenOrders.push(value);
+                }
+            }
+
+            return hiddenOrders;
+        } catch (error) {
+            console.error('Error getting all hidden orders:', error);
+            return [];
         }
     }
 }
