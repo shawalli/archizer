@@ -66,6 +66,77 @@ export class StorageManager {
     }
 
     /**
+     * Store order tags data
+     * @param {string} orderId - Order ID
+     * @param {Object} tagData - Tag data to store
+     */
+    async storeOrderTags(orderId, tagData) {
+        try {
+            const key = `order_tags_${orderId}`;
+            await this.set(key, {
+                orderId,
+                tagData,
+                timestamp: new Date().toISOString()
+            });
+            console.log(`Stored tags for order ${orderId}:`, tagData);
+        } catch (error) {
+            console.error(`Error storing tags for order ${orderId}:`, error);
+        }
+    }
+
+    /**
+     * Get order tags data
+     * @param {string} orderId - Order ID
+     * @returns {Object|null} Tag data or null if not found
+     */
+    async getOrderTags(orderId) {
+        try {
+            const key = `order_tags_${orderId}`;
+            const data = await this.get(key);
+            return data ? data.tagData : null;
+        } catch (error) {
+            console.error(`Error getting tags for order ${orderId}:`, error);
+            return null;
+        }
+    }
+
+    /**
+     * Remove order tags data
+     * @param {string} orderId - Order ID
+     */
+    async removeOrderTags(orderId) {
+        try {
+            const key = `order_tags_${orderId}`;
+            await this.remove(key);
+            console.log(`Removed tags for order ${orderId}`);
+        } catch (error) {
+            console.error(`Error removing tags for order ${orderId}:`, error);
+        }
+    }
+
+    /**
+     * Get all order tags from storage
+     * @returns {Array} Array of all order tag data
+     */
+    async getAllOrderTags() {
+        try {
+            const allData = await chrome.storage.local.get(null);
+            const orderTags = [];
+
+            for (const [key, value] of Object.entries(allData)) {
+                if (key.startsWith(this.prefix + 'order_tags_') && value) {
+                    orderTags.push(value);
+                }
+            }
+
+            return orderTags;
+        } catch (error) {
+            console.error('Error getting all order tags:', error);
+            return [];
+        }
+    }
+
+    /**
      * Clear all storage data for a specific order
      * This is more thorough than removeHiddenOrder and clears any related data
      * @param {string} orderId - Order ID to clear all data for
@@ -92,19 +163,6 @@ export class StorageManager {
                 console.log(`✅ Cleared ${keysToRemove.length} Chrome storage keys for order ${orderId}`);
             } else {
                 console.log(`ℹ️ No Chrome storage keys found for order ${orderId}`);
-            }
-
-            // Also clear localStorage tags for this order
-            try {
-                const localStorageKey = `archivaz_order_tags_${orderId}`;
-                if (localStorage.getItem(localStorageKey)) {
-                    localStorage.removeItem(localStorageKey);
-                    console.log(`🗑️ Cleared localStorage key: ${localStorageKey}`);
-                } else {
-                    console.log(`ℹ️ No localStorage key found: ${localStorageKey}`);
-                }
-            } catch (error) {
-                console.warn(`⚠️ Could not clear localStorage for order ${orderId}:`, error);
             }
 
             return keysToRemove.length;

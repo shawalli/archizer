@@ -32,6 +32,18 @@ const mockDOM = {
     removeEventListener: jest.fn()
 };
 
+// Mock Chrome storage API
+const mockChrome = {
+    storage: {
+        local: {
+            get: jest.fn(),
+            set: jest.fn(),
+            remove: jest.fn(),
+            clear: jest.fn()
+        }
+    }
+};
+
 // Mock document and window
 global.document = {
     createElement: mockDOM.createElement,
@@ -44,7 +56,8 @@ global.document = {
 
 global.window = {
     addEventListener: jest.fn(),
-    removeEventListener: jest.fn()
+    removeEventListener: jest.fn(),
+    chrome: mockChrome
 };
 
 global.Node = {

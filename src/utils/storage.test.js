@@ -183,4 +183,167 @@ describe('StorageManager', () => {
             expect(result).toEqual([]);
         });
     });
+
+    describe('storeOrderTags', () => {
+        it('should store order tags data with timestamp', async () => {
+            const mockTagData = { tags: ['electronics', 'gift'], notes: 'Birthday present' };
+            const orderId = '123';
+
+            mockChrome.storage.local.set.mockImplementation(() => {
+                return Promise.resolve();
+            });
+
+            await storageManager.storeOrderTags(orderId, mockTagData);
+
+            expect(mockChrome.storage.local.set).toHaveBeenCalledWith({
+                'amazon_archiver_order_tags_123': {
+                    orderId: '123',
+                    tagData: mockTagData,
+                    timestamp: expect.any(String)
+                }
+            });
+        });
+
+        it('should handle storage errors gracefully', async () => {
+            const mockTagData = { tags: ['electronics'] };
+            const orderId = '123';
+
+            mockChrome.storage.local.set.mockImplementation(() => {
+                return Promise.reject(new Error('Storage error'));
+            });
+
+            // Should not throw error
+            await expect(storageManager.storeOrderTags(orderId, mockTagData)).resolves.toBeUndefined();
+        });
+    });
+
+    describe('getOrderTags', () => {
+        it('should retrieve order tags data', async () => {
+            const mockTagData = { tags: ['electronics', 'gift'], notes: 'Birthday present' };
+            const orderId = '123';
+
+            mockChrome.storage.local.get.mockImplementation((key) => {
+                if (key === 'amazon_archiver_order_tags_123') {
+                    return Promise.resolve({
+                        'amazon_archiver_order_tags_123': {
+                            orderId: '123',
+                            tagData: mockTagData,
+                            timestamp: '2025-01-01T00:00:00.000Z'
+                        }
+                    });
+                }
+                return Promise.resolve({});
+            });
+
+            const result = await storageManager.getOrderTags(orderId);
+
+            expect(result).toEqual(mockTagData);
+            expect(mockChrome.storage.local.get).toHaveBeenCalledWith('amazon_archiver_order_tags_123');
+        });
+
+        it('should return null when order tags do not exist', async () => {
+            const orderId = '123';
+
+            mockChrome.storage.local.get.mockImplementation(() => {
+                return Promise.resolve({});
+            });
+
+            const result = await storageManager.getOrderTags(orderId);
+
+            expect(result).toBeNull();
+        });
+
+        it('should handle storage errors gracefully', async () => {
+            const orderId = '123';
+
+            mockChrome.storage.local.get.mockImplementation(() => {
+                return Promise.reject(new Error('Storage error'));
+            });
+
+            const result = await storageManager.getOrderTags(orderId);
+
+            expect(result).toBeNull();
+        });
+    });
+
+    describe('removeOrderTags', () => {
+        it('should remove order tags data', async () => {
+            const orderId = '123';
+
+            mockChrome.storage.local.remove.mockImplementation(() => {
+                return Promise.resolve();
+            });
+
+            await storageManager.removeOrderTags(orderId);
+
+            expect(mockChrome.storage.local.remove).toHaveBeenCalledWith('amazon_archiver_order_tags_123');
+        });
+
+        it('should handle storage errors gracefully', async () => {
+            const orderId = '123';
+
+            mockChrome.storage.local.remove.mockImplementation(() => {
+                return Promise.reject(new Error('Storage error'));
+            });
+
+            // Should not throw error
+            await expect(storageManager.removeOrderTags(orderId)).resolves.toBeUndefined();
+        });
+    });
+
+    describe('getAllOrderTags', () => {
+        it('should retrieve all order tags from storage', async () => {
+            const mockOrderTags = {
+                'amazon_archiver_order_tags_123': {
+                    orderId: '123',
+                    tagData: { tags: ['electronics'], notes: 'Test' },
+                    timestamp: '2025-01-01T00:00:00.000Z'
+                },
+                'amazon_archiver_order_tags_456': {
+                    orderId: '456',
+                    tagData: { tags: ['gift'], notes: 'Another test' },
+                    timestamp: '2025-01-02T00:00:00.000Z'
+                },
+                'amazon_archiver_other_data': 'not order tags'
+            };
+
+            mockChrome.storage.local.get.mockImplementation(() => {
+                return Promise.resolve(mockOrderTags);
+            });
+
+            const result = await storageManager.getAllOrderTags();
+
+            expect(result).toHaveLength(2);
+            expect(result[0]).toEqual({
+                orderId: '123',
+                tagData: { tags: ['electronics'], notes: 'Test' },
+                timestamp: '2025-01-01T00:00:00.000Z'
+            });
+            expect(result[1]).toEqual({
+                orderId: '456',
+                tagData: { tags: ['gift'], notes: 'Another test' },
+                timestamp: '2025-01-02T00:00:00.000Z'
+            });
+        });
+
+        it('should return empty array when no order tags exist', async () => {
+            mockChrome.storage.local.get.mockImplementation(() => {
+                return Promise.resolve({});
+            });
+
+            const result = await storageManager.getAllOrderTags();
+
+            expect(result).toEqual([]);
+        });
+
+        it('should handle storage errors gracefully', async () => {
+            mockChrome.storage.local.get.mockImplementation(() => {
+                return Promise.reject(new Error('Storage error'));
+            });
+
+            const result = await storageManager.getAllOrderTags();
+
+            expect(result).toEqual([]);
+        });
+    });
 });

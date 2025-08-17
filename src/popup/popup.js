@@ -359,19 +359,23 @@ class PopupManager {
                 console.log('ℹ️ No hidden orders found to remove from Chrome storage');
             }
 
-            // Also clear all localStorage tag data
+            // Also clear all order tags data from Chrome storage
             try {
-                let localStorageCleared = 0;
-                for (let i = 0; i < localStorage.length; i++) {
-                    const key = localStorage.key(i);
-                    if (key && key.startsWith('archivaz_order_tags_')) {
-                        localStorage.removeItem(key);
-                        localStorageCleared++;
+                const allData = await chrome.storage.local.get(null);
+                const tagKeysToRemove = [];
+                
+                for (const key of Object.keys(allData)) {
+                    if (key.includes('order_tags_') && key.startsWith('amazon_archiver_')) {
+                        tagKeysToRemove.push(key);
                     }
                 }
-                console.log(`🗑️ Cleared ${localStorageCleared} localStorage tag entries`);
+                
+                if (tagKeysToRemove.length > 0) {
+                    await chrome.storage.local.remove(tagKeysToRemove);
+                    console.log(`🗑️ Cleared ${tagKeysToRemove.length} order tag entries from Chrome storage`);
+                }
             } catch (error) {
-                console.warn('⚠️ Could not clear localStorage:', error);
+                console.warn('⚠️ Could not clear order tags from Chrome storage:', error);
             }
 
             return keysToRemove.length;
@@ -402,3 +406,4 @@ style.textContent = `
     }
 `;
 document.head.appendChild(style);
+

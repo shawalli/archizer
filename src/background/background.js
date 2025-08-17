@@ -1,7 +1,36 @@
 // Background Script for Amazon Order Archiver
 // Handles Google OAuth and API calls
 
+import { StorageManager } from '../utils/storage.js';
+import { StorageMigrationManager } from '../utils/storage-migration.js';
+
 console.log('Amazon Order Archiver background script loaded');
+
+// Initialize storage and migration managers
+let storageManager;
+let migrationManager;
+
+// Initialize storage systems
+async function initializeStorage() {
+    try {
+        storageManager = new StorageManager();
+        migrationManager = new StorageMigrationManager(storageManager);
+        
+        // Check if migration is needed
+        if (await migrationManager.needsMigration()) {
+            console.log('🔄 Storage migration needed, starting...');
+            const results = await migrationManager.migrateData();
+            console.log('✅ Migration completed:', results);
+            
+            // Clean up any remaining localStorage data
+            migrationManager.cleanupLocalStorage();
+        } else {
+            console.log('ℹ️ No storage migration needed');
+        }
+    } catch (error) {
+        console.error('❌ Error initializing storage:', error);
+    }
+}
 
 // Message handling for communication with content scripts and popup
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
@@ -82,9 +111,18 @@ async function reloadExtension() {
     }
 }
 
+// Extension startup handler
+chrome.runtime.onStartup.addListener(async () => {
+    console.log('🚀 Extension starting up...');
+    await initializeStorage();
+});
+
 // Extension installation handler
-chrome.runtime.onInstalled.addListener((details) => {
+chrome.runtime.onInstalled.addListener(async (details) => {
     console.log('📦 Extension installed:', details.reason);
+
+    // Initialize storage and handle migration
+    await initializeStorage();
 
     if (details.reason === 'install') {
         // First time installation
@@ -99,15 +137,6 @@ chrome.runtime.onInstalled.addListener((details) => {
         // Extension updated
         console.log('🔄 Extension updated to version:', chrome.runtime.getManifest().version);
     }
-});
-
-// Extension startup handler
-chrome.runtime.onStartup.addListener(() => {
-    console.log('🚀 Extension started');
-
-    // TODO: Perform any startup tasks
-    // TODO: Check for updates
-    // TODO: Initialize background services
 });
 
 // TODO: Implement Google OAuth 2.0 authentication flow

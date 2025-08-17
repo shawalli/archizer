@@ -178,15 +178,19 @@ Object.defineProperty(document, 'dispatchEvent', {
     writable: true
 });
 
-// Mock localStorage
-const mockLocalStorage = {
-    getItem: jest.fn(),
-    setItem: jest.fn(),
-    removeItem: jest.fn(),
-    clear: jest.fn()
+// Mock Chrome storage API
+const mockChrome = {
+    storage: {
+        local: {
+            get: jest.fn(),
+            set: jest.fn(),
+            remove: jest.fn(),
+            clear: jest.fn()
+        }
+    }
 };
-Object.defineProperty(window, 'localStorage', {
-    value: mockLocalStorage,
+Object.defineProperty(window, 'chrome', {
+    value: mockChrome,
     writable: true
 });
 

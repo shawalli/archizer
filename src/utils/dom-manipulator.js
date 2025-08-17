@@ -316,7 +316,10 @@ export class DOMManipulator {
             }
 
             // Get stored tags if available
-            const storedTags = this.getOrderTags(orderId);
+            let storedTags = null;
+            if (this.storage) {
+                storedTags = await this.getOrderTags(orderId, this.storage);
+            }
 
             // Prepare order data for the dialog
             const dialogData = {
@@ -362,7 +365,11 @@ export class DOMManipulator {
                 console.log(`✅ Tags saved for order ${orderId}:`, tagData);
 
                 // Store the tag data
-                this.storeOrderTags(orderId, tagData);
+                if (this.storage) {
+                    await this.storeOrderTags(orderId, tagData, this.storage);
+                } else {
+                    console.warn('No storage manager available for storing order tags');
+                }
 
                 // Get username from storage and pass it to performHideOperation
                 try {
@@ -458,7 +465,9 @@ export class DOMManipulator {
             // If no tag data provided, try to retrieve stored tags
             if (!tagData) {
                 console.log('🔍 No tagData provided, retrieving from storage...');
-                tagData = this.getOrderTags(orderId);
+                if (this.storage) {
+                    tagData = await this.getOrderTags(orderId, this.storage);
+                }
                 console.log('🔍 Retrieved tagData from storage:', tagData);
             }
 
@@ -544,13 +553,15 @@ export class DOMManipulator {
      * Store order tags in storage
      * @param {string} orderId - Order ID
      * @param {Object} tagData - Tag data to store
+     * @param {StorageManager} storage - Storage manager instance
      */
-    storeOrderTags(orderId, tagData) {
+    async storeOrderTags(orderId, tagData, storage) {
         try {
-            // Store in localStorage for now (will be replaced with proper storage manager)
-            const storageKey = `archivaz_order_tags_${orderId}`;
-            localStorage.setItem(storageKey, JSON.stringify(tagData));
-            console.log(`Stored tags for order ${orderId}:`, tagData);
+            if (!storage) {
+                console.warn('No storage manager provided for storeOrderTags');
+                return;
+            }
+            await storage.storeOrderTags(orderId, tagData);
         } catch (error) {
             console.error(`Error storing tags for order ${orderId}:`, error);
         }
@@ -559,18 +570,20 @@ export class DOMManipulator {
     /**
      * Retrieve order tags from storage
      * @param {string} orderId - Order ID
+     * @param {StorageManager} storage - Storage manager instance
      * @returns {Object|null} Tag data or null if not found
      */
-    getOrderTags(orderId) {
+    async getOrderTags(orderId, storage) {
         try {
-            const storageKey = `archivaz_order_tags_${orderId}`;
-            const storedData = localStorage.getItem(storageKey);
-            if (storedData) {
-                const tagData = JSON.parse(storedData);
-                console.log(`Retrieved tags for order ${orderId}:`, tagData);
-                return tagData;
+            if (!storage) {
+                console.warn('No storage manager provided for getOrderTags');
+                return null;
             }
-            return null;
+            const tagData = await storage.getOrderTags(orderId);
+            if (tagData) {
+                console.log(`Retrieved tags for order ${orderId}:`, tagData);
+            }
+            return tagData;
         } catch (error) {
             console.error(`Error retrieving tags for order ${orderId}:`, error);
             return null;
@@ -1966,16 +1979,24 @@ export class DOMManipulator {
                         console.log(`🗑️ Cleared ${keysToRemove.length} Chrome storage keys from previous sessions`);
                     }
 
-                    // Also clear all localStorage tag data
-                    let localStorageCleared = 0;
-                    for (let i = 0; i < localStorage.length; i++) {
-                        const key = localStorage.key(i);
-                        if (key && key.startsWith('archivaz_order_tags_')) {
-                            localStorage.removeItem(key);
-                            localStorageCleared++;
+                    // Also clear all order tags data from Chrome storage
+                    try {
+                        const allData = await chrome.storage.local.get(null);
+                        const tagKeysToRemove = [];
+
+                        for (const key of Object.keys(allData)) {
+                            if (key.includes('order_tags_') && key.startsWith('amazon_archiver_')) {
+                                tagKeysToRemove.push(key);
+                            }
                         }
+
+                        if (tagKeysToRemove.length > 0) {
+                            await chrome.storage.local.remove(tagKeysToRemove);
+                            console.log(`🗑️ Cleared ${tagKeysToRemove.length} order tag entries from Chrome storage`);
+                        }
+                    } catch (error) {
+                        console.warn('⚠️ Could not clear order tags from Chrome storage:', error);
                     }
-                    console.log(`🗑️ Cleared ${localStorageCleared} localStorage tag entries from previous sessions`);
 
                 } catch (error) {
                     console.warn('⚠️ Could not clear all stored data:', error);
