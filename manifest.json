@@ -18,6 +18,18 @@
                 "https://www.amazon.com/*"
             ],
             "js": [
+                "content-scripts/amazon-orders-early.js"
+            ],
+            "css": [
+                "content-scripts/amazon-orders-early.css"
+            ],
+            "run_at": "document_start"
+        },
+        {
+            "matches": [
+                "https://www.amazon.com/*"
+            ],
+            "js": [
                 "content-scripts/amazon-orders.js"
             ],
             "css": [
