@@ -639,6 +639,10 @@ export class DOMManipulator {
                 return;
             }
 
+            // Clear any processing flags that might be leftover from previous operations
+            orderCard.removeAttribute('data-archivaz-processed');
+            orderCard.removeAttribute('data-archivaz-hiding');
+
             // Check if this order is already being processed
             if (orderCard.hasAttribute('data-archivaz-hiding')) {
                 console.warn(`⚠️ Order ${orderId} is already being hidden, skipping duplicate operation`);
@@ -1279,6 +1283,243 @@ export class DOMManipulator {
     }
 
     /**
+     * Hide order details when restoring from storage (doesn't require button parameter)
+     * @param {string} orderId - Order ID
+     * @param {Element} orderCard - The order card element directly
+     * @param {Object} tagData - Optional tag data to display
+     */
+    async performHideOrderDetailsWithCard(orderId, orderCard, tagData = null) {
+        try {
+            console.log('🔍 performHideOrderDetailsWithCard called with:', { orderId, orderCard, tagData });
+
+            if (!orderCard) {
+                console.warn(`No order card provided for order ${orderId}`);
+                return;
+            }
+
+            // CRITICAL CHECK: Prevent hiding if order is already hidden
+            if (orderCard.classList.contains('archivaz-details-hidden')) {
+                console.warn(`⚠️ Order ${orderId} is already hidden - skipping restoration`);
+                return;
+            }
+
+            // Check if this order is already being processed
+            if (orderCard.hasAttribute('data-archivaz-hiding')) {
+                console.warn(`⚠️ Order ${orderId} is already being hidden, skipping duplicate operation`);
+                return;
+            }
+
+            // Mark this order as being hidden to prevent duplicate operations
+            orderCard.setAttribute('data-archivaz-hiding', 'true');
+
+            // Enhanced selectors for different page formats to hide product details
+            const selectorsToHide = [
+                // Product images and thumbnails
+                'img[src*="images"]', 'img[src*="product"]', '.product-image', '.item-image',
+
+                // Product links and titles
+                'a[href*="product"]', 'a[href*="dp/"]', '.product-title', '.item-title', '.product-link',
+
+                // Product descriptions and details
+                '.product-description', '.item-description', '.product-details', '.item-details',
+
+                // Price information (excluding order total)
+                '.price', '.item-price', '.product-price', '.a-price',
+
+                // Quantity and other product metadata
+                '.quantity', '.item-quantity', '.product-quantity',
+
+                // Product-specific containers
+                '.product-container', '.item-container', '.product-wrapper', '.item-wrapper'
+            ];
+
+            let totalHidden = 0;
+            const hiddenElements = [];
+
+            // Hide elements using selectors
+            selectorsToHide.forEach(selector => {
+                try {
+                    const elements = orderCard.querySelectorAll(selector);
+                    elements.forEach(element => {
+                        // Skip if already hidden or if it's our injected buttons
+                        if (element.classList.contains('archivaz-hidden-details') ||
+                            element.closest('.archivaz-button-container')) {
+                            return;
+                        }
+
+                        // Verify the element is within the order card boundaries
+                        if (!this.isElementWithinOrderCard(element, orderCard)) {
+                            console.warn(`⚠️ Element outside order card boundaries in order ${orderId}:`, element);
+                            return;
+                        }
+
+                        // Store original display value for restoration
+                        const originalDisplay = window.getComputedStyle(element).display;
+                        element.setAttribute('data-archivaz-original-display', originalDisplay);
+
+                        // Hide the element
+                        element.classList.add('archivaz-hidden-details');
+                        element.style.display = 'none';
+
+                        hiddenElements.push(element);
+                        totalHidden++;
+                    });
+                } catch (error) {
+                    console.warn(`⚠️ Error processing selector "${selector}":`, error);
+                }
+            });
+
+            // Now hide additional specific elements using custom logic
+            const additionalHiddenElements = this.hideAdditionalOrderElements(orderCard);
+            if (additionalHiddenElements.length > 0) {
+                // Merge with existing hidden elements
+                hiddenElements.push(...additionalHiddenElements);
+                totalHidden += additionalHiddenElements.length;
+            }
+
+            // Handle order-item containers intelligently to preserve essential status
+            const orderItemElements = orderCard.querySelectorAll('.order-item');
+            console.log(`🔍 Found ${orderItemElements.length} order-item elements in order ${orderId}`);
+
+            orderItemElements.forEach((element) => {
+                // Skip if already hidden or if it's our injected buttons
+                if (element.classList.contains('archivaz-hidden-details') ||
+                    element.closest('.archivaz-button-container')) {
+                    return;
+                }
+
+                // Verify the element is within the order card boundaries
+                if (!this.isElementWithinOrderCard(element, orderCard)) {
+                    console.warn(`⚠️ Order-item element outside order card boundaries in order ${orderId}:`, element);
+                    return;
+                }
+
+                // Check if this order-item contains essential delivery status information
+                const hasEssentialStatus = element.querySelector('.delivery-box, [class*="shipment-status"], [class*="delivery-box"]') ||
+                    element.textContent.includes('Return complete') ||
+                    element.textContent.includes('Delivered') ||
+                    element.textContent.includes('Shipped');
+
+                if (!hasEssentialStatus) {
+                    // Store original display value for restoration
+                    const originalDisplay = window.getComputedStyle(element).display;
+                    element.setAttribute('data-archivaz-original-display', originalDisplay);
+
+                    // Hide the element
+                    element.classList.add('archivaz-hidden-details');
+                    element.style.display = 'none';
+
+                    hiddenElements.push(element);
+                    totalHidden++;
+                    console.log(`🔍 Hidden order-item element in order ${orderId}:`, element);
+                }
+            });
+
+            // Special handling: Preserve the delivery status column (left column) in the delivery-box
+            const deliveryBox = orderCard.querySelector('.delivery-box');
+            console.log('🔍 Looking for delivery-box:', deliveryBox);
+
+            if (deliveryBox) {
+                const leftColumn = deliveryBox.querySelector('.a-fixed-right-grid-col.a-col-left');
+                console.log('🔍 Looking for left column:', leftColumn);
+
+                if (leftColumn) {
+                    // Check if left column was hidden and needs restoration
+                    if (leftColumn.classList.contains('archivaz-hidden-details')) {
+                        console.log('🔍 Left column was hidden, restoring it...');
+                        // Restore the left column if it was hidden - it contains essential delivery status
+                        leftColumn.classList.remove('archivaz-hidden-details');
+                        leftColumn.style.display = leftColumn.getAttribute('data-archivaz-original-display') || 'block';
+
+                        // Remove from hidden elements array
+                        const index = hiddenElements.indexOf(leftColumn);
+                        if (index > -1) {
+                            hiddenElements.splice(index, 1);
+                            totalHidden--;
+                        }
+                    } else {
+                        console.log('🔍 Left column is already visible, no restoration needed');
+                    }
+
+                    // Always add tags and username below the delivery status if available
+                    console.log('🔍 Checking if tags/username should be added:', { tagData, hasTags: tagData && tagData.tags && tagData.tags.length > 0 });
+
+                    // Get username from stored data and pass it to the method
+                    const username = this.getUsernameForOrder(orderId);
+                    console.log(`🔍 Username for order ${orderId}: "${username}" (from stored data)`);
+
+                    const tags = tagData && tagData.tags ? tagData.tags : [];
+                    console.log(`🔍 About to call addTagsToDeliveryStatus with username: "${username}"`);
+
+                    // Add tags and username to the delivery status
+                    this.addTagsToDeliveryStatus(leftColumn, tags, username);
+                }
+            }
+
+            // Mark the order as hidden
+            orderCard.classList.add('archivaz-details-hidden');
+            orderCard.style.opacity = '0.8';
+
+            // Add to hidden orders tracking
+            this.hiddenOrders.add(`${orderId}-details`);
+
+            // Store hidden elements for restoration
+            if (hiddenElements.length > 0) {
+                // Get existing button info to preserve important properties
+                const existingButtonInfo = this.injectedButtons.get(orderId);
+
+                // Create a proper buttonInfo structure for restoration that includes all required properties
+                const tempButtonInfo = {
+                    orderCard,
+                    hiddenElements,
+                    button: existingButtonInfo?.button || null,  // Preserve existing button reference if available
+                    // Preserve other important properties from existing button info
+                    ...(existingButtonInfo && {
+                        orderId: existingButtonInfo.orderId,
+                        username: existingButtonInfo.username,
+                        // Don't overwrite hiddenElements if it already exists
+                        hiddenElements: existingButtonInfo.hiddenElements ?
+                            [...existingButtonInfo.hiddenElements, ...hiddenElements] :
+                            hiddenElements
+                    })
+                };
+
+                // Update the button info without completely overwriting it
+                if (existingButtonInfo) {
+                    // Merge the new data with existing data
+                    Object.assign(existingButtonInfo, tempButtonInfo);
+                } else {
+                    // Create new entry if none exists
+                    this.injectedButtons.set(orderId, tempButtonInfo);
+                }
+            }
+
+            // Update button state to reflect hidden status
+            const hideDetailsButton = orderCard.querySelector('button[data-archivaz-type="hide-details"]');
+            if (hideDetailsButton) {
+                hideDetailsButton.textContent = 'Show details';
+                hideDetailsButton.setAttribute('data-archivaz-type', 'show-details');
+                hideDetailsButton.classList.add('archivaz-details-hidden');
+                console.log(`✅ Updated button state to "Show details" for order ${orderId}`);
+            } else {
+                console.warn(`⚠️ Could not find hide-details button to update for order ${orderId}`);
+            }
+
+            // Clean up processing flag
+            orderCard.removeAttribute('data-archivaz-hiding');
+
+            console.log(`Hidden ${totalHidden} detail elements for order ${orderId} during restoration`);
+
+        } catch (error) {
+            console.error(`Error hiding details for order ${orderId} during restoration:`, error);
+            // Clean up processing flag on error
+            if (orderCard) {
+                orderCard.removeAttribute('data-archivaz-hiding');
+            }
+        }
+    }
+
+    /**
      * Show order details that were previously hidden
      * @param {string} orderId - Order ID to show details for
      * @param {Element} button - The button that was clicked
@@ -1347,6 +1588,22 @@ export class DOMManipulator {
 
             // Remove from hidden state tracking
             this.hiddenOrders.delete(`${orderId}-details`);
+
+            // Reset the button info to ensure proper state for future hiding
+            if (buttonInfo) {
+                buttonInfo.hiddenElements = [];
+                // Ensure the button info is properly updated
+                this.injectedButtons.set(orderId, {
+                    ...buttonInfo,
+                    hiddenElements: []
+                });
+
+                console.log(`🔧 Reset button info for order ${orderId}:`, {
+                    hasOrderCard: !!buttonInfo.orderCard,
+                    hasButton: !!buttonInfo.button,
+                    hiddenElementsCount: buttonInfo.hiddenElements?.length || 0
+                });
+            }
 
             // Notify callback
             if (this.onOrderShown) {
@@ -2086,8 +2343,8 @@ export class DOMManipulator {
                         this.setUsernameForOrder(orderId, username);
                     }
 
-                    // Hide the order details
-                    await this.performHideOrderDetails(orderId, null, tagData);
+                    // Hide the order details - pass the order card directly
+                    await this.performHideOrderDetailsWithCard(orderId, orderCard, tagData);
 
                     restoredCount++;
                     console.log(`✅ Successfully restored hidden order ${orderId}`);
