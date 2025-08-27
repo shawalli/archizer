@@ -5,6 +5,25 @@ console.log('🔧 Amazon Order Archiver early content script loaded (document_st
 
 // Create and inject the orders overlay immediately
 function createOrdersOverlay() {
+    // Define 12 beautiful gradient schemes
+    const gradientSchemes = [
+        'linear-gradient(45deg, #667eea, #764ba2, #667eea, #764ba2)', // Blue to Purple
+        'linear-gradient(45deg, #f093fb, #f5576c, #f093fb, #f5576c)', // Pink to Red
+        'linear-gradient(45deg, #4facfe, #00f2fe, #4facfe, #00f2fe)', // Blue to Cyan
+        'linear-gradient(45deg, #43e97b, #38f9d7, #43e97b, #38f9d7)', // Green to Teal
+        'linear-gradient(45deg, #fa709a, #fee140, #fa709a, #fee140)', // Pink to Yellow
+        'linear-gradient(45deg, #a8edea, #fed6e3, #a8edea, #fed6e3)', // Mint to Pink
+        'linear-gradient(45deg, #ff9a9e, #fecfef, #ff9a9e, #fecfef)', // Coral to Pink
+        'linear-gradient(45deg, #a18cd1, #fbc2eb, #a18cd1, #fbc2eb)', // Lavender to Pink
+        'linear-gradient(45deg, #ffecd2, #fcb69f, #ffecd2, #fcb69f)', // Peach to Coral
+        'linear-gradient(45deg, #ff9a9e, #fad0c4, #ff9a9e, #fad0c4)', // Coral to Peach
+        'linear-gradient(45deg, #a8edea, #fed6e3, #a8edea, #fed6e3)', // Mint to Pink
+        'linear-gradient(45deg, #d299c2, #fef9d7, #d299c2, #fef9d7)'  // Rose to Cream
+    ];
+
+    // Randomly select one gradient scheme
+    const randomGradient = gradientSchemes[Math.floor(Math.random() * gradientSchemes.length)];
+
     // Create overlay element
     const overlay = document.createElement('div');
     overlay.id = 'amazon-orders-archiver-overlay';
@@ -24,74 +43,14 @@ function createOrdersOverlay() {
         </div>
     `;
 
-    // Apply styles inline for immediate effect
+    // Apply minimal inline styles - CSS file handles the rest
     overlay.style.cssText = `
-        position: fixed;
-        top: 280px;
-        left: 150px;
-        width: calc(100vw - 300px);
-        height: calc(100vh - 280px);
-        background: rgba(255, 255, 255, 0.98);
-        border: 2px solid #e7e7e7;
-        border-radius: 8px;
-        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
-        z-index: 999999;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-        backdrop-filter: blur(5px);
-        transition: opacity 0.3s ease, transform 0.3s ease;
         opacity: 1;
         transform: scale(1);
+        background: ${randomGradient};
     `;
 
-    // Apply styles to child elements
-    const content = overlay.querySelector('.overlay-content');
-    content.style.cssText = `
-        text-align: center;
-        padding: 40px;
-        max-width: 400px;
-    `;
-
-    const header = overlay.querySelector('.overlay-header h3');
-    header.style.cssText = `
-        margin: 0 0 10px 0;
-        color: #232f3e;
-        font-size: 24px;
-        font-weight: 600;
-    `;
-
-    const subtitle = overlay.querySelector('.overlay-header p');
-    subtitle.style.cssText = `
-        margin: 0 0 30px 0;
-        color: #666;
-        font-size: 16px;
-    `;
-
-    const status = overlay.querySelector('.overlay-status');
-    status.style.cssText = `
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        gap: 15px;
-    `;
-
-    const spinner = overlay.querySelector('.loading-spinner');
-    spinner.style.cssText = `
-        width: 40px;
-        height: 40px;
-        border: 4px solid #f3f3f3;
-        border-top: 4px solid #ff9900;
-        border-radius: 50%;
-        animation: spin 1s linear infinite;
-    `;
-
-    const statusText = overlay.querySelector('.overlay-status span');
-    statusText.style.cssText = `
-        color: #666;
-        font-size: 14px;
-    `;
+    // Child element styles are handled by CSS file
 
     // Add keyframe animation for spinner - handle case where head doesn't exist yet
     try {
@@ -102,6 +61,12 @@ function createOrdersOverlay() {
                     0% { transform: rotate(0deg); }
                     100% { transform: rotate(360deg); }
                 }
+                
+                @keyframes swirlGradient {
+                    0% { background-position: 0% 50%; }
+                    50% { background-position: 100% 50%; }
+                    100% { background-position: 0% 50%; }
+                }
             `;
             document.head.appendChild(style);
         } else {
@@ -111,6 +76,12 @@ function createOrdersOverlay() {
                 @keyframes spin {
                     0% { transform: rotate(0deg); }
                     100% { transform: rotate(360deg); }
+                }
+                
+                @keyframes swirlGradient {
+                    0% { background-position: 0% 50%; }
+                    50% { background-position: 100% 50%; }
+                    100% { background-position: 0% 50%; }
                 }
             `;
             overlay.appendChild(style);
