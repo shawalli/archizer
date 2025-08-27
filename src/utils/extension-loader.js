@@ -2,6 +2,7 @@
 // Manages extension initialization, lifecycle, and state management
 
 import { globalErrorHandler } from './error-handler.js';
+import { specializedLogger as log } from './logger.js';
 
 export class ExtensionLoader {
     constructor() {
@@ -19,11 +20,11 @@ export class ExtensionLoader {
         }
 
         try {
-            console.log('🚀 Initializing Amazon Order Archiver extension...');
+            log.info('Initializing Amazon Order Archiver extension...');
 
             // Check if we're on a supported page
             if (!this.isSupportedPage()) {
-                console.log('⚠️ Current page is not supported by the extension');
+                log.warning('Current page is not supported by the extension');
                 return false;
             }
 
@@ -36,12 +37,12 @@ export class ExtensionLoader {
             // Mark as initialized
             this.isInitialized = true;
 
-            console.log('✅ Extension initialized successfully');
+            log.success('Extension initialized successfully');
             return true;
 
         } catch (error) {
             globalErrorHandler.handleError(error, 'extension-loader', 'error');
-            console.error('❌ Failed to initialize extension:', error);
+            log.error('Failed to initialize extension:', error);
             return false;
         }
     }
@@ -62,7 +63,7 @@ export class ExtensionLoader {
     async loadDependencies() {
         // Dependencies are now imported directly in the content script
         // This method is kept for future extensibility but doesn't need to load anything
-        console.log('📦 Dependencies loaded via static imports');
+        log.info('Dependencies loaded via static imports');
         return true;
     }
 
@@ -80,7 +81,7 @@ export class ExtensionLoader {
                 await hook(this.dependencies);
             } catch (error) {
                 globalErrorHandler.handleError(error, 'initialization-hook', 'error');
-                console.warn('⚠️ Initialization hook failed:', error);
+                log.warning('Initialization hook failed:', error);
             }
         }
     }
@@ -97,7 +98,7 @@ export class ExtensionLoader {
 
     // Reload the extension
     async reload() {
-        console.log('🔄 Reloading extension...');
+        log.info('Reloading extension...');
 
         this.isInitialized = false;
         this.dependencies.clear();
@@ -121,7 +122,7 @@ export class ExtensionLoader {
             // Reset state
             this.isLoaded = false;
 
-            console.log('🧹 Extension cleanup completed');
+            log.info('Extension cleanup completed');
         } catch (error) {
             globalErrorHandler.handleError(error, 'extension-loader-cleanup', 'error');
         }
@@ -130,13 +131,13 @@ export class ExtensionLoader {
     // Remove event listeners
     removeEventListeners() {
         // This will be implemented when we add specific event listeners
-        console.log('🗑️ Event listeners removed');
+        log.info('Event listeners removed');
     }
 
     // Clear timers
     clearTimers() {
         // This will be implemented when we add specific timers
-        console.log('⏰ Timers cleared');
+        log.info('Timers cleared');
     }
 
     // Get extension status

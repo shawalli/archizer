@@ -8,10 +8,13 @@ module.exports = {
         'content-scripts/amazon-orders-early': './src/content-scripts/amazon-orders-early.js',
         'background/background': './src/background/background.js',
         'popup/popup': './src/popup/popup.js',
-        'utils/google-sheets-api': './src/utils/google-sheets-api.js',
+
         'utils/order-parser': './src/utils/order-parser.js',
         'utils/storage': './src/utils/storage.js',
         'utils/dom-manipulator': './src/utils/dom-manipulator.js',
+        'utils/dom-utils': './src/utils/dom-utils.js',
+        'utils/validation-utils': './src/utils/validation-utils.js',
+        'utils/logger': './src/utils/logger.js',
         'components/tagging-dialog': './src/components/tagging-dialog.js'
     },
     output: {

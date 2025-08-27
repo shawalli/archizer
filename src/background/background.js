@@ -2,33 +2,20 @@
 // Handles Google OAuth and API calls
 
 import { StorageManager } from '../utils/storage.js';
-import { StorageMigrationManager } from '../utils/storage-migration.js';
+import { specializedLogger as log } from '../utils/logger.js';
 
-console.log('Amazon Order Archiver background script loaded');
+log.info('Amazon Order Archiver background script loaded');
 
-// Initialize storage and migration managers
+// Initialize storage manager
 let storageManager;
-let migrationManager;
 
 // Initialize storage systems
 async function initializeStorage() {
     try {
         storageManager = new StorageManager();
-        migrationManager = new StorageMigrationManager(storageManager);
-        
-        // Check if migration is needed
-        if (await migrationManager.needsMigration()) {
-            console.log('🔄 Storage migration needed, starting...');
-            const results = await migrationManager.migrateData();
-            console.log('✅ Migration completed:', results);
-            
-            // Clean up any remaining localStorage data
-            migrationManager.cleanupLocalStorage();
-        } else {
-            console.log('ℹ️ No storage migration needed');
-        }
+        log.success('Storage initialized successfully');
     } catch (error) {
-        console.error('❌ Error initializing storage:', error);
+        log.error('Error initializing storage:', error);
     }
 }
 
@@ -38,7 +25,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         handleMessage(message, sender, sendResponse);
         return true; // Keep message channel open for async response
     } catch (error) {
-        console.error('❌ Error handling message:', error);
+        log.error('Error handling message:', error);
         sendResponse({ success: false, error: error.message });
     }
 });
@@ -62,7 +49,7 @@ async function handleMessage(message, sender, sendResponse) {
             break;
 
         default:
-            console.warn('⚠️ Unknown message type:', message.type);
+            log.warning('Unknown message type:', message.type);
             sendResponse({ success: false, error: 'Unknown message type' });
     }
 }
@@ -70,17 +57,17 @@ async function handleMessage(message, sender, sendResponse) {
 // Handle error reports from content scripts
 async function handleErrorReport(errorInfo) {
     try {
-        console.log('📝 Received error report:', errorInfo);
+        log.info('Received error report:', errorInfo);
 
         // Store error in background storage for debugging
         await chrome.storage.local.set({
             [`error_${Date.now()}`]: errorInfo
         });
 
-        // TODO: Implement external error reporting (e.g., to monitoring service)
+
 
     } catch (error) {
-        console.error('❌ Failed to handle error report:', error);
+        log.error('Failed to handle error report:', error);
     }
 }
 
@@ -97,7 +84,7 @@ function getExtensionStatus() {
 // Reload extension
 async function reloadExtension() {
     try {
-        console.log('🔄 Reloading extension...');
+        log.info('Reloading extension...');
 
         // Clear any cached data
         await chrome.storage.local.clear();
@@ -106,39 +93,37 @@ async function reloadExtension() {
         chrome.runtime.reload();
 
     } catch (error) {
-        console.error('❌ Failed to reload extension:', error);
+        log.error('Failed to reload extension:', error);
         throw error;
     }
 }
 
 // Extension startup handler
 chrome.runtime.onStartup.addListener(async () => {
-    console.log('🚀 Extension starting up...');
+    log.info('Extension starting up...');
     await initializeStorage();
 });
 
 // Extension installation handler
 chrome.runtime.onInstalled.addListener(async (details) => {
-    console.log('📦 Extension installed:', details.reason);
+    log.info('Extension installed:', details.reason);
 
     // Initialize storage and handle migration
     await initializeStorage();
 
     if (details.reason === 'install') {
         // First time installation
-        console.log('🎉 Welcome to Amazon Order Archiver!');
+        log.success('Welcome to Amazon Order Archiver!');
 
-        // TODO: Show welcome page or onboarding
+
         chrome.tabs.create({
             url: chrome.runtime.getURL('popup/popup.html')
         });
 
     } else if (details.reason === 'update') {
         // Extension updated
-        console.log('🔄 Extension updated to version:', chrome.runtime.getManifest().version);
+        log.info('Extension updated to version:', chrome.runtime.getManifest().version);
     }
 });
 
-// TODO: Implement Google OAuth 2.0 authentication flow
-// TODO: Implement Google Sheets API client
-// TODO: Handle API rate limits and quota management
+

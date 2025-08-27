@@ -92,17 +92,30 @@ export class OrderParser {
      */
     startObserving(onOrderDetected = null, onOrderRemoved = null) {
         if (this.isObserving) {
-            console.log('OrderParser: Already observing for dynamic content');
-            return;
+            return; // Already observing
         }
 
         this.onOrderDetected = onOrderDetected;
         this.onOrderRemoved = onOrderRemoved;
 
         try {
-            // Create a MutationObserver to watch for DOM changes
+            // Batch mutations for better performance
+            let pendingMutations = [];
+            let mutationTimeout = null;
+
             this.observer = new MutationObserver((mutations) => {
-                this.handleDOMChanges(mutations);
+                // Add mutations to pending queue
+                pendingMutations.push(...mutations);
+
+                // Debounce processing to avoid excessive calls
+                if (mutationTimeout) {
+                    clearTimeout(mutationTimeout);
+                }
+
+                mutationTimeout = setTimeout(() => {
+                    this.processBatchedMutations(pendingMutations);
+                    pendingMutations = [];
+                }, 50); // 50ms debounce
             });
 
             // Start observing the document body for changes
@@ -114,7 +127,6 @@ export class OrderParser {
             });
 
             this.isObserving = true;
-            console.log('OrderParser: Started observing for dynamic content changes');
         } catch (error) {
             console.error('OrderParser: Failed to start observing:', error);
         }
@@ -133,27 +145,48 @@ export class OrderParser {
     }
 
     /**
-     * Handle DOM changes detected by the MutationObserver
+     * Process batched mutations for better performance
      * @param {Array} mutations - Array of mutation records
      */
-    handleDOMChanges(mutations) {
+    processBatchedMutations(mutations) {
+        const addedNodes = new Set();
+        const removedNodes = new Set();
+
+        // Collect all nodes from mutations
         mutations.forEach((mutation) => {
-            // Handle added nodes (new orders)
             if (mutation.type === 'childList') {
                 mutation.addedNodes.forEach((node) => {
                     if (node.nodeType === Node.ELEMENT_NODE) {
-                        this.checkForNewOrders(node);
+                        addedNodes.add(node);
                     }
                 });
 
-                // Handle removed nodes (orders being removed)
                 mutation.removedNodes.forEach((node) => {
                     if (node.nodeType === Node.ELEMENT_NODE) {
-                        this.checkForRemovedOrders(node);
+                        removedNodes.add(node);
                     }
                 });
             }
         });
+
+        // Process added nodes
+        addedNodes.forEach((node) => {
+            this.checkForNewOrders(node);
+        });
+
+        // Process removed nodes
+        removedNodes.forEach((node) => {
+            this.checkForRemovedOrders(node);
+        });
+    }
+
+    /**
+     * Handle DOM changes detected by the MutationObserver (legacy method)
+     * @param {Array} mutations - Array of mutation records
+     * @deprecated Use processBatchedMutations instead
+     */
+    handleDOMChanges(mutations) {
+        this.processBatchedMutations(mutations);
     }
 
     /**

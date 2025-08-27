@@ -1,24 +1,57 @@
 // Storage Management Utilities
 // Local storage for user preferences and caching
 
-console.log('Storage utilities loaded');
+import { specializedLogger as log } from './logger.js';
+
+log.info('Storage utilities loaded');
 
 export class StorageManager {
     constructor() {
         this.prefix = 'amazon_archiver_';
     }
 
+    /**
+     * Generate a storage key with the standard prefix
+     * @param {string} key - The key suffix
+     * @returns {string} The full storage key
+     */
+    _makeKey(key) {
+        return this.prefix + key;
+    }
+
+    /**
+     * Generate a hidden order key suffix
+     * @param {string} orderId - Order ID
+     * @param {string} type - Type of hiding
+     * @returns {string} The key suffix
+     */
+    _makeHiddenOrderKey(orderId, type) {
+        return `hidden_order_${orderId}_${type}`;
+    }
+
+    /**
+     * Generate an order tags key suffix
+     * @param {string} orderId - Order ID
+     * @returns {string} The key suffix
+     */
+    _makeOrderTagsKey(orderId) {
+        return `order_tags_${orderId}`;
+    }
+
     async get(key) {
-        const result = await chrome.storage.local.get(this.prefix + key);
-        return result[this.prefix + key] || null;
+        const fullKey = this._makeKey(key);
+        const result = await chrome.storage.local.get(fullKey);
+        return result[fullKey] || null;
     }
 
     async set(key, value) {
-        await chrome.storage.local.set({ [this.prefix + key]: value });
+        const fullKey = this._makeKey(key);
+        await chrome.storage.local.set({ [fullKey]: value });
     }
 
     async remove(key) {
-        await chrome.storage.local.remove(this.prefix + key);
+        const fullKey = this._makeKey(key);
+        await chrome.storage.local.remove(fullKey);
     }
 
     async clear() {
@@ -36,7 +69,7 @@ export class StorageManager {
             // Get username from storage
             const username = await this.get('username') || 'Unknown User';
 
-            const key = `hidden_order_${orderId}_${type}`;
+            const key = this._makeHiddenOrderKey(orderId, type);
             await this.set(key, {
                 orderId,
                 type,
@@ -44,9 +77,9 @@ export class StorageManager {
                 username,
                 timestamp: new Date().toISOString()
             });
-            console.log(`Stored hidden order ${orderId} (${type}):`, orderData);
+            log.info(`Stored hidden order ${orderId} (${type}):`, orderData);
         } catch (error) {
-            console.error(`Error storing hidden order ${orderId}:`, error);
+            log.error(`Error storing hidden order ${orderId}:`, error);
         }
     }
 
@@ -57,11 +90,11 @@ export class StorageManager {
      */
     async removeHiddenOrder(orderId, type) {
         try {
-            const key = `hidden_order_${orderId}_${type}`;
+            const key = this._makeHiddenOrderKey(orderId, type);
             await this.remove(key);
-            console.log(`Removed hidden order ${orderId} (${type})`);
+            log.info(`Removed hidden order ${orderId} (${type})`);
         } catch (error) {
-            console.error(`Error removing hidden order ${orderId}:`, error);
+            log.error(`Error removing hidden order ${orderId}:`, error);
         }
     }
 
@@ -72,15 +105,15 @@ export class StorageManager {
      */
     async storeOrderTags(orderId, tagData) {
         try {
-            const key = `order_tags_${orderId}`;
+            const key = this._makeOrderTagsKey(orderId);
             await this.set(key, {
                 orderId,
                 tagData,
                 timestamp: new Date().toISOString()
             });
-            console.log(`Stored tags for order ${orderId}:`, tagData);
+            log.info(`Stored tags for order ${orderId}:`, tagData);
         } catch (error) {
-            console.error(`Error storing tags for order ${orderId}:`, error);
+            log.error(`Error storing tags for order ${orderId}:`, error);
         }
     }
 
@@ -91,11 +124,11 @@ export class StorageManager {
      */
     async getOrderTags(orderId) {
         try {
-            const key = `order_tags_${orderId}`;
+            const key = this._makeOrderTagsKey(orderId);
             const data = await this.get(key);
             return data ? data.tagData : null;
         } catch (error) {
-            console.error(`Error getting tags for order ${orderId}:`, error);
+            log.error(`Error getting tags for order ${orderId}:`, error);
             return null;
         }
     }
@@ -106,11 +139,11 @@ export class StorageManager {
      */
     async removeOrderTags(orderId) {
         try {
-            const key = `order_tags_${orderId}`;
+            const key = this._makeOrderTagsKey(orderId);
             await this.remove(key);
-            console.log(`Removed tags for order ${orderId}`);
+            log.info(`Removed tags for order ${orderId}`);
         } catch (error) {
-            console.error(`Error removing tags for order ${orderId}:`, error);
+            log.error(`Error removing tags for order ${orderId}:`, error);
         }
     }
 
@@ -124,14 +157,14 @@ export class StorageManager {
             const orderTags = [];
 
             for (const [key, value] of Object.entries(allData)) {
-                if (key.startsWith(this.prefix + 'order_tags_') && value) {
+                if (key.startsWith(this._makeKey('order_tags_')) && value) {
                     orderTags.push(value);
                 }
             }
 
             return orderTags;
         } catch (error) {
-            console.error('Error getting all order tags:', error);
+            log.error('Error getting all order tags:', error);
             return [];
         }
     }
@@ -143,7 +176,7 @@ export class StorageManager {
      */
     async clearAllOrderData(orderId) {
         try {
-            console.log(`🗑️ Clearing all storage data for order ${orderId}...`);
+            log.info(`Clearing all storage data for order ${orderId}...`);
 
             // Get all storage data
             const allData = await chrome.storage.local.get(null);
@@ -153,21 +186,21 @@ export class StorageManager {
             for (const key of Object.keys(allData)) {
                 if (key.includes(orderId) && key.startsWith(this.prefix)) {
                     keysToRemove.push(key);
-                    console.log(`🔍 Found Chrome storage key to remove: ${key}`);
+                    log.debug(`Found Chrome storage key to remove: ${key}`);
                 }
             }
 
             // Remove all found Chrome storage keys
             if (keysToRemove.length > 0) {
                 await chrome.storage.local.remove(keysToRemove);
-                console.log(`✅ Cleared ${keysToRemove.length} Chrome storage keys for order ${orderId}`);
+                log.success(`Cleared ${keysToRemove.length} Chrome storage keys for order ${orderId}`);
             } else {
-                console.log(`ℹ️ No Chrome storage keys found for order ${orderId}`);
+                log.info(`No Chrome storage keys found for order ${orderId}`);
             }
 
             return keysToRemove.length;
         } catch (error) {
-            console.error(`❌ Error clearing order data for ${orderId}:`, error);
+            log.error(`Error clearing order data for ${orderId}:`, error);
             throw error;
         }
     }
@@ -180,11 +213,11 @@ export class StorageManager {
      */
     async getHiddenOrder(orderId, type) {
         try {
-            const key = `hidden_order_${orderId}_${type}`;
+            const key = this._makeHiddenOrderKey(orderId, type);
             const data = await this.get(key);
             return data;
         } catch (error) {
-            console.error(`Error getting hidden order ${orderId}:`, error);
+            log.error(`Error getting hidden order ${orderId}:`, error);
             return null;
         }
     }
@@ -199,18 +232,17 @@ export class StorageManager {
             const hiddenOrders = [];
 
             for (const [key, value] of Object.entries(allData)) {
-                if (key.startsWith(this.prefix + 'hidden_order_') && value) {
+                if (key.startsWith(this._makeKey('hidden_order_')) && value) {
                     hiddenOrders.push(value);
                 }
             }
 
             return hiddenOrders;
         } catch (error) {
-            console.error('Error getting all hidden orders:', error);
+            log.error('Error getting all hidden orders:', error);
             return [];
         }
     }
 }
 
-// TODO: Implement user preferences storage
-// TODO: Implement caching system
+

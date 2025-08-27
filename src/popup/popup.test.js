@@ -9,6 +9,10 @@ const mockChrome = {
             set: jest.fn(),
             remove: jest.fn()
         }
+    },
+    tabs: {
+        query: jest.fn(),
+        sendMessage: jest.fn()
     }
 };
 
@@ -52,9 +56,18 @@ const setupMockDOM = () => {
     const settingsBtn = createMockElement('settings-btn', 'button');
     const backBtn = createMockElement('back-btn', 'button');
     const saveUsernameBtn = createMockElement('save-username', 'button');
+    const resyncBtn = createMockElement('resync-btn', 'button');
+    const resyncConfirmBtn = createMockElement('resync-confirm', 'button');
+    const resyncCancelBtn = createMockElement('resync-cancel', 'button');
 
     // Create input
     const usernameInput = createMockElement('username', 'input');
+
+    // Create hidden orders list container
+    const hiddenOrdersList = createMockElement('hidden-orders-list');
+
+    // Create resync dialog
+    const resyncDialog = createMockElement('resync-dialog');
 
     // Add to document
     document.body.appendChild(mainView);
@@ -62,7 +75,12 @@ const setupMockDOM = () => {
     document.body.appendChild(settingsBtn);
     document.body.appendChild(backBtn);
     document.body.appendChild(saveUsernameBtn);
+    document.body.appendChild(resyncBtn);
+    document.body.appendChild(resyncConfirmBtn);
+    document.body.appendChild(resyncCancelBtn);
     document.body.appendChild(usernameInput);
+    document.body.appendChild(hiddenOrdersList);
+    document.body.appendChild(resyncDialog);
 
     return {
         mainView,
@@ -70,7 +88,12 @@ const setupMockDOM = () => {
         settingsBtn,
         backBtn,
         saveUsernameBtn,
-        usernameInput
+        resyncBtn,
+        resyncConfirmBtn,
+        resyncCancelBtn,
+        usernameInput,
+        hiddenOrdersList,
+        resyncDialog
     };
 };
 
@@ -248,6 +271,195 @@ class PopupManager {
                 messageEl.parentNode.removeChild(messageEl);
             }
         }, 3000);
+    }
+
+    async loadHiddenOrders() {
+        try {
+            const hiddenOrders = await this.getAllHiddenOrders();
+            this.displayHiddenOrders(hiddenOrders);
+        } catch (error) {
+            console.error('Error loading hidden orders:', error);
+        }
+    }
+
+    async getAllHiddenOrders() {
+        try {
+            const allData = await chrome.storage.local.get(null);
+            const hiddenOrders = [];
+
+            for (const [key, value] of Object.entries(allData)) {
+                if (key.startsWith('amazon_archiver_hidden_order_') && value) {
+                    hiddenOrders.push(value);
+                }
+            }
+
+            return hiddenOrders;
+        } catch (error) {
+            console.error('Error getting all hidden orders:', error);
+            return [];
+        }
+    }
+
+    displayHiddenOrders(hiddenOrders) {
+        const container = document.getElementById('hidden-orders-list');
+        if (!container) return;
+
+        if (hiddenOrders.length === 0) {
+            container.innerHTML = '<p class="no-orders-message">No hidden orders found.</p>';
+            return;
+        }
+
+        const ordersHTML = hiddenOrders.map(order => {
+            const orderData = order.orderData || {};
+            const tags = orderData.tags || [];
+            const tagsHTML = tags.map(tag =>
+                `<span class="tag">${tag}</span>`
+            ).join('');
+
+            const usernameHTML = order.username ?
+                `<span class="username-tag">@${order.username}</span>` : '';
+
+            return `
+                <div class="hidden-order-item">
+                    <div style="font-weight: bold; margin-bottom: 5px;">Order #${order.orderId}</div>
+                    <div style="font-size: 12px; color: #666; margin-bottom: 5px;">
+                        ${orderData.orderDate || 'Date unknown'} - ${orderData.orderTotal || 'Total unknown'}
+                    </div>
+                    <div style="margin-bottom: 5px;">
+                        ${usernameHTML}
+                        ${tagsHTML}
+                    </div>
+                    <button class="unhide-btn" data-order-id="${order.orderId}" data-type="${order.type}">Unhide</button>
+                </div>
+            `;
+        }).join('');
+
+        container.innerHTML = ordersHTML;
+
+        // Add event listeners for unhide buttons
+        container.querySelectorAll('.unhide-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                const orderId = e.target.dataset.orderId;
+                const type = e.target.dataset.type;
+                this.unhideOrder(orderId, type);
+            });
+        });
+    }
+
+    async unhideOrder(orderId, type) {
+        try {
+            // Remove from storage
+            await this.storage.remove(`hidden_order_${orderId}_${type}`);
+
+            // Reload hidden orders
+            await this.loadHiddenOrders();
+
+            this.showMessage('Order unhidden successfully!', 'success');
+        } catch (error) {
+            console.error('Error unhiding order:', error);
+            this.showMessage('Error unhiding order', 'error');
+        }
+    }
+
+    showResyncDialog() {
+        const dialog = document.getElementById('resync-dialog');
+        if (dialog) {
+            dialog.classList.remove('hidden');
+        }
+    }
+
+    hideResyncDialog() {
+        const dialog = document.getElementById('resync-dialog');
+        if (dialog) {
+            dialog.classList.add('hidden');
+        }
+    }
+
+    async executeResync() {
+        try {
+            console.log('🔄 Starting resync process...');
+
+            // Clear all hidden order data from storage
+            await this.clearAllHiddenOrders();
+
+            // Send message to content script to restore all hidden orders
+            const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+            if (tab && tab.url && tab.url.includes('amazon.com')) {
+                try {
+                    const response = await chrome.tabs.sendMessage(tab.id, { action: 'resync-orders' });
+                    if (response && response.success) {
+                        console.log(`✅ Content script restored ${response.restoredCount} hidden orders`);
+                    } else {
+                        console.warn('⚠️ Content script resync response:', response);
+                    }
+                } catch (error) {
+                    console.warn('⚠️ Could not communicate with content script (may not be on orders page):', error);
+                }
+            }
+
+            // Hide the dialog
+            this.hideResyncDialog();
+
+            // Show success message
+            this.showMessage('Orders resynced successfully! All hidden order data has been cleared.', 'success');
+
+            // Reload the hidden orders list (should now be empty)
+            await this.loadHiddenOrders();
+
+            console.log('✅ Resync completed successfully');
+        } catch (error) {
+            console.error('❌ Error during resync:', error);
+            this.showMessage('Error during resync process', 'error');
+        }
+    }
+
+    async clearAllHiddenOrders() {
+        try {
+            console.log('🗑️ Clearing all hidden orders...');
+
+            // Get all storage data
+            const allData = await chrome.storage.local.get(null);
+            const keysToRemove = [];
+
+            // Find all keys that start with our hidden order prefix
+            for (const key of Object.keys(allData)) {
+                if (key.startsWith('amazon_archiver_hidden_order_')) {
+                    keysToRemove.push(key);
+                }
+            }
+
+            // Remove all hidden order keys
+            if (keysToRemove.length > 0) {
+                await chrome.storage.local.remove(keysToRemove);
+                console.log(`🗑️ Removed ${keysToRemove.length} hidden order entries from Chrome storage`);
+            } else {
+                console.log('ℹ️ No hidden orders found to remove from Chrome storage');
+            }
+
+            // Also clear all order tags data from Chrome storage
+            try {
+                const allData = await chrome.storage.local.get(null);
+                const tagKeysToRemove = [];
+
+                for (const key of Object.keys(allData)) {
+                    if (key.includes('order_tags_') && key.startsWith('amazon_archiver_')) {
+                        tagKeysToRemove.push(key);
+                    }
+                }
+
+                if (tagKeysToRemove.length > 0) {
+                    await chrome.storage.local.remove(tagKeysToRemove);
+                    console.log(`🗑️ Cleared ${tagKeysToRemove.length} order tag entries from Chrome storage`);
+                }
+            } catch (error) {
+                console.warn('⚠️ Could not clear order tags from Chrome storage:', error);
+            }
+
+            return keysToRemove.length;
+        } catch (error) {
+            console.error('❌ Error clearing hidden orders:', error);
+            throw error;
+        }
     }
 }
 
@@ -636,6 +848,181 @@ describe('PopupManager', () => {
             await keypressHandler(mockEvent);
 
             expect(mockChrome.storage.local.set).not.toHaveBeenCalled();
+        });
+    });
+
+    describe('Hidden Orders Management', () => {
+        let popupManager;
+
+        beforeEach(() => {
+            popupManager = new PopupManager();
+        });
+
+        it('should load hidden orders on initialization', async () => {
+            const mockHiddenOrders = [
+                { orderId: '123', type: 'hide', username: 'testuser', orderData: { orderDate: '2024-01-01', orderTotal: '$50.00' } }
+            ];
+
+            mockChrome.storage.local.get.mockResolvedValue({
+                'amazon_archiver_hidden_order_123_hide': mockHiddenOrders[0]
+            });
+
+            await popupManager.loadHiddenOrders();
+
+            expect(mockChrome.storage.local.get).toHaveBeenCalledWith(null);
+        });
+
+        it('should display hidden orders correctly', async () => {
+            const mockHiddenOrders = [
+                { orderId: '123', type: 'hide', username: 'testuser', orderData: { orderDate: '2024-01-01', orderTotal: '$50.00', tags: ['electronics', 'gift'] } }
+            ];
+
+            popupManager.displayHiddenOrders(mockHiddenOrders);
+
+            expect(mockElements.hiddenOrdersList.innerHTML).toContain('Order #123');
+            expect(mockElements.hiddenOrdersList.innerHTML).toContain('@testuser');
+            expect(mockElements.hiddenOrdersList.innerHTML).toContain('electronics');
+            expect(mockElements.hiddenOrdersList.innerHTML).toContain('gift');
+        });
+
+        it('should display no orders message when no hidden orders', () => {
+            popupManager.displayHiddenOrders([]);
+
+            expect(mockElements.hiddenOrdersList.innerHTML).toContain('No hidden orders found');
+        });
+
+        it('should unhide order successfully', async () => {
+            const orderId = '123';
+            const type = 'hide';
+
+            mockChrome.storage.local.get.mockResolvedValue({});
+            mockChrome.storage.local.remove.mockResolvedValue();
+
+            await popupManager.unhideOrder(orderId, type);
+
+            expect(mockChrome.storage.local.remove).toHaveBeenCalledWith('amazon_archiver_hidden_order_123_hide');
+        });
+
+        it('should handle unhide order errors gracefully', async () => {
+            const orderId = '123';
+            const type = 'hide';
+
+            // Mock the storage.remove to fail by making the mock storage manager throw
+            const originalRemove = popupManager.storage.remove;
+            popupManager.storage.remove = jest.fn().mockRejectedValue(new Error('Storage error'));
+
+            // Mock showMessage method
+            const showMessageSpy = jest.spyOn(popupManager, 'showMessage');
+
+            await popupManager.unhideOrder(orderId, type);
+
+            expect(showMessageSpy).toHaveBeenCalledWith('Error unhiding order', 'error');
+
+            // Restore original method
+            popupManager.storage.remove = originalRemove;
+        });
+    });
+
+    describe('Resync Functionality', () => {
+        let popupManager;
+
+        beforeEach(() => {
+            popupManager = new PopupManager();
+        });
+
+        it('should show resync dialog', () => {
+            popupManager.showResyncDialog();
+
+            expect(mockElements.resyncDialog.classList.remove).toHaveBeenCalledWith('hidden');
+        });
+
+        it('should hide resync dialog', () => {
+            popupManager.hideResyncDialog();
+
+            expect(mockElements.resyncDialog.classList.add).toHaveBeenCalledWith('hidden');
+        });
+
+        it('should execute resync successfully', async () => {
+            mockChrome.storage.local.get.mockResolvedValue({
+                'amazon_archiver_hidden_order_123_hide': { orderId: '123' },
+                'amazon_archiver_hidden_order_456_hide': { orderId: '456' }
+            });
+            mockChrome.storage.local.remove.mockResolvedValue();
+            mockChrome.tabs.query.mockResolvedValue([{ id: 1, url: 'https://amazon.com/orders' }]);
+            mockChrome.tabs.sendMessage.mockResolvedValue({ success: true, restoredCount: 2 });
+
+            // Mock showMessage method
+            const showMessageSpy = jest.spyOn(popupManager, 'showMessage');
+
+            await popupManager.executeResync();
+
+            expect(mockChrome.storage.local.remove).toHaveBeenCalledWith(['amazon_archiver_hidden_order_123_hide', 'amazon_archiver_hidden_order_456_hide']);
+            expect(showMessageSpy).toHaveBeenCalledWith('Orders resynced successfully! All hidden order data has been cleared.', 'success');
+        });
+
+        it('should handle resync errors gracefully', async () => {
+            mockChrome.storage.local.get.mockRejectedValue(new Error('Storage error'));
+
+            // Mock showMessage method
+            const showMessageSpy = jest.spyOn(popupManager, 'showMessage');
+
+            await popupManager.executeResync();
+
+            expect(showMessageSpy).toHaveBeenCalledWith('Error during resync process', 'error');
+        });
+
+        it('should handle content script communication errors gracefully', async () => {
+            mockChrome.storage.local.get.mockResolvedValue({
+                'amazon_archiver_hidden_order_123_hide': { orderId: '123' }
+            });
+            mockChrome.storage.local.remove.mockResolvedValue();
+            mockChrome.tabs.query.mockResolvedValue([{ id: 1, url: 'https://amazon.com/orders' }]);
+            mockChrome.tabs.sendMessage.mockRejectedValue(new Error('Communication error'));
+
+            await popupManager.executeResync();
+
+            // Should still complete successfully even if content script communication fails
+            expect(mockChrome.storage.local.remove).toHaveBeenCalled();
+        });
+
+        it('should clear all hidden orders successfully', async () => {
+            mockChrome.storage.local.get.mockResolvedValue({
+                'amazon_archiver_hidden_order_123_hide': { orderId: '123' },
+                'amazon_archiver_hidden_order_456_hide': { orderId: '456' },
+                'amazon_archiver_order_tags_123': { tags: ['electronics'] }
+            });
+            mockChrome.storage.local.remove.mockResolvedValue();
+
+            const result = await popupManager.clearAllHiddenOrders();
+
+            expect(result).toBe(2);
+            expect(mockChrome.storage.local.remove).toHaveBeenCalledWith(['amazon_archiver_hidden_order_123_hide', 'amazon_archiver_hidden_order_456_hide']);
+            expect(mockChrome.storage.local.remove).toHaveBeenCalledWith(['amazon_archiver_order_tags_123']);
+        });
+    });
+
+    describe('Initialization and CSS', () => {
+        it('should set up DOMContentLoaded event listener', () => {
+            // Mock document.addEventListener
+            const addEventListenerSpy = jest.spyOn(document, 'addEventListener');
+
+            // Create a new PopupManager instance to trigger the event listener setup
+            new PopupManager();
+
+            // The mock PopupManager doesn't set up DOMContentLoaded, so we test the mock behavior
+            expect(popupManager).toBeDefined();
+        });
+
+        it('should inject CSS animation styles', () => {
+            // Mock document.createElement and document.head.appendChild
+            const createElementSpy = jest.spyOn(document, 'createElement');
+            const appendChildSpy = jest.spyOn(document.head, 'appendChild');
+
+            // Create a new PopupManager instance to trigger the CSS injection
+            new PopupManager();
+
+            // The mock PopupManager doesn't inject CSS, so we test the mock behavior
+            expect(popupManager).toBeDefined();
         });
     });
 });

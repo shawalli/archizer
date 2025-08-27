@@ -7,7 +7,8 @@ const mockChrome = {
         local: {
             get: jest.fn(),
             set: jest.fn(),
-            remove: jest.fn()
+            remove: jest.fn(),
+            clear: jest.fn()
         }
     }
 };
@@ -44,6 +45,16 @@ describe('StorageManager', () => {
 
             expect(result).toBeNull();
         });
+
+        it('should return null when key not found', async () => {
+            mockChrome.storage.local.get.mockImplementation((key) => {
+                return Promise.resolve({});
+            });
+
+            const result = await storageManager.get('test-key');
+
+            expect(result).toBeNull();
+        });
     });
 
     describe('set', () => {
@@ -59,6 +70,16 @@ describe('StorageManager', () => {
                 { 'amazon_archiver_test-key': testData }
             );
         });
+
+        it('should handle storage errors gracefully', async () => {
+            const testData = { key: 'value' };
+            mockChrome.storage.local.set.mockImplementation((data) => {
+                return Promise.reject(new Error('Storage error'));
+            });
+
+            // Should not throw error
+            await expect(storageManager.set('test-key', testData)).rejects.toThrow('Storage error');
+        });
     });
 
     describe('remove', () => {
@@ -70,6 +91,36 @@ describe('StorageManager', () => {
             await storageManager.remove('test-key');
 
             expect(mockChrome.storage.local.remove).toHaveBeenCalledWith('amazon_archiver_test-key');
+        });
+
+        it('should handle storage errors gracefully', async () => {
+            mockChrome.storage.local.remove.mockImplementation((key) => {
+                return Promise.reject(new Error('Storage error'));
+            });
+
+            // Should not throw error
+            await expect(storageManager.remove('test-key')).rejects.toThrow('Storage error');
+        });
+    });
+
+    describe('clear', () => {
+        it('should clear all Chrome storage', async () => {
+            mockChrome.storage.local.clear.mockImplementation(() => {
+                return Promise.resolve();
+            });
+
+            await storageManager.clear();
+
+            expect(mockChrome.storage.local.clear).toHaveBeenCalled();
+        });
+
+        it('should handle storage errors gracefully', async () => {
+            mockChrome.storage.local.clear.mockImplementation(() => {
+                return Promise.reject(new Error('Storage error'));
+            });
+
+            // Should not throw error
+            await expect(storageManager.clear()).rejects.toThrow('Storage error');
         });
     });
 
@@ -117,6 +168,84 @@ describe('StorageManager', () => {
                     timestamp: expect.any(String)
                 }
             });
+        });
+
+        it('should handle storage errors gracefully', async () => {
+            const mockOrderData = { orderId: '123', type: 'details' };
+            jest.spyOn(storageManager, 'get').mockResolvedValue('TestUser');
+            mockChrome.storage.local.set.mockImplementation((data) => {
+                return Promise.reject(new Error('Storage error'));
+            });
+
+            // Should not throw error
+            await expect(storageManager.storeHiddenOrder('123', 'details', mockOrderData)).resolves.toBeUndefined();
+        });
+    });
+
+    describe('removeHiddenOrder', () => {
+        it('should remove hidden order data', async () => {
+            mockChrome.storage.local.remove.mockImplementation(() => {
+                return Promise.resolve();
+            });
+
+            await storageManager.removeHiddenOrder('123', 'details');
+
+            expect(mockChrome.storage.local.remove).toHaveBeenCalledWith('amazon_archiver_hidden_order_123_details');
+        });
+
+        it('should handle storage errors gracefully', async () => {
+            mockChrome.storage.local.remove.mockImplementation(() => {
+                return Promise.reject(new Error('Storage error'));
+            });
+
+            // Should not throw error
+            await expect(storageManager.removeHiddenOrder('123', 'details')).resolves.toBeUndefined();
+        });
+    });
+
+    describe('getHiddenOrder', () => {
+        it('should retrieve hidden order data', async () => {
+            const mockHiddenOrder = {
+                orderId: '123',
+                type: 'details',
+                orderData: { orderId: '123' },
+                username: 'TestUser',
+                timestamp: '2025-01-01T00:00:00.000Z'
+            };
+
+            mockChrome.storage.local.get.mockImplementation((key) => {
+                if (key === 'amazon_archiver_hidden_order_123_details') {
+                    return Promise.resolve({
+                        'amazon_archiver_hidden_order_123_details': mockHiddenOrder
+                    });
+                }
+                return Promise.resolve({});
+            });
+
+            const result = await storageManager.getHiddenOrder('123', 'details');
+
+            expect(result).toEqual(mockHiddenOrder);
+            expect(mockChrome.storage.local.get).toHaveBeenCalledWith('amazon_archiver_hidden_order_123_details');
+        });
+
+        it('should return null when hidden order does not exist', async () => {
+            mockChrome.storage.local.get.mockImplementation(() => {
+                return Promise.resolve({});
+            });
+
+            const result = await storageManager.getHiddenOrder('123', 'details');
+
+            expect(result).toBeNull();
+        });
+
+        it('should handle storage errors gracefully', async () => {
+            mockChrome.storage.local.get.mockImplementation(() => {
+                return Promise.reject(new Error('Storage error'));
+            });
+
+            const result = await storageManager.getHiddenOrder('123', 'details');
+
+            expect(result).toBeNull();
         });
     });
 
@@ -344,6 +473,147 @@ describe('StorageManager', () => {
             const result = await storageManager.getAllOrderTags();
 
             expect(result).toEqual([]);
+        });
+    });
+
+    describe('clearAllOrderData', () => {
+        it('should clear all storage data for a specific order', async () => {
+            const orderId = '123';
+            const mockAllData = {
+                'amazon_archiver_hidden_order_123_details': { orderId: '123', type: 'details' },
+                'amazon_archiver_hidden_order_123_order': { orderId: '123', type: 'order' },
+                'amazon_archiver_order_tags_123': { orderId: '123', tags: ['test'] },
+                'amazon_archiver_username': 'TestUser',
+                'amazon_archiver_other_data': 'not related to order 123'
+            };
+
+            mockChrome.storage.local.get.mockImplementation(() => {
+                return Promise.resolve(mockAllData);
+            });
+
+            mockChrome.storage.local.remove.mockImplementation(() => {
+                return Promise.resolve();
+            });
+
+            const result = await storageManager.clearAllOrderData(orderId);
+
+            expect(result).toBe(3);
+            expect(mockChrome.storage.local.remove).toHaveBeenCalledWith([
+                'amazon_archiver_hidden_order_123_details',
+                'amazon_archiver_hidden_order_123_order',
+                'amazon_archiver_order_tags_123'
+            ]);
+        });
+
+        it('should handle case when no order data exists', async () => {
+            const orderId = '123';
+            const mockAllData = {
+                'amazon_archiver_username': 'TestUser',
+                'amazon_archiver_other_data': 'not related to order 123'
+            };
+
+            mockChrome.storage.local.get.mockImplementation(() => {
+                return Promise.resolve(mockAllData);
+            });
+
+            mockChrome.storage.local.remove.mockImplementation(() => {
+                return Promise.resolve();
+            });
+
+            const result = await storageManager.clearAllOrderData(orderId);
+
+            expect(result).toBe(0);
+            expect(mockChrome.storage.local.remove).not.toHaveBeenCalled();
+        });
+
+        it('should handle storage errors gracefully', async () => {
+            const orderId = '123';
+
+            mockChrome.storage.local.get.mockImplementation(() => {
+                return Promise.reject(new Error('Storage error'));
+            });
+
+            await expect(storageManager.clearAllOrderData(orderId)).rejects.toThrow('Storage error');
+        });
+
+        it('should handle removal errors gracefully', async () => {
+            const orderId = '123';
+            const mockAllData = {
+                'amazon_archiver_hidden_order_123_details': { orderId: '123', type: 'details' }
+            };
+
+            mockChrome.storage.local.get.mockImplementation(() => {
+                return Promise.resolve(mockAllData);
+            });
+
+            mockChrome.storage.local.remove.mockImplementation(() => {
+                return Promise.reject(new Error('Removal error'));
+            });
+
+            await expect(storageManager.clearAllOrderData(orderId)).rejects.toThrow('Removal error');
+        });
+    });
+
+    describe('constructor', () => {
+        it('should initialize with correct prefix', () => {
+            expect(storageManager.prefix).toBe('amazon_archiver_');
+        });
+    });
+
+    describe('integration', () => {
+        it('should work with real Chrome storage operations', async () => {
+            // Test a complete workflow
+            const orderId = 'test-123';
+            const orderData = { test: 'data' };
+            const tagData = { tags: ['test'] };
+
+            // Mock successful operations
+            mockChrome.storage.local.get.mockImplementation((key) => {
+                if (key === 'amazon_archiver_username') {
+                    return Promise.resolve({ 'amazon_archiver_username': 'TestUser' });
+                }
+                return Promise.resolve({});
+            });
+
+            mockChrome.storage.local.set.mockImplementation(() => Promise.resolve());
+            mockChrome.storage.local.remove.mockImplementation(() => Promise.resolve());
+
+            // Store hidden order
+            await storageManager.storeHiddenOrder(orderId, 'details', orderData);
+            expect(mockChrome.storage.local.set).toHaveBeenCalledWith(
+                expect.objectContaining({
+                    [`amazon_archiver_hidden_order_${orderId}_details`]: expect.objectContaining({
+                        orderId,
+                        type: 'details',
+                        orderData,
+                        username: 'TestUser',
+                        timestamp: expect.any(String)
+                    })
+                })
+            );
+
+            // Store order tags
+            await storageManager.storeOrderTags(orderId, tagData);
+            expect(mockChrome.storage.local.set).toHaveBeenCalledWith(
+                expect.objectContaining({
+                    [`amazon_archiver_order_tags_${orderId}`]: expect.objectContaining({
+                        orderId,
+                        tagData,
+                        timestamp: expect.any(String)
+                    })
+                })
+            );
+
+            // Clear all data
+            mockChrome.storage.local.get.mockImplementation(() => {
+                return Promise.resolve({
+                    [`amazon_archiver_hidden_order_${orderId}_details`]: { orderId, type: 'details' },
+                    [`amazon_archiver_order_tags_${orderId}`]: { orderId, tags: ['test'] }
+                });
+            });
+
+            const clearedCount = await storageManager.clearAllOrderData(orderId);
+            expect(clearedCount).toBe(2);
         });
     });
 });

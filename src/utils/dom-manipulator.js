@@ -3,6 +3,9 @@
  * Handles button injection, order hiding/showing, and dynamic content management
  */
 
+import { createElement, createButton, createContainer, safeAddEventListener, safeSetStyles, hideElementsBySelectors, containsEssentialInfo, isElementWithinContainer, safeModifyClasses, safeSetMultipleStyles } from './dom-utils.js';
+
+
 export class DOMManipulator {
     constructor() {
         this.injectedButtons = new Map(); // Track injected buttons by order ID
@@ -134,57 +137,52 @@ export class DOMManipulator {
                 return null;
             }
 
-            // Create container for the buttons
-            const buttonContainer = document.createElement('div');
-            buttonContainer.className = 'archivaz-button-container';
-            buttonContainer.setAttribute('data-archivaz-order-id', orderId);
-            buttonContainer.style.cssText = `
-                margin-top: 8px;
-                padding: 8px 0;
-                border-top: 1px solid #e7e7e7;
-            `;
+            // Create container for the buttons using utility function
+            const buttonContainer = createContainer('archivaz-button-container', {
+                attributes: {
+                    'data-archivaz-order-id': orderId
+                }
+            });
 
             // Create unordered list for button layout
-            const buttonList = document.createElement('ul');
-            buttonList.className = 'a-unordered-list a-vertical a-spacing-mini';
-            buttonList.style.cssText = `
-                margin: 0;
-                padding: 0;
-                list-style: none;
-            `;
+            const buttonList = createElement('ul', {
+                className: 'a-unordered-list a-vertical a-spacing-mini',
+                styles: {
+                    margin: '0',
+                    padding: '0',
+                    listStyle: 'none'
+                }
+            });
 
-            // Create "Hide details" button
-            const hideDetailsLi = document.createElement('li');
-            hideDetailsLi.className = 'a-list-item';
-            hideDetailsLi.style.cssText = 'margin-bottom: 4px;';
+            // Create "Hide details" button using utility function
+            const hideDetailsLi = createElement('li', {
+                className: 'a-list-item',
+                styles: {
+                    marginBottom: '4px'
+                }
+            });
 
-            const hideDetailsBtn = document.createElement('button');
-            hideDetailsBtn.className = 'a-button a-button-normal a-spacing-mini a-button-base';
-            hideDetailsBtn.type = 'button'; // Prevent form submission
-            hideDetailsBtn.setAttribute('data-archivaz-type', 'hide-details');
-            hideDetailsBtn.setAttribute('data-archivaz-order-id', orderId);
-            hideDetailsBtn.setAttribute('aria-label', `Hide details for order ${orderId}`);
-            hideDetailsBtn.style.cssText = `
-                width: 100%;
-                background-color: #7759b9;
-                border-color: #888c8c;
-                color: white;
-                font-size: 12px;
-                padding: 6px 12px;
-                border-radius: 4px;
-                cursor: pointer;
-                transition: all 0.2s ease;
-            `;
-            hideDetailsBtn.textContent = 'Hide details';
+            const hideDetailsBtn = createButton('Hide details', {
+                attributes: {
+                    'data-archivaz-type': 'hide-details',
+                    'data-archivaz-order-id': orderId,
+                    'aria-label': `Hide details for order ${orderId}`
+                }
+            });
 
             // Add hover effects for hide details button
-            hideDetailsBtn.addEventListener('mouseenter', () => {
-                hideDetailsBtn.style.backgroundColor = '#8a6bb9';
-                hideDetailsBtn.style.borderColor = '#7759b9';
+            safeAddEventListener(hideDetailsBtn, 'mouseenter', () => {
+                safeSetStyles(hideDetailsBtn, {
+                    backgroundColor: '#8a6bb9',
+                    borderColor: '#7759b9'
+                });
             });
-            hideDetailsBtn.addEventListener('mouseleave', () => {
-                hideDetailsBtn.style.backgroundColor = '#7759b9';
-                hideDetailsBtn.style.borderColor = '#888c8c';
+
+            safeAddEventListener(hideDetailsBtn, 'mouseleave', () => {
+                safeSetStyles(hideDetailsBtn, {
+                    backgroundColor: '#7759b9',
+                    borderColor: '#888c8c'
+                });
             });
 
             hideDetailsLi.appendChild(hideDetailsBtn);
@@ -196,7 +194,7 @@ export class DOMManipulator {
             buttonContainer.appendChild(buttonList);
 
             // Add click event listeners
-            hideDetailsBtn.addEventListener('click', (event) => {
+            safeAddEventListener(hideDetailsBtn, 'click', (event) => {
                 event.preventDefault();
                 event.stopPropagation();
 
@@ -617,6 +615,7 @@ export class DOMManipulator {
      * @param {Object} tagData - Optional tag data if order was tagged before hiding
      */
     performHideOrderDetails(orderId, button, tagData = null) {
+        let orderCard = null;
         try {
             console.log('🔍 performHideOrderDetails called with:', { orderId, button, tagData });
 
@@ -626,7 +625,7 @@ export class DOMManipulator {
                 return;
             }
 
-            const orderCard = buttonInfo.orderCard;
+            orderCard = buttonInfo.orderCard;
             console.log('🔍 Order card found:', orderCard);
             console.log('🔍 Order card outerHTML preview:', orderCard.outerHTML.substring(0, 200) + '...');
             console.log('🔍 Order card classes:', orderCard.className);
@@ -1287,8 +1286,10 @@ export class DOMManipulator {
      * @param {string} orderId - Order ID
      * @param {Element} orderCard - The order card element directly
      * @param {Object} tagData - Optional tag data to display
+     * @param {string} username - Optional username for the order (used during restoration)
      */
-    async performHideOrderDetailsWithCard(orderId, orderCard, tagData = null) {
+    async performHideOrderDetailsWithCard(orderId, orderCard, tagData = null, username = null) {
+        // UNIQUE IDENTIFIER: This is the performHideOrderDetailsWithCard method
         try {
             console.log('🔍 performHideOrderDetailsWithCard called with:', { orderId, orderCard, tagData });
 
@@ -1333,41 +1334,20 @@ export class DOMManipulator {
                 '.product-container', '.item-container', '.product-wrapper', '.item-wrapper'
             ];
 
-            let totalHidden = 0;
-            const hiddenElements = [];
-
-            // Hide elements using selectors
-            selectorsToHide.forEach(selector => {
-                try {
-                    const elements = orderCard.querySelectorAll(selector);
-                    elements.forEach(element => {
-                        // Skip if already hidden or if it's our injected buttons
-                        if (element.classList.contains('archivaz-hidden-details') ||
-                            element.closest('.archivaz-button-container')) {
-                            return;
-                        }
-
-                        // Verify the element is within the order card boundaries
-                        if (!this.isElementWithinOrderCard(element, orderCard)) {
-                            console.warn(`⚠️ Element outside order card boundaries in order ${orderId}:`, element);
-                            return;
-                        }
-
-                        // Store original display value for restoration
-                        const originalDisplay = window.getComputedStyle(element).display;
-                        element.setAttribute('data-archivaz-original-display', originalDisplay);
-
-                        // Hide the element
-                        element.classList.add('archivaz-hidden-details');
-                        element.style.display = 'none';
-
-                        hiddenElements.push(element);
-                        totalHidden++;
-                    });
-                } catch (error) {
-                    console.warn(`⚠️ Error processing selector "${selector}":`, error);
+            // Hide elements using selectors with utility function
+            const hiddenElements = hideElementsBySelectors(
+                orderCard,
+                selectorsToHide,
+                orderId,
+                (element) => {
+                    // Skip if already hidden or if it's our injected buttons
+                    return element.classList.contains('archivaz-hidden-details') ||
+                        element.closest('.archivaz-button-container') ||
+                        !isElementWithinContainer(element, orderCard);
                 }
-            });
+            );
+
+            let totalHidden = hiddenElements.length;
 
             // Now hide additional specific elements using custom logic
             const additionalHiddenElements = this.hideAdditionalOrderElements(orderCard);
@@ -1389,29 +1369,21 @@ export class DOMManipulator {
                 }
 
                 // Verify the element is within the order card boundaries
-                if (!this.isElementWithinOrderCard(element, orderCard)) {
+                if (!isElementWithinContainer(element, orderCard)) {
                     console.warn(`⚠️ Order-item element outside order card boundaries in order ${orderId}:`, element);
                     return;
                 }
 
                 // Check if this order-item contains essential delivery status information
                 const hasEssentialStatus = element.querySelector('.delivery-box, [class*="shipment-status"], [class*="delivery-box"]') ||
-                    element.textContent.includes('Return complete') ||
-                    element.textContent.includes('Delivered') ||
-                    element.textContent.includes('Shipped');
+                    containsEssentialInfo(element);
 
                 if (!hasEssentialStatus) {
-                    // Store original display value for restoration
-                    const originalDisplay = window.getComputedStyle(element).display;
-                    element.setAttribute('data-archivaz-original-display', originalDisplay);
-
-                    // Hide the element
-                    element.classList.add('archivaz-hidden-details');
-                    element.style.display = 'none';
-
-                    hiddenElements.push(element);
-                    totalHidden++;
-                    console.log(`🔍 Hidden order-item element in order ${orderId}:`, element);
+                    const result = hideElement(element, orderId, 'order-item element');
+                    if (result.success) {
+                        hiddenElements.push(element);
+                        totalHidden++;
+                    }
                 }
             });
 
@@ -1444,15 +1416,15 @@ export class DOMManipulator {
                     // Always add tags and username below the delivery status if available
                     console.log('🔍 Checking if tags/username should be added:', { tagData, hasTags: tagData && tagData.tags && tagData.tags.length > 0 });
 
-                    // Get username from stored data and pass it to the method
-                    const username = this.getUsernameForOrder(orderId);
-                    console.log(`🔍 Username for order ${orderId}: "${username}" (from stored data)`);
+                    // Use passed username or get from stored data
+                    const finalUsername = username || this.getUsernameForOrder(orderId);
+                    console.log(`🔍 Username for order ${orderId}: "${finalUsername}" (${username ? 'from parameter' : 'from stored data'})`);
 
                     const tags = tagData && tagData.tags ? tagData.tags : [];
-                    console.log(`🔍 About to call addTagsToDeliveryStatus with username: "${username}"`);
+                    console.log(`🔍 About to call addTagsToDeliveryStatus with username: "${finalUsername}"`);
 
                     // Add tags and username to the delivery status
-                    this.addTagsToDeliveryStatus(leftColumn, tags, username);
+                    this.addTagsToDeliveryStatus(leftColumn, tags, finalUsername);
                 }
             }
 
@@ -1495,14 +1467,29 @@ export class DOMManipulator {
             }
 
             // Update button state to reflect hidden status
-            const hideDetailsButton = orderCard.querySelector('button[data-archivaz-type="hide-details"]');
-            if (hideDetailsButton) {
-                hideDetailsButton.textContent = 'Show details';
-                hideDetailsButton.setAttribute('data-archivaz-type', 'show-details');
-                hideDetailsButton.classList.add('archivaz-details-hidden');
+            // Look for any button with our extension attributes, regardless of current type
+            const extensionButton = orderCard.querySelector('button[data-archivaz-type]');
+            console.log(`🔍 Looking for extension button in order ${orderId}:`, {
+                found: !!extensionButton,
+                buttonType: extensionButton?.getAttribute('data-archivaz-type'),
+                buttonText: extensionButton?.textContent,
+                orderCardClasses: orderCard.className
+            });
+
+            if (extensionButton) {
+                extensionButton.textContent = 'Show details';
+                extensionButton.setAttribute('data-archivaz-type', 'show-details');
+                extensionButton.classList.add('archivaz-details-hidden');
                 console.log(`✅ Updated button state to "Show details" for order ${orderId}`);
             } else {
-                console.warn(`⚠️ Could not find hide-details button to update for order ${orderId}`);
+                console.warn(`⚠️ Could not find extension button to update for order ${orderId}`);
+                // Debug: check what buttons exist in the order card
+                const allButtons = orderCard.querySelectorAll('button');
+                console.log(`🔍 All buttons in order card ${orderId}:`, Array.from(allButtons).map(btn => ({
+                    text: btn.textContent,
+                    type: btn.getAttribute('data-archivaz-type'),
+                    classes: btn.className
+                })));
             }
 
             // Clean up processing flag
@@ -1751,10 +1738,17 @@ export class DOMManipulator {
             }
 
             // Track the injected buttons
-            this.injectedButtons.set(orderId, {
+            const buttonInfo = {
                 hideDetailsLi: hideDetailsLi,
                 hideDetailsBtn: hideDetailsBtn,
                 orderCard: orderCard
+            };
+            this.injectedButtons.set(orderId, buttonInfo);
+            console.log(`🔧 Stored button info for order ${orderId}:`, {
+                hasHideDetailsLi: !!buttonInfo.hideDetailsLi,
+                hasHideDetailsBtn: !!buttonInfo.hideDetailsBtn,
+                hasOrderCard: !!buttonInfo.orderCard,
+                totalInjectedButtons: this.injectedButtons.size
             });
 
             console.log(`✅ Successfully injected buttons for order ${orderId}`);
@@ -1807,35 +1801,74 @@ export class DOMManipulator {
      */
     startObserving(onOrderDetected = null, onOrderRemoved = null) {
         if (this.isObserving) {
-            console.log('DOMManipulator: Already observing for dynamic content');
-            return;
+            return; // Already observing, no need to log
         }
 
-        this.observer = new MutationObserver((mutations) => {
-            mutations.forEach((mutation) => {
-                if (mutation.type === 'childList') {
-                    mutation.addedNodes.forEach((node) => {
-                        if (node.nodeType === Node.ELEMENT_NODE) {
-                            this.handleAddedNode(node, onOrderDetected);
-                        }
-                    });
+        // Batch mutations for better performance
+        let pendingMutations = [];
+        let mutationTimeout = null;
 
-                    mutation.removedNodes.forEach((node) => {
-                        if (node.nodeType === Node.ELEMENT_NODE) {
-                            this.handleRemovedNode(node, onOrderRemoved);
-                        }
-                    });
-                }
-            });
+        this.observer = new MutationObserver((mutations) => {
+            // Add mutations to pending queue
+            pendingMutations.push(...mutations);
+
+            // Debounce processing to avoid excessive calls
+            if (mutationTimeout) {
+                clearTimeout(mutationTimeout);
+            }
+
+            mutationTimeout = setTimeout(() => {
+                this.processMutations(pendingMutations, onOrderDetected, onOrderRemoved);
+                pendingMutations = [];
+            }, 50); // 50ms debounce
         });
 
         this.observer.observe(document.body, {
             childList: true,
-            subtree: true
+            subtree: true,
+            attributes: false, // Don't watch attribute changes
+            characterData: false // Don't watch text changes
         });
 
         this.isObserving = true;
-        console.log('DOMManipulator: Started observing DOM changes');
+    }
+
+    /**
+     * Process batched mutations for better performance
+     * @param {Array} mutations - Array of mutation records
+     * @param {Function} onOrderDetected - Callback for detected orders
+     * @param {Function} onOrderRemoved - Callback for removed orders
+     */
+    processMutations(mutations, onOrderDetected, onOrderRemoved) {
+        const addedNodes = new Set();
+        const removedNodes = new Set();
+
+        // Collect all nodes from mutations
+        mutations.forEach((mutation) => {
+            if (mutation.type === 'childList') {
+                mutation.addedNodes.forEach((node) => {
+                    if (node.nodeType === Node.ELEMENT_NODE) {
+                        addedNodes.add(node);
+                    }
+                });
+
+                mutation.removedNodes.forEach((node) => {
+                    if (node.nodeType === Node.ELEMENT_NODE) {
+                        removedNodes.add(node);
+                    }
+                });
+            }
+        });
+
+        // Process added nodes
+        addedNodes.forEach((node) => {
+            this.handleAddedNode(node, onOrderDetected);
+        });
+
+        // Process removed nodes
+        removedNodes.forEach((node) => {
+            this.handleRemovedNode(node, onOrderRemoved);
+        });
     }
 
     /**
@@ -2322,6 +2355,9 @@ export class DOMManipulator {
                             console.warn(`⚠️ Failed to inject buttons for order ${orderId}, skipping restoration`);
                             continue;
                         }
+                        console.log(`✅ Buttons successfully injected for order ${orderId} during restoration`);
+                    } else {
+                        console.log(`ℹ️ Buttons already exist for order ${orderId} during restoration`);
                     }
 
                     // Mark the order card as processed to prevent duplicate processing
@@ -2338,13 +2374,8 @@ export class DOMManipulator {
                         console.warn(`⚠️ Could not retrieve tags for order ${orderId}:`, error);
                     }
 
-                    // Set username for this order
-                    if (username) {
-                        this.setUsernameForOrder(orderId, username);
-                    }
-
-                    // Hide the order details - pass the order card directly
-                    await this.performHideOrderDetailsWithCard(orderId, orderCard, tagData);
+                    // Hide the order details - pass the order card directly and include username
+                    await this.performHideOrderDetailsWithCard(orderId, orderCard, tagData, username);
 
                     restoredCount++;
                     console.log(`✅ Successfully restored hidden order ${orderId}`);
