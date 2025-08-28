@@ -80,20 +80,19 @@ describe('DOMManipulator', () => {
                 className: '',
                 style: {},
                 setAttribute: jest.fn(),
-                getAttribute: jest.fn().mockReturnValue('mock-value'),
+                getAttribute: jest.fn(),
                 addEventListener: jest.fn(),
                 removeEventListener: jest.fn(),
                 appendChild: jest.fn(),
                 remove: jest.fn(),
                 querySelector: jest.fn(),
-                querySelectorAll: jest.fn().mockReturnValue([]),
+                querySelectorAll: jest.fn(),
                 matches: jest.fn(),
                 outerHTML: `<${tag}>mock</${tag}>`,
                 textContent: '',
                 attributes: {},
                 children: [],
-                nodeType: 1,
-                contains: jest.fn().mockReturnValue(true)
+                nodeType: 1
             };
             return element;
         });
@@ -128,16 +127,8 @@ describe('DOMManipulator', () => {
             attributes: {},
             children: [],
             nodeType: 1,
-            querySelectorAll: jest.fn().mockReturnValue([]),
-            contains: jest.fn().mockReturnValue(true),
-            getAttribute: jest.fn().mockReturnValue('123-4567890-1234567'),
-            createTreeWalker: jest.fn()
+            querySelectorAll: jest.fn().mockReturnValue([])
         };
-
-        // Mock document.createTreeWalker
-        document.createTreeWalker = jest.fn().mockReturnValue({
-            nextNode: jest.fn().mockReturnValue(null)
-        });
     });
 
     describe('Constructor and Initialization', () => {
@@ -228,19 +219,15 @@ describe('DOMManipulator', () => {
             const orderId = '123-4567890-1234567';
             const buttons = domManipulator.createButtons(orderId);
 
-            // Check that all expected event types were added
-            const eventTypes = buttons.hideDetailsBtn.addEventListener.mock.calls.map(call => call[0]);
-            expect(eventTypes).toContain('click');
+            expect(buttons.hideDetailsBtn.addEventListener).toHaveBeenCalledWith('click', expect.any(Function));
         });
 
         test('should add hover effects to buttons', () => {
             const orderId = '123-4567890-1234567';
             const buttons = domManipulator.createButtons(orderId);
 
-            // Check that all expected event types were added
-            const eventTypes = buttons.hideDetailsBtn.addEventListener.mock.calls.map(call => call[0]);
-            expect(eventTypes).toContain('mouseenter');
-            expect(eventTypes).toContain('mouseleave');
+            expect(buttons.hideDetailsBtn.addEventListener).toHaveBeenCalledWith('mouseenter', expect.any(Function));
+            expect(buttons.hideDetailsBtn.addEventListener).toHaveBeenCalledWith('mouseleave', expect.any(Function));
         });
     });
 
@@ -436,8 +423,6 @@ describe('DOMManipulator', () => {
         test('should reject element outside order card', () => {
             const orderCard = document.createElement('div');
             const outsideElement = document.createElement('span');
-            // Mock contains to return false for outside element
-            orderCard.contains.mockReturnValueOnce(false);
 
             const result = domManipulator.isElementWithinOrderCard(outsideElement, orderCard);
             expect(result).toBe(false);
@@ -450,94 +435,73 @@ describe('DOMManipulator', () => {
             const mockElement = {
                 classList: { add: jest.fn() },
                 style: {},
-                setAttribute: jest.fn(),
-                outerHTML: '<div>test element</div>',
-                getAttribute: jest.fn().mockReturnValue('test-order-123'),
-                querySelector: jest.fn().mockReturnValue(null)
+                setAttribute: jest.fn()
             };
 
-            const result = domManipulator.hideAdditionalOrderElements(mockElement);
-            expect(result).toBeDefined();
-            expect(Array.isArray(result)).toBe(true);
+            const result = domManipulator.hideAdditionalOrderElements(orderId, [mockElement]);
+            expect(result).toBe(true);
+            expect(mockElement.classList.add).toHaveBeenCalledWith('archivaz-hidden-details');
         });
     });
 
     describe('Delivery Status Tagging', () => {
         test('should add tags to delivery status', () => {
+            const orderId = 'test-order-123';
             const mockElement = {
                 classList: { add: jest.fn() },
-                textContent: 'Delivered',
-                querySelector: jest.fn().mockReturnValue(null)
+                textContent: 'Delivered'
             };
 
-            domManipulator.addTagsToDeliveryStatus(mockElement, ['tag1', 'tag2'], 'testuser');
-            expect(mockElement.querySelector).toHaveBeenCalled();
+            domManipulator.addTagsToDeliveryStatus(orderId, mockElement);
+            expect(mockElement.classList.add).toHaveBeenCalledWith('archivaz-delivery-tagged');
         });
 
         test('should remove tags from delivery status', () => {
+            const orderId = 'test-order-123';
             const mockElement = {
-                querySelector: jest.fn().mockReturnValue({
-                    remove: jest.fn()
-                })
+                classList: { remove: jest.fn() }
             };
 
-            domManipulator.removeTagsFromDeliveryStatus(mockElement);
-            expect(mockElement.querySelector).toHaveBeenCalledWith('.archivaz-delivery-status-tags');
+            domManipulator.removeTagsFromDeliveryStatus(orderId, mockElement);
+            expect(mockElement.classList.remove).toHaveBeenCalledWith('archivaz-delivery-tagged');
         });
     });
 
     describe('Text Element Hiding', () => {
         test('should find and hide text elements', () => {
+            const orderId = 'test-order-123';
             const mockContainer = {
                 querySelectorAll: jest.fn().mockReturnValue([
-                    {
-                        classList: { add: jest.fn() },
-                        style: {},
-                        outerHTML: '<div>test text</div>',
-                        getAttribute: jest.fn().mockReturnValue('test-order-123')
-                    }
-                ]),
-                outerHTML: '<div>container</div>',
-                getAttribute: jest.fn().mockReturnValue('test-order-123'),
-                querySelector: jest.fn().mockReturnValue(null),
-                className: 'test-container',
-                id: 'test-id'
+                    { classList: { add: jest.fn() }, style: {} }
+                ])
             };
 
-            // This method doesn't return anything, it just processes the container
-            expect(() => domManipulator.findAndHideTextElements(mockContainer, ['test text'], [])).not.toThrow();
+            const result = domManipulator.findAndHideTextElements(orderId, mockContainer);
+            expect(result).toBe(true);
         });
     });
 
     describe('Action Button Hiding', () => {
         test('should find and hide action buttons', () => {
-            // Mock the method to avoid complex DOM interactions in tests
-            const originalMethod = domManipulator.findAndHideActionButtons;
-            domManipulator.findAndHideActionButtons = jest.fn();
+            const orderId = 'test-order-123';
+            const mockContainer = {
+                querySelectorAll: jest.fn().mockReturnValue([
+                    { classList: { add: jest.fn() }, style: {} }
+                ])
+            };
 
-            const mockContainer = { className: 'test-container' };
-            const hiddenElements = [];
-
-            domManipulator.findAndHideActionButtons(mockContainer, hiddenElements);
-
-            expect(domManipulator.findAndHideActionButtons).toHaveBeenCalledWith(mockContainer, hiddenElements);
-
-            // Restore original method
-            domManipulator.findAndHideActionButtons = originalMethod;
+            const result = domManipulator.findAndHideActionButtons(orderId, mockContainer);
+            expect(result).toBe(true);
         });
 
         test('should handle container without action buttons', () => {
+            const orderId = 'test-order-123';
             const mockContainer = {
-                querySelectorAll: jest.fn().mockReturnValue([]),
-                outerHTML: '<div>container</div>',
-                getAttribute: jest.fn().mockReturnValue('test-order-123'),
-                querySelector: jest.fn().mockReturnValue(null),
-                className: 'test-container',
-                id: 'test-id'
+                querySelectorAll: jest.fn().mockReturnValue([])
             };
 
-            // This method doesn't return anything, it just processes the container
-            expect(() => domManipulator.findAndHideActionButtons(mockContainer, [])).not.toThrow();
+            const result = domManipulator.findAndHideActionButtons(orderId, mockContainer);
+            expect(result).toBe(true);
         });
     });
 
@@ -576,8 +540,7 @@ describe('DOMManipulator', () => {
 
             domManipulator.showOrderDetails(orderId, mockButton);
 
-            // Should not throw error
-            expect(() => domManipulator.showOrderDetails(orderId, mockButton)).not.toThrow();
+            expect(mockOrderCard.classList.remove).toHaveBeenCalledWith('archivaz-details-hidden');
         });
 
         test('should handle missing button info', () => {
@@ -594,64 +557,24 @@ describe('DOMManipulator', () => {
     describe('HTML Escaping', () => {
         test('should escape HTML characters', () => {
             const text = '<script>alert("xss")</script>';
-            // Mock document.createElement to return a proper element for this test
-            const originalCreateElement = document.createElement;
-            document.createElement = jest.fn(() => ({
-                textContent: text,
-                innerHTML: '&lt;script&gt;alert(&quot;xss&quot;)&lt;/script&gt;'
-            }));
-
             const result = domManipulator.escapeHtml(text);
-            expect(result).toBeDefined();
-
-            // Restore original mock
-            document.createElement = originalCreateElement;
+            expect(result).toBe('&lt;script&gt;alert(&quot;xss&quot;)&lt;/script&gt;');
         });
 
         test('should handle text without HTML characters', () => {
             const text = 'Plain text';
-            // Mock document.createElement to return a proper element for this test
-            const originalCreateElement = document.createElement;
-            document.createElement = jest.fn(() => ({
-                textContent: text,
-                innerHTML: 'Plain text'
-            }));
-
             const result = domManipulator.escapeHtml(text);
-            expect(result).toBeDefined();
-
-            // Restore original mock
-            document.createElement = originalCreateElement;
+            expect(result).toBe('Plain text');
         });
 
         test('should handle empty string', () => {
-            // Mock document.createElement to return a proper element for this test
-            const originalCreateElement = document.createElement;
-            document.createElement = jest.fn(() => ({
-                textContent: '',
-                innerHTML: ''
-            }));
-
             const result = domManipulator.escapeHtml('');
-            expect(result).toBeDefined();
-
-            // Restore original mock
-            document.createElement = originalCreateElement;
+            expect(result).toBe('');
         });
 
         test('should handle null and undefined', () => {
-            // Mock document.createElement to return a proper element for this test
-            const originalCreateElement = document.createElement;
-            document.createElement = jest.fn(() => ({
-                textContent: '',
-                innerHTML: ''
-            }));
-
-            expect(domManipulator.escapeHtml(null)).toBeDefined();
-            expect(domManipulator.escapeHtml(undefined)).toBeDefined();
-
-            // Restore original mock
-            document.createElement = originalCreateElement;
+            expect(domManipulator.escapeHtml(null)).toBe('');
+            expect(domManipulator.escapeHtml(undefined)).toBe('');
         });
     });
 
@@ -666,8 +589,9 @@ describe('DOMManipulator', () => {
             mockOrderCard.querySelector.mockReturnValue(mockContainer);
 
             const result = domManipulator.injectButtons(mockOrderCard, orderId);
-
-            expect(result).toBeDefined();
+            
+            expect(result).toBe(true);
+            expect(domManipulator.injectedButtons.has(orderId)).toBe(true);
         });
 
         test('should not inject buttons if already injected', () => {
@@ -687,63 +611,57 @@ describe('DOMManipulator', () => {
             const mockButton = { remove: jest.fn() };
 
             domManipulator.injectedButtons.set(orderId, {
-                hideDetailsLi: mockButton
+                hideDetailsBtn: mockButton
             });
 
             const result = domManipulator.removeButtons(orderId);
-            expect(result).toBeDefined();
+            expect(result).toBe(true);
             expect(mockButton.remove).toHaveBeenCalled();
         });
 
         test('should handle removal when no buttons exist', () => {
             const orderId = 'test-order-123';
             const result = domManipulator.removeButtons(orderId);
-            expect(result).toBeDefined();
+            expect(result).toBe(false);
         });
     });
 
     describe('DOM Observation Processing', () => {
         test('should process mutations correctly', () => {
-            const mockNode = document.createElement('div');
-            mockNode.querySelectorAll = jest.fn().mockReturnValue([]);
-
             const mockMutations = [
-                { type: 'childList', addedNodes: [mockNode], removedNodes: [] }
+                { type: 'childList', addedNodes: [document.createElement('div')] }
             ];
 
-            // Set up the callback that the method actually uses
-            domManipulator.setCallbacks(jest.fn(), jest.fn());
+            const mockCallback = jest.fn();
+            domManipulator.onOrderDetected = mockCallback;
 
             domManipulator.processMutations(mockMutations);
 
-            // The method processes mutations but doesn't call external callbacks
-            expect(mockMutations).toBeDefined();
+            expect(mockCallback).toHaveBeenCalled();
         });
 
         test('should handle added nodes', () => {
             const mockNode = document.createElement('div');
             mockNode.querySelectorAll = jest.fn().mockReturnValue([]);
 
-            // Set up the callback that the method actually uses
-            domManipulator.setCallbacks(jest.fn(), jest.fn());
+            const mockCallback = jest.fn();
+            domManipulator.onOrderDetected = mockCallback;
 
             domManipulator.handleAddedNode(mockNode);
 
-            // The method processes the node but doesn't call external callbacks
-            expect(mockNode).toBeDefined();
+            expect(mockCallback).toHaveBeenCalled();
         });
 
         test('should handle removed nodes', () => {
             const mockNode = document.createElement('div');
             mockNode.querySelectorAll = jest.fn().mockReturnValue([]);
 
-            // Set up the callback that the method actually uses
-            domManipulator.setCallbacks(jest.fn(), jest.fn());
+            const mockCallback = jest.fn();
+            domManipulator.onOrderRemoved = mockCallback;
 
             domManipulator.handleRemovedNode(mockNode);
 
-            // The method processes the node but doesn't call external callbacks
-            expect(mockNode).toBeDefined();
+            expect(mockCallback).toHaveBeenCalled();
         });
     });
 
@@ -751,12 +669,7 @@ describe('DOMManipulator', () => {
         test('should extract order ID from element', () => {
             const mockElement = {
                 outerHTML: '<div data-order-id="123-4567890-1234567">Order</div>',
-                querySelector: jest.fn().mockReturnValue({
-                    textContent: '123-4567890-1234567',
-                    getAttribute: jest.fn().mockReturnValue('123-4567890-1234567')
-                }),
-                getAttribute: jest.fn().mockReturnValue('123-4567890-1234567'),
-                textContent: 'Order #123-4567890-1234567'
+                querySelector: jest.fn().mockReturnValue({ textContent: '123-4567890-1234567' })
             };
 
             const result = domManipulator.getOrderIdFromElement(mockElement);
@@ -764,8 +677,8 @@ describe('DOMManipulator', () => {
         });
 
         test('should handle null element', () => {
-            // Should throw error when trying to access outerHTML on null
-            expect(() => domManipulator.getOrderIdFromElement(null)).toThrow();
+            const result = domManipulator.getOrderIdFromElement(null);
+            expect(result).toBeNull();
         });
     });
 
@@ -785,12 +698,11 @@ describe('DOMManipulator', () => {
 
         test('should reject invalid order number formats', () => {
             const invalidOrderIds = [
-                'Arriving today',
-                'January 15, 2024',
-                'Mon',
-                '12/25/2024',
-                '12/25',
-                'Only letters and spaces'
+                '1234567890',
+                '123-4567890',
+                '123-4567890-123456',
+                'abc-defghij-klmnopq',
+                '123-4567890-12345678'
             ];
 
             invalidOrderIds.forEach(orderId => {
@@ -814,44 +726,35 @@ describe('DOMManipulator', () => {
         test('should return null for non-existent username', () => {
             const orderId = 'non-existent-order';
             const result = domManipulator.getUsernameForOrder(orderId);
-            expect(result).toBe('Unknown User');
+            expect(result).toBeNull();
         });
     });
 
     describe('Tagging Dialog Management', () => {
         test('should handle tagging dialog cancelled', () => {
             const orderId = 'test-order-123';
-
-            // Mock console.log since the method uses console.log, not console.warn
-            const mockLog = jest.spyOn(console, 'log').mockImplementation(() => { });
-
+            
+            // Mock console.warn
+            const mockWarn = jest.spyOn(console, 'warn').mockImplementation(() => { });
+            
             domManipulator.handleTaggingDialogCancelled(orderId);
-
-            // Check that the expected message was logged (it might be logged multiple times)
-            const calls = mockLog.mock.calls.map(call => call[0]);
-            expect(calls).toContain(`🚫 Tagging dialog cancelled for order ${orderId}`);
-            mockLog.mockRestore();
+            
+            expect(mockWarn).toHaveBeenCalledWith(`🚫 Tagging dialog cancelled for order ${orderId}`);
+            mockWarn.mockRestore();
         });
 
         test('should show dialog already open message', () => {
             const orderId = 'test-order-123';
-
+            
             // Mock console.warn
             const mockWarn = jest.spyOn(console, 'warn').mockImplementation(() => { });
-
-            // Mock document.body.appendChild to avoid DOM manipulation errors
-            const originalAppendChild = document.body.appendChild;
-            document.body.appendChild = jest.fn();
-
+            
             domManipulator.showDialogAlreadyOpenMessage(orderId);
-
-            // Should not throw error
-            expect(() => domManipulator.showDialogAlreadyOpenMessage(orderId)).not.toThrow();
-
-            // Restore mocks
+            
+            expect(mockWarn).toHaveBeenCalledWith(`⚠️ Tagging dialog already open for order ${orderId}`);
             mockWarn.mockRestore();
-            document.body.appendChild = originalAppendChild;
         });
+    });
     });
 
     describe('Button Removal', () => {
@@ -926,9 +829,7 @@ describe('DOMManipulator', () => {
             expect(domManipulator.observer).toBeDefined();
             expect(mockObserver.observe).toHaveBeenCalledWith(document.body, {
                 childList: true,
-                subtree: true,
-                attributes: false,
-                characterData: false
+                subtree: true
             });
         });
 
@@ -1038,8 +939,6 @@ describe('DOMManipulator', () => {
         test('should reject element outside order card', () => {
             const orderCard = document.createElement('div');
             const outsideElement = document.createElement('span');
-            // Mock contains to return false for outside element
-            orderCard.contains.mockReturnValueOnce(false);
 
             const result = domManipulator.isElementWithinOrderCard(outsideElement, orderCard);
             expect(result).toBe(false);
@@ -1047,8 +946,6 @@ describe('DOMManipulator', () => {
 
         test('should handle null elements gracefully', () => {
             const orderCard = document.createElement('div');
-            // Mock contains to handle null element
-            orderCard.contains.mockReturnValueOnce(false);
             const result = domManipulator.isElementWithinOrderCard(null, orderCard);
             expect(result).toBe(false);
         });
@@ -1064,10 +961,9 @@ describe('DOMManipulator', () => {
             // Mock querySelectorAll to return elements to hide
             orderCard.querySelectorAll = jest.fn().mockReturnValue([elementToHide]);
 
-            const result = domManipulator.hideAdditionalOrderElements(orderCard);
+            domManipulator.hideAdditionalOrderElements(orderCard);
 
-            expect(result).toBeDefined();
-            expect(Array.isArray(result)).toBe(true);
+            expect(elementToHide.style.display).toBe('none');
         });
 
         test('should handle order card without additional elements', () => {
@@ -1087,8 +983,9 @@ describe('DOMManipulator', () => {
 
             domManipulator.addTagsToDeliveryStatus(leftColumn, tags, username);
 
-            // Check that the method was called
-            expect(leftColumn.querySelector).toHaveBeenCalled();
+            // Check that tags were added
+            const tagElements = leftColumn.querySelectorAll('.archivaz-tag');
+            expect(tagElements.length).toBeGreaterThan(0);
         });
 
         test('should add tags without username', () => {
@@ -1097,8 +994,9 @@ describe('DOMManipulator', () => {
 
             domManipulator.addTagsToDeliveryStatus(leftColumn, tags);
 
-            // Check that the method was called
-            expect(leftColumn.querySelector).toHaveBeenCalled();
+            // Check that tags were added
+            const tagElements = leftColumn.querySelectorAll('.archivaz-tag');
+            expect(tagElements.length).toBeGreaterThan(0);
         });
 
         test('should handle empty tags array', () => {
@@ -1144,8 +1042,10 @@ describe('DOMManipulator', () => {
             const hiddenElements = [];
             const textToFind = 'Product details';
 
-            // Should not throw error
-            expect(() => domManipulator.findAndHideTextElements(container, textToFind, hiddenElements)).not.toThrow();
+            domManipulator.findAndHideTextElements(container, textToFind, hiddenElements);
+
+            expect(elementToHide.style.display).toBe('none');
+            expect(hiddenElements.length).toBeGreaterThan(0);
         });
 
         test('should handle container without matching text', () => {
@@ -1166,8 +1066,8 @@ describe('DOMManipulator', () => {
             const hiddenElements = [];
             const textToFind = 'Product details';
 
-            // Should throw error when trying to access outerHTML on null
-            expect(() => domManipulator.findAndHideTextElements(null, textToFind, hiddenElements)).toThrow();
+            // Should not throw error
+            expect(() => domManipulator.findAndHideTextElements(null, textToFind, hiddenElements)).not.toThrow();
         });
     });
 
@@ -1180,8 +1080,10 @@ describe('DOMManipulator', () => {
 
             const hiddenElements = [];
 
-            // Should not throw error
-            expect(() => domManipulator.findAndHideActionButtons(container, hiddenElements)).not.toThrow();
+            domManipulator.findAndHideActionButtons(container, hiddenElements);
+
+            expect(buttonToHide.style.display).toBe('none');
+            expect(hiddenElements.length).toBeGreaterThan(0);
         });
 
         test('should handle container without action buttons', () => {
@@ -1231,8 +1133,7 @@ describe('DOMManipulator', () => {
 
             domManipulator.showOrderDetails(orderId, button);
 
-            // Should not throw error
-            expect(() => domManipulator.showOrderDetails(orderId, button)).not.toThrow();
+            expect(mockOrderCard.classList.remove).toHaveBeenCalledWith('archivaz-details-hidden');
         });
 
         test('should handle missing button info', () => {
@@ -1250,74 +1151,36 @@ describe('DOMManipulator', () => {
     describe('HTML Escaping', () => {
         test('should escape HTML characters', () => {
             const text = '<script>alert("xss")</script>';
-            // Mock document.createElement to return a proper element for this test
-            const originalCreateElement = document.createElement;
-            document.createElement = jest.fn(() => ({
-                textContent: text,
-                innerHTML: '&lt;script&gt;alert(&quot;xss&quot;)&lt;/script&gt;'
-            }));
-
             const result = domManipulator.escapeHtml(text);
-            expect(result).toBeDefined();
 
-            // Restore original mock
-            document.createElement = originalCreateElement;
+            expect(result).toBe('&lt;script&gt;alert(&quot;xss&quot;)&lt;/script&gt;');
         });
 
         test('should handle text without HTML characters', () => {
             const text = 'Plain text';
-            // Mock document.createElement to return a proper element for this test
-            const originalCreateElement = document.createElement;
-            document.createElement = jest.fn(() => ({
-                textContent: text,
-                innerHTML: 'Plain text'
-            }));
-
             const result = domManipulator.escapeHtml(text);
-            expect(result).toBeDefined();
 
-            // Restore original mock
-            document.createElement = originalCreateElement;
+            expect(result).toBe('Plain text');
         });
 
         test('should handle empty string', () => {
-            // Mock document.createElement to return a proper element for this test
-            const originalCreateElement = document.createElement;
-            document.createElement = jest.fn(() => ({
-                textContent: '',
-                innerHTML: ''
-            }));
-
             const result = domManipulator.escapeHtml('');
-            expect(result).toBeDefined();
-
-            // Restore original mock
-            document.createElement = originalCreateElement;
+            expect(result).toBe('');
         });
 
         test('should handle null and undefined', () => {
-            // Mock document.createElement to return a proper element for this test
-            const originalCreateElement = document.createElement;
-            document.createElement = jest.fn(() => ({
-                textContent: '',
-                innerHTML: ''
-            }));
-
-            expect(domManipulator.escapeHtml(null)).toBeDefined();
-            expect(domManipulator.escapeHtml(undefined)).toBeDefined();
-
-            // Restore original mock
-            document.createElement = originalCreateElement;
+            expect(domManipulator.escapeHtml(null)).toBe('');
+            expect(domManipulator.escapeHtml(undefined)).toBe('');
         });
     });
 
     describe('Order State Queries', () => {
         test('should check if details are hidden', () => {
             const orderId = 'test-order-123';
-
+            
             // Initially not hidden
             expect(domManipulator.areDetailsHidden(orderId)).toBe(false);
-
+            
             // Mark as hidden
             domManipulator.hiddenOrders.add(`${orderId}-details`);
             expect(domManipulator.areDetailsHidden(orderId)).toBe(true);
@@ -1326,11 +1189,11 @@ describe('DOMManipulator', () => {
         test('should get all hidden orders', () => {
             // Clear existing hidden orders
             domManipulator.hiddenOrders.clear();
-
+            
             // Add some hidden orders
             domManipulator.hiddenOrders.add('order1-details');
             domManipulator.hiddenOrders.add('order2-details');
-
+            
             const result = domManipulator.getHiddenOrders();
             expect(result).toContain('order1-details');
             expect(result).toContain('order2-details');
@@ -1341,24 +1204,25 @@ describe('DOMManipulator', () => {
         test('should inject buttons successfully', () => {
             const orderId = 'test-order-123';
             const orderCard = document.createElement('div');
-
+            
             // Mock order card structure
             orderCard.querySelector = jest.fn().mockReturnValue(document.createElement('div'));
-
+            
             const result = domManipulator.injectButtons(orderCard, orderId);
-
-            expect(result).toBeDefined();
+            
+            expect(result).toBe(true);
+            expect(domManipulator.injectedButtons.has(orderId)).toBe(true);
         });
 
         test('should not inject buttons if already injected', () => {
             const orderId = 'test-order-123';
             const orderCard = document.createElement('div');
-
+            
             // Mark as already injected
             domManipulator.injectedButtons.set(orderId, {});
-
+            
             const result = domManipulator.injectButtons(orderCard, orderId);
-
+            
             expect(result).toBe(true); // Returns true for already injected
         });
 
@@ -1369,9 +1233,9 @@ describe('DOMManipulator', () => {
                     throw new Error('Mock error');
                 })
             };
-
+            
             const result = domManipulator.injectButtons(orderCard, orderId);
-
+            
             expect(result).toBe(false);
         });
     });
@@ -1380,15 +1244,15 @@ describe('DOMManipulator', () => {
         test('should remove buttons successfully', () => {
             const orderId = 'test-order-123';
             const mockLi = { remove: jest.fn() };
-
+            
             domManipulator.injectedButtons.set(orderId, {
                 orderCard: mockOrderCard,
                 hideDetailsLi: mockLi,
                 hideOrderLi: mockLi
             });
-
+            
             const result = domManipulator.removeButtons(orderId);
-
+            
             expect(result).toBe(true);
             expect(domManipulator.injectedButtons.has(orderId)).toBe(false);
             expect(mockLi.remove).toHaveBeenCalled();
@@ -1396,10 +1260,10 @@ describe('DOMManipulator', () => {
 
         test('should handle removal when no buttons exist', () => {
             const orderId = 'test-order-123';
-
+            
             const result = domManipulator.removeButtons(orderId);
-
-            expect(result).toBeDefined();
+            
+            expect(result).toBe(false);
         });
     });
 
@@ -1412,21 +1276,20 @@ describe('DOMManipulator', () => {
                     removedNodes: []
                 }
             ];
-
+            
             const onOrderDetected = jest.fn();
             const onOrderRemoved = jest.fn();
-
+            
             domManipulator.processMutations(mutations, onOrderDetected, onOrderRemoved);
-
-            // Should not throw error
-            expect(() => domManipulator.processMutations(mutations, onOrderDetected, onOrderRemoved)).not.toThrow();
+            
+            expect(onOrderDetected).toHaveBeenCalled();
         });
 
         test('should handle empty mutations array', () => {
             const mutations = [];
             const onOrderDetected = jest.fn();
             const onOrderRemoved = jest.fn();
-
+            
             // Should not throw error
             expect(() => domManipulator.processMutations(mutations, onOrderDetected, onOrderRemoved)).not.toThrow();
         });
@@ -1434,9 +1297,9 @@ describe('DOMManipulator', () => {
         test('should handle added nodes', () => {
             const node = document.createElement('div');
             const onOrderDetected = jest.fn();
-
+            
             domManipulator.handleAddedNode(node, onOrderDetected);
-
+            
             // Should not throw error
             expect(() => domManipulator.handleAddedNode(node, onOrderDetected)).not.toThrow();
         });
@@ -1444,9 +1307,9 @@ describe('DOMManipulator', () => {
         test('should handle removed nodes', () => {
             const node = document.createElement('div');
             const onOrderRemoved = jest.fn();
-
+            
             domManipulator.handleRemovedNode(node, onOrderRemoved);
-
+            
             // Should not throw error
             expect(() => domManipulator.handleRemovedNode(node, onOrderRemoved)).not.toThrow();
         });
@@ -1456,25 +1319,24 @@ describe('DOMManipulator', () => {
         test('should extract order ID from element', () => {
             const orderElement = document.createElement('div');
             orderElement.textContent = 'Order #123-4567890-1234567';
-            orderElement.getAttribute = jest.fn().mockReturnValue('123-4567890-1234567');
-
+            
             const result = domManipulator.getOrderIdFromElement(orderElement);
-
+            
             expect(result).toBe('123-4567890-1234567');
         });
 
         test('should handle element without order ID', () => {
             const orderElement = document.createElement('div');
             orderElement.textContent = 'No order ID here';
-
+            
             const result = domManipulator.getOrderIdFromElement(orderElement);
-
+            
             expect(result).toBeNull();
         });
 
         test('should handle null element', () => {
-            // Should throw error when trying to access outerHTML on null
-            expect(() => domManipulator.getOrderIdFromElement(null)).toThrow();
+            const result = domManipulator.getOrderIdFromElement(null);
+            expect(result).toBeNull();
         });
     });
 
@@ -1487,14 +1349,14 @@ describe('DOMManipulator', () => {
 
         test('should reject invalid order number formats', () => {
             const invalidOrderIds = [
-                'Arriving today',
-                'January 15, 2024',
-                'Mon',
-                '12/25/2024',
-                '12/25',
-                'Only letters and spaces'
+                '1234567890',           // Missing hyphens
+                '123-4567890',          // Missing second part
+                '123-4567890-',         // Missing last part
+                'abc-defghij-klmnopq',  // Non-numeric
+                '123-4567890-123456',   // Wrong length
+                '123-4567890-12345678'  // Wrong length
             ];
-
+            
             invalidOrderIds.forEach(orderId => {
                 const result = domManipulator.isValidOrderId(orderId);
                 expect(result).toBe(false);
@@ -1512,9 +1374,9 @@ describe('DOMManipulator', () => {
         test('should set username for order', () => {
             const orderId = 'test-order-123';
             const username = 'testuser';
-
+            
             domManipulator.setUsernameForOrder(orderId, username);
-
+            
             const result = domManipulator.getUsernameForOrder(orderId);
             expect(result).toBe(username);
         });
@@ -1522,18 +1384,18 @@ describe('DOMManipulator', () => {
         test('should get username for order', () => {
             const orderId = 'test-order-123';
             const username = 'testuser';
-
+            
             domManipulator.setUsernameForOrder(orderId, username);
             const result = domManipulator.getUsernameForOrder(orderId);
-
+            
             expect(result).toBe(username);
         });
 
         test('should return null for non-existent username', () => {
             const orderId = 'non-existent-order';
             const result = domManipulator.getUsernameForOrder(orderId);
-
-            expect(result).toBe('Unknown User');
+            
+            expect(result).toBeNull();
         });
     });
 
@@ -1542,23 +1404,23 @@ describe('DOMManipulator', () => {
             const orderId = 'test-order-123';
             const orderCard = document.createElement('div');
             orderCard.textContent = `Order ${orderId} details`;
-
+            
             // Mock document.querySelectorAll to return the order card
             document.querySelectorAll = jest.fn().mockReturnValue([orderCard]);
-
+            
             const result = domManipulator.findOrderCardById(orderId);
-
+            
             expect(result).toBe(orderCard);
         });
 
         test('should return null when order card not found', () => {
             const orderId = 'non-existent-order';
-
+            
             // Mock document.querySelectorAll to return empty array
             document.querySelectorAll = jest.fn().mockReturnValue([]);
-
+            
             const result = domManipulator.findOrderCardById(orderId);
-
+            
             expect(result).toBeNull();
         });
     });
@@ -1566,36 +1428,33 @@ describe('DOMManipulator', () => {
     describe('Tagging Dialog Management', () => {
         test('should handle tagging dialog cancelled', () => {
             const orderId = 'test-order-123';
-
+            
             // Mock console.log
             const mockLog = jest.spyOn(console, 'log').mockImplementation(() => { });
-
+            
             domManipulator.handleTaggingDialogCancelled(orderId);
-
-            // Check that the expected message was logged (it might be logged multiple times)
-            const calls = mockLog.mock.calls.map(call => call[0]);
-            expect(calls).toContain(`🚫 Tagging dialog cancelled for order ${orderId}`);
+            
+            expect(mockLog).toHaveBeenCalledWith(`Tagging dialog cancelled for order ${orderId}`);
             mockLog.mockRestore();
         });
 
         test('should show dialog already open message', () => {
             const orderId = 'test-order-123';
-
-            // Mock document.body.appendChild to avoid DOM errors
-            const mockAppendChild = jest.spyOn(document.body, 'appendChild').mockImplementation(() => { });
-
+            
+            // Mock console.warn
+            const mockWarn = jest.spyOn(console, 'warn').mockImplementation(() => { });
+            
             domManipulator.showDialogAlreadyOpenMessage(orderId);
-
-            // Should not throw error
-            expect(() => domManipulator.showDialogAlreadyOpenMessage(orderId)).not.toThrow();
-            mockAppendChild.mockRestore();
+            
+            expect(mockWarn).toHaveBeenCalledWith(`Tagging dialog already open for order ${orderId}`);
+            mockWarn.mockRestore();
         });
     });
 
     describe('Button Placement Strategy', () => {
         test('should return button placement strategy', () => {
             const strategy = domManipulator.getButtonPlacementStrategy();
-
+            
             expect(strategy).toHaveProperty('orderCard');
             expect(strategy).toHaveProperty('orderHeader');
             expect(strategy).toHaveProperty('orderActions');
@@ -1607,35 +1466,35 @@ describe('DOMManipulator', () => {
     describe('Format Specific Strategy', () => {
         test('should return strategy for your-orders format', () => {
             const strategy = domManipulator.getFormatSpecificStrategy('your-orders');
-
+            
             expect(strategy.container).toBe('.yohtmlc-shipment-level-connections');
             expect(strategy.fallback).toBe('.order-actions, .a-box-group');
         });
 
         test('should return strategy for css format', () => {
             const strategy = domManipulator.getFormatSpecificStrategy('css');
-
+            
             expect(strategy.container).toBe('.order-actions, .a-box-group');
             expect(strategy.fallback).toBe('.a-box-group');
         });
 
         test('should return strategy for your-account format', () => {
             const strategy = domManipulator.getFormatSpecificStrategy('your-account');
-
+            
             expect(strategy.container).toBe('.delivery-box');
             expect(strategy.fallback).toBe('.a-unordered-list, .a-vertical');
         });
 
         test('should return default strategy for unknown format', () => {
             const strategy = domManipulator.getFormatSpecificStrategy('unknown');
-
+            
             expect(strategy.container).toBe('.order-actions, .a-box-group, .a-box-group');
             expect(strategy.fallback).toBeNull();
         });
 
         test('should return default strategy for undefined format', () => {
             const strategy = domManipulator.getFormatSpecificStrategy();
-
+            
             expect(strategy.container).toBe('.order-actions, .a-box-group, .a-box-group');
             expect(strategy.fallback).toBeNull();
         });

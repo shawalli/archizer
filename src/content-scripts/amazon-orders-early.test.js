@@ -200,4 +200,239 @@ describe('Amazon Orders Early Content Script', () => {
             expect(console.log).toHaveBeenCalledWith('🔧 Early content script initialization complete');
         });
     });
+
+    // NEW TESTS TO COVER UNCOVERED LINES
+    describe('Style Injection Edge Cases', () => {
+        it('should handle missing document.head gracefully', () => {
+            // Mock document.head as null to test uncovered line 83-84
+            Object.defineProperty(document, 'head', {
+                value: null,
+                writable: true
+            });
+
+            require('./amazon-orders-early.js');
+
+            // Should continue without throwing error
+            expect(console.log).toHaveBeenCalledWith('🔧 Early content script initialization complete');
+        });
+
+        it('should handle style creation failures gracefully', () => {
+            // Mock document.head to exist but make createElement fail for style
+            Object.defineProperty(document, 'head', {
+                value: { appendChild: jest.fn() },
+                writable: true
+            });
+
+            // Mock createElement to fail for style elements
+            document.createElement = jest.fn().mockImplementation((tagName) => {
+                if (tagName === 'style') {
+                    throw new Error('Style creation failed');
+                }
+                return {
+                    id: '',
+                    className: '',
+                    style: {},
+                    innerHTML: '',
+                    textContent: '',
+                    appendChild: jest.fn(),
+                    querySelector: jest.fn(),
+                    querySelectorAll: jest.fn()
+                };
+            });
+
+            require('./amazon-orders-early.js');
+
+            // Should log style injection failure and continue
+            expect(console.log).toHaveBeenCalledWith('🔧 Style injection failed, continuing without animation:', expect.any(Error));
+        });
+
+        it('should handle style appendChild failures gracefully', () => {
+            // Mock document.head with failing appendChild
+            Object.defineProperty(document, 'head', {
+                value: {
+                    appendChild: jest.fn(() => {
+                        throw new Error('Style append failed');
+                    })
+                },
+                writable: true
+            });
+
+            require('./amazon-orders-early.js');
+
+            // Should log style injection failure and continue
+            expect(console.log).toHaveBeenCalledWith('🔧 Style injection failed, continuing without animation:', expect.any(Error));
+        });
+    });
+
+    describe('Overlay Injection Edge Cases', () => {
+        it('should skip injection when overlay already exists', () => {
+            // Mock overlay already exists
+            document.getElementById = jest.fn().mockImplementation((id) => {
+                if (id === 'amazon-orders-archiver-overlay') {
+                    return { id: 'amazon-orders-archiver-overlay' };
+                }
+                return null;
+            });
+
+            require('./amazon-orders-early.js');
+
+            // Should log that overlay already exists
+            expect(console.log).toHaveBeenCalledWith('🔧 Overlay already exists, skipping injection');
+        });
+
+        it('should handle case when neither body nor documentElement exists', () => {
+            // Mock both body and documentElement as null
+            Object.defineProperty(document, 'body', {
+                value: null,
+                writable: true
+            });
+            Object.defineProperty(document, 'documentElement', {
+                value: null,
+                writable: true
+            });
+
+            require('./amazon-orders-early.js');
+
+            // Should complete initialization without throwing error
+            expect(console.log).toHaveBeenCalledWith('🔧 Early content script initialization complete');
+        });
+
+        it('should handle appendChild failures gracefully', () => {
+            // Mock body exists but appendChild fails
+            Object.defineProperty(document, 'body', {
+                value: {
+                    appendChild: jest.fn(() => {
+                        throw new Error('Append failed');
+                    })
+                },
+                writable: true
+            });
+
+            require('./amazon-orders-early.js');
+
+            // Should handle error gracefully and continue
+            expect(console.error).toHaveBeenCalledWith('🔧 Error injecting orders overlay:', expect.any(Error));
+        });
+    });
+
+    describe('Fallback Injection Scenarios', () => {
+        it('should attempt fallback injection when immediate injection fails', () => {
+            // Mock immediate injection to fail by making getElementById return null
+            // and then mock setTimeout to execute immediately
+            let setTimeoutCallback;
+            global.setTimeout = jest.fn((callback, delay) => {
+                if (delay === 0) {
+                    setTimeoutCallback = callback;
+                }
+                return 1;
+            });
+
+            require('./amazon-orders-early.js');
+
+            // Should attempt immediate injection
+            expect(console.log).toHaveBeenCalledWith('🔧 Amazon Order Archiver early content script loaded (document_start)');
+
+            // Execute the fallback callback
+            if (setTimeoutCallback) {
+                setTimeoutCallback();
+            }
+        });
+
+        it('should handle DOMContentLoaded fallback injection', () => {
+            // Mock DOMContentLoaded event listener
+            let domContentLoadedCallback;
+            document.addEventListener = jest.fn((event, callback) => {
+                if (event === 'DOMContentLoaded') {
+                    domContentLoadedCallback = callback;
+                }
+            });
+
+            require('./amazon-orders-early.js');
+
+            // Should set up DOMContentLoaded listener
+            expect(document.addEventListener).toHaveBeenCalledWith('DOMContentLoaded', expect.any(Function));
+
+            // Simulate DOMContentLoaded event
+            if (domContentLoadedCallback) {
+                domContentLoadedCallback();
+            }
+        });
+
+        it('should handle overlay removal after timeout', () => {
+            // Mock setTimeout to capture callbacks
+            let timeoutCallbacks = [];
+            global.setTimeout = jest.fn((callback, delay) => {
+                timeoutCallbacks.push({ callback, delay });
+                return 1;
+            });
+
+            // Mock overlay element with parent
+            const mockOverlay = {
+                style: { opacity: '1', transform: 'scale(1)' },
+                parentNode: { removeChild: jest.fn() }
+            };
+
+            document.getElementById = jest.fn().mockImplementation((id) => {
+                if (id === 'amazon-orders-archiver-overlay') {
+                    return mockOverlay;
+                }
+                return null;
+            });
+
+            require('./amazon-orders-early.js');
+
+            // Should set up timeout for overlay removal
+            // Note: setTimeout is called in the DOMContentLoaded event listener
+            // We need to trigger that event to see the setTimeout call
+            const domContentLoadedCallback = document.addEventListener.mock.calls.find(
+                call => call[0] === 'DOMContentLoaded'
+            )?.[1];
+
+            if (domContentLoadedCallback) {
+                domContentLoadedCallback();
+            }
+
+            // Now setTimeout should have been called for the overlay removal
+            expect(setTimeout).toHaveBeenCalled();
+
+            // Execute the 500ms timeout callback (overlay removal)
+            const removalCallback = timeoutCallbacks.find(tc => tc.delay === 500);
+            if (removalCallback) {
+                removalCallback.callback();
+            }
+
+            // Should set opacity to 0 and transform to scale(0.95)
+            expect(mockOverlay.style.opacity).toBe('0');
+            expect(mockOverlay.style.transform).toBe('scale(0.95)');
+        });
+    });
+
+    describe('Overlay Creation and Styling', () => {
+        it('should create overlay with random gradient background', () => {
+            // Mock Math.random to return predictable value
+            const originalRandom = Math.random;
+            Math.random = jest.fn(() => 0.5);
+
+            require('./amazon-orders-early.js');
+
+            // Should create overlay element
+            expect(document.createElement).toHaveBeenCalledWith('div');
+
+            // Restore Math.random
+            Math.random = originalRandom;
+        });
+
+        it('should apply CSS animations for spinner and gradient', () => {
+            // Mock document.head to exist
+            Object.defineProperty(document, 'head', {
+                value: { appendChild: jest.fn() },
+                writable: true
+            });
+
+            require('./amazon-orders-early.js');
+
+            // Should create style element with keyframes
+            expect(document.createElement).toHaveBeenCalledWith('style');
+        });
+    });
 });

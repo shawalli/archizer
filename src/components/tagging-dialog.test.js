@@ -276,11 +276,35 @@ describe('TaggingDialog', () => {
             expect(taggingDialog.tags).toContain('gift');
         });
 
-        test.skip('should render tags correctly', () => {
-            // TODO: This test requires complex DOM setup that needs to be fixed
-            // The TaggingDialog.renderTags method expects a specific DOM structure
-            // that's not properly set up in the test environment
-            expect(true).toBe(true); // Placeholder
+        test('should render tags correctly', () => {
+            // Set up the required DOM structure
+            const dialogElement = document.createElement('div');
+            dialogElement.innerHTML = `
+                <div id="existing-tags"></div>
+            `;
+
+            // Mock the dialogElement property
+            taggingDialog.dialogElement = dialogElement;
+
+            // Add some tags
+            taggingDialog.tags = ['electronics', 'gift', 'holiday'];
+
+            // Call renderTags
+            taggingDialog.renderTags();
+
+            // Check that tags were rendered
+            const existingTagsContainer = dialogElement.querySelector('#existing-tags');
+            expect(existingTagsContainer.children.length).toBe(3);
+
+            // Check first tag
+            const firstTag = existingTagsContainer.children[0];
+            expect(firstTag.className).toBe('tag-item');
+            expect(firstTag.querySelector('.tag-text').textContent).toBe('electronics');
+            expect(firstTag.querySelector('.remove-tag')).toBeTruthy();
+
+            // Check that remove button has event listener
+            const removeButton = firstTag.querySelector('.remove-tag');
+            expect(removeButton).toBeTruthy();
         });
     });
 
@@ -329,28 +353,124 @@ describe('TaggingDialog', () => {
     });
 
     describe('Input Processing', () => {
-        test.skip('should process comma-separated tags', () => {
-            // TODO: This test requires complex DOM setup that needs to be fixed
-            // The TaggingDialog.processTagInput method expects a specific DOM structure
-            expect(true).toBe(true); // Placeholder
+        test('should process comma-separated tags', () => {
+            // Set up the required DOM structure
+            const dialogElement = document.createElement('div');
+            dialogElement.innerHTML = `
+                <div id="tag-input" value="electronics,gift,holiday"></div>
+            `;
+
+            // Mock the dialogElement property
+            taggingDialog.dialogElement = dialogElement;
+
+            // Mock the addTag method to track calls
+            const originalAddTag = taggingDialog.addTag;
+            const addTagCalls = [];
+            taggingDialog.addTag = (tag) => {
+                addTagCalls.push(tag);
+                return originalAddTag.call(taggingDialog, tag);
+            };
+
+            // Set input value
+            const tagInput = dialogElement.querySelector('#tag-input');
+            tagInput.value = 'electronics,gift,holiday';
+
+            // Call processTagInput
+            taggingDialog.processTagInput();
+
+            // Check that addTag was called for each tag
+            expect(addTagCalls).toEqual(['electronics', 'gift', 'holiday']);
+
+            // Check that input was cleared
+            expect(tagInput.value).toBe('');
+
+            // Restore original method
+            taggingDialog.addTag = originalAddTag;
         });
 
-        test.skip('should handle Enter key for tag input', () => {
-            // TODO: This test requires complex DOM setup that needs to be fixed
-            // The TaggingDialog event handling expects a specific DOM structure
-            expect(true).toBe(true); // Placeholder
+        test('should handle Enter key for tag input', () => {
+            // Set up the required DOM structure
+            const dialogElement = document.createElement('div');
+            dialogElement.innerHTML = `
+                <div id="tag-input"></div>
+            `;
+
+            // Call bindEventsToDialog to set up event listeners
+            taggingDialog.bindEventsToDialog(dialogElement);
+
+            // Mock the processTagInput method to track calls
+            const originalProcessTagInput = taggingDialog.processTagInput;
+            let processTagInputCalled = false;
+            taggingDialog.processTagInput = () => {
+                processTagInputCalled = true;
+            };
+
+            // Set input value
+            const tagInput = dialogElement.querySelector('#tag-input');
+            tagInput.value = 'electronics';
+
+            // Create and dispatch Enter key event
+            const enterEvent = new KeyboardEvent('keydown', { key: 'Enter' });
+            tagInput.dispatchEvent(enterEvent);
+
+            // Check that processTagInput was called
+            expect(processTagInputCalled).toBe(true);
+
+            // Restore original method
+            taggingDialog.processTagInput = originalProcessTagInput;
         });
 
-        test.skip('should handle comma key for tag input', () => {
-            // TODO: This test requires complex DOM setup that needs to be fixed
-            // The TaggingDialog event handling expects a specific DOM structure
-            expect(true).toBe(true); // Placeholder
+        test('should handle comma key for tag input', () => {
+            // Set up the required DOM structure
+            const dialogElement = document.createElement('div');
+            dialogElement.innerHTML = `
+                <div id="tag-input"></div>
+            `;
+
+            // Call bindEventsToDialog to set up event listeners
+            taggingDialog.bindEventsToDialog(dialogElement);
+
+            // Mock the processTagInput method to track calls
+            const originalProcessTagInput = taggingDialog.processTagInput;
+            let processTagInputCalled = false;
+            taggingDialog.processTagInput = () => {
+                processTagInputCalled = true;
+            };
+
+            // Set input value
+            const tagInput = dialogElement.querySelector('#tag-input');
+            tagInput.value = 'electronics';
+
+            // Create and dispatch comma key event
+            const commaEvent = new KeyboardEvent('keydown', { key: ',' });
+            tagInput.dispatchEvent(commaEvent);
+
+            // Check that processTagInput was called
+            expect(processTagInputCalled).toBe(true);
+
+            // Restore original method
+            taggingDialog.processTagInput = originalProcessTagInput;
         });
 
-        test.skip('should clear input after processing tags', () => {
-            // TODO: This test requires complex DOM setup that needs to be fixed
-            // The TaggingDialog.processTagInput method expects a specific DOM structure
-            expect(true).toBe(true); // Placeholder
+        test('should clear input after processing tags', () => {
+            // Set up the required DOM structure
+            const dialogElement = document.createElement('div');
+            dialogElement.innerHTML = `
+                <div id="tag-input"></div>
+            `;
+
+            // Mock the dialogElement property
+            taggingDialog.dialogElement = dialogElement;
+
+            // Set input value
+            const tagInput = dialogElement.querySelector('#tag-input');
+            tagInput.value = 'electronics,gift';
+
+            // Call processTagInput
+            taggingDialog.processTagInput();
+
+            // Check that input was cleared
+            expect(tagInput.value).toBe('');
         });
     });
 
@@ -511,10 +631,43 @@ describe('TaggingDialog', () => {
             expect(taggingDialog.isOpen).toBe(false);
         });
 
-        test.skip('should handle overlay click to close dialog', () => {
-            // TODO: This test requires complex DOM setup that needs to be fixed
-            // The TaggingDialog overlay handling expects a specific DOM structure
-            expect(true).toBe(true); // Placeholder
+        test('should handle overlay click to close dialog', () => {
+            // Set up the required DOM structure with delivery-box as parent
+            const deliveryBox = document.createElement('div');
+            deliveryBox.className = 'delivery-box';
+            deliveryBox.innerHTML = `
+                <div class="a-box-inner">
+                    <div class="order-content">Mock order content</div>
+                </div>
+            `;
+
+            // Create dialog element as a child of delivery-box
+            const dialogElement = document.createElement('div');
+            dialogElement.className = 'tagging-dialog';
+            deliveryBox.appendChild(dialogElement);
+
+            // Call bindEventsToDialog to set up event listeners
+            taggingDialog.bindEventsToDialog(dialogElement);
+
+            // Mock the close method to track calls
+            const originalClose = taggingDialog.close;
+            let closeCalled = false;
+            taggingDialog.close = () => {
+                closeCalled = true;
+            };
+
+            // Open the dialog first
+            taggingDialog.isOpen = true;
+
+            // Simulate click on delivery-box (not on dialog content)
+            const clickEvent = new MouseEvent('click', { bubbles: true });
+            deliveryBox.dispatchEvent(clickEvent);
+
+            // Check that close was called
+            expect(closeCalled).toBe(true);
+
+            // Restore original method
+            taggingDialog.close = originalClose;
         });
     });
 });

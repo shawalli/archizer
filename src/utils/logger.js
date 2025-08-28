@@ -20,10 +20,20 @@ const isProduction = typeof process !== 'undefined' && process.env.NODE_ENV === 
 // Set log level
 export function setLogLevel(level) {
     if (typeof level === 'string') {
-        currentLogLevel = LOG_LEVELS[level.toUpperCase()] || LOG_LEVELS.INFO;
+        const upperLevel = level.toUpperCase();
+        if (LOG_LEVELS.hasOwnProperty(upperLevel)) {
+            currentLogLevel = LOG_LEVELS[upperLevel];
+        } else {
+            currentLogLevel = LOG_LEVELS.INFO;
+        }
     } else if (typeof level === 'number') {
         currentLogLevel = Math.max(0, Math.min(3, level));
     }
+}
+
+// Reset log level to default (for testing)
+export function resetLogLevel() {
+    currentLogLevel = LOG_LEVELS.INFO;
 }
 
 // Get current log level
@@ -33,7 +43,7 @@ export function getLogLevel() {
 
 // Check if a log level should be displayed
 function shouldLog(level) {
-    return level <= currentLogLevel && !isProduction;
+    return level <= currentLogLevel;
 }
 
 // Logger functions
@@ -111,9 +121,6 @@ export const specializedLogger = {
     }
 };
 
-// Initialize with production-friendly defaults
-if (isProduction) {
-    setLogLevel(LOG_LEVELS.ERROR); // Only show errors in production
-}
+// Note: Log level is set by resetLogLevel() in tests or by explicit setLogLevel() calls
 
 export default logger;

@@ -3,8 +3,8 @@
 
 console.log('Amazon Order Archiver popup script loaded');
 
-// Simple storage manager for popup (since we can't use ES6 imports in popup HTML)
-class PopupStorageManager {
+// Simple storage manager for popup
+export class PopupStorageManager {
     constructor() {
         this.prefix = 'amazon_archiver_';
     }
@@ -37,7 +37,7 @@ class PopupStorageManager {
     }
 }
 
-class PopupManager {
+export class PopupManager {
     constructor() {
         this.storage = new PopupStorageManager();
         this.currentView = 'main';
@@ -363,13 +363,13 @@ class PopupManager {
             try {
                 const allData = await chrome.storage.local.get(null);
                 const tagKeysToRemove = [];
-                
+
                 for (const key of Object.keys(allData)) {
                     if (key.includes('order_tags_') && key.startsWith('amazon_archiver_')) {
                         tagKeysToRemove.push(key);
                     }
                 }
-                
+
                 if (tagKeysToRemove.length > 0) {
                     await chrome.storage.local.remove(tagKeysToRemove);
                     console.log(`🗑️ Cleared ${tagKeysToRemove.length} order tag entries from Chrome storage`);

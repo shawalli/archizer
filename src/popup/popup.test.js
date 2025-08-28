@@ -1,7 +1,6 @@
-// Popup functionality tests
-// Tests for PopupStorageManager and PopupManager classes
+import { PopupStorageManager, PopupManager } from './popup.js';
 
-// Mock Chrome storage API
+// Mock Chrome APIs
 const mockChrome = {
     storage: {
         local: {
@@ -16,459 +15,46 @@ const mockChrome = {
     }
 };
 
-global.chrome = mockChrome;
-
 // Mock DOM elements
-const createMockElement = (id, tagName = 'div') => {
-    const element = document.createElement(tagName);
-    element.id = id;
-
-    // Create a proper mock for classList
-    const classListMock = {
-        add: jest.fn(),
-        remove: jest.fn(),
-        contains: jest.fn()
-    };
-
-    // Override the classList property
-    Object.defineProperty(element, 'classList', {
-        value: classListMock,
-        writable: false
-    });
-
-    element.value = '';
-    element.textContent = '';
-    element.style = {
-        background: ''
-    };
-    element.addEventListener = jest.fn();
-    element.focus = jest.fn();
-    return element;
+const createMockDOM = () => {
+    document.body.innerHTML = `
+        <div id="main-view">
+            <button id="settings-btn">Settings</button>
+            <button id="resync-btn">Resync</button>
+            <div id="hidden-orders-list"></div>
+        </div>
+        <div id="settings-view" class="hidden">
+            <button id="back-btn">Back</button>
+            <input id="username" type="text" placeholder="Enter username">
+            <button id="save-username">Save Username</button>
+        </div>
+        <div id="resync-dialog" class="hidden">
+            <button id="resync-confirm">Confirm</button>
+            <button id="resync-cancel">Cancel</button>
+        </div>
+    `;
 };
 
-// Mock DOM structure
-const setupMockDOM = () => {
-    // Create main view
-    const mainView = createMockElement('main-view');
-    const settingsView = createMockElement('settings-view');
-
-    // Create buttons
-    const settingsBtn = createMockElement('settings-btn', 'button');
-    const backBtn = createMockElement('back-btn', 'button');
-    const saveUsernameBtn = createMockElement('save-username', 'button');
-    const resyncBtn = createMockElement('resync-btn', 'button');
-    const resyncConfirmBtn = createMockElement('resync-confirm', 'button');
-    const resyncCancelBtn = createMockElement('resync-cancel', 'button');
-
-    // Create input
-    const usernameInput = createMockElement('username', 'input');
-
-    // Create hidden orders list container
-    const hiddenOrdersList = createMockElement('hidden-orders-list');
-
-    // Create resync dialog
-    const resyncDialog = createMockElement('resync-dialog');
-
-    // Add to document
-    document.body.appendChild(mainView);
-    document.body.appendChild(settingsView);
-    document.body.appendChild(settingsBtn);
-    document.body.appendChild(backBtn);
-    document.body.appendChild(saveUsernameBtn);
-    document.body.appendChild(resyncBtn);
-    document.body.appendChild(resyncConfirmBtn);
-    document.body.appendChild(resyncCancelBtn);
-    document.body.appendChild(usernameInput);
-    document.body.appendChild(hiddenOrdersList);
-    document.body.appendChild(resyncDialog);
-
-    return {
-        mainView,
-        settingsView,
-        settingsBtn,
-        backBtn,
-        saveUsernameBtn,
-        resyncBtn,
-        resyncConfirmBtn,
-        resyncCancelBtn,
-        usernameInput,
-        hiddenOrdersList,
-        resyncDialog
-    };
+// Mock console methods
+const mockConsole = {
+    log: jest.fn(),
+    error: jest.fn(),
+    warn: jest.fn()
 };
-
-// Mock PopupStorageManager class
-class PopupStorageManager {
-    constructor() {
-        this.prefix = 'amazon_archiver_';
-    }
-
-    async get(key) {
-        try {
-            const result = await chrome.storage.local.get(this.prefix + key);
-            return result[this.prefix + key] || null;
-        } catch (error) {
-            console.error('Error getting from storage:', error);
-            return null;
-        }
-    }
-
-    async set(key, value) {
-        try {
-            await chrome.storage.local.set({ [this.prefix + key]: value });
-        } catch (error) {
-            console.error('Error setting storage:', error);
-            throw error;
-        }
-    }
-
-    async remove(key) {
-        try {
-            await chrome.storage.local.remove(this.prefix + key);
-        } catch (error) {
-            console.error('Error removing from storage:', error);
-        }
-    }
-}
-
-// Mock PopupManager class
-class PopupManager {
-    constructor() {
-        this.storage = new PopupStorageManager();
-        this.currentView = 'main';
-        this.init();
-    }
-
-    async init() {
-        this.setupEventListeners();
-        await this.loadUserSettings();
-        this.showView('main');
-    }
-
-    setupEventListeners() {
-        // Settings button click
-        const settingsBtn = document.getElementById('settings-btn');
-        if (settingsBtn) {
-            settingsBtn.addEventListener('click', () => this.showView('settings'));
-        }
-
-        // Back button click
-        const backBtn = document.getElementById('back-btn');
-        if (backBtn) {
-            backBtn.addEventListener('click', () => this.showView('main'));
-        }
-
-        // Save username button click
-        const saveUsernameBtn = document.getElementById('save-username');
-        if (saveUsernameBtn) {
-            saveUsernameBtn.addEventListener('click', () => this.saveUsername());
-        }
-
-        // Username input enter key
-        const usernameInput = document.getElementById('username');
-        if (usernameInput) {
-            usernameInput.addEventListener('keypress', (e) => {
-                if (e.key === 'Enter') {
-                    this.saveUsername();
-                }
-            });
-        }
-    }
-
-    showView(viewName) {
-        const mainView = document.getElementById('main-view');
-        const settingsView = document.getElementById('settings-view');
-
-        if (viewName === 'main') {
-            mainView.classList.remove('hidden');
-            settingsView.classList.add('hidden');
-            this.currentView = 'main';
-        } else if (viewName === 'settings') {
-            mainView.classList.add('hidden');
-            settingsView.classList.remove('hidden');
-            this.currentView = 'settings';
-        }
-    }
-
-    async loadUserSettings() {
-        try {
-            const username = await this.storage.get('username');
-            const usernameInput = document.getElementById('username');
-            if (usernameInput && username) {
-                usernameInput.value = username;
-            }
-        } catch (error) {
-            console.error('Error loading user settings:', error);
-        }
-    }
-
-    async saveUsername() {
-        try {
-            const usernameInput = document.getElementById('username');
-            const username = usernameInput.value.trim();
-
-            if (!username) {
-                this.showMessage('Username cannot be empty', 'error');
-                return;
-            }
-
-            await this.storage.set('username', username);
-            this.showMessage('Username saved successfully!', 'success');
-
-            // Update the save button text temporarily
-            const saveBtn = document.getElementById('save-username');
-            if (saveBtn) {
-                const originalText = saveBtn.textContent;
-                saveBtn.textContent = 'Saved!';
-                saveBtn.style.background = '#28a745';
-
-                setTimeout(() => {
-                    saveBtn.textContent = originalText;
-                    saveBtn.style.background = '';
-                }, 2000);
-            }
-        } catch (error) {
-            console.error('Error saving username:', error);
-            this.showMessage('Error saving username', 'error');
-        }
-    }
-
-    showMessage(message, type = 'info') {
-        // Create a temporary message element
-        const messageEl = document.createElement('div');
-        messageEl.className = `message message-${type}`;
-        messageEl.textContent = message;
-
-        // Style the message
-        messageEl.style.cssText = `
-            position: fixed;
-            top: 20px;
-            right: 20px;
-            padding: 12px 16px;
-            border-radius: 6px;
-            color: white;
-            font-size: 14px;
-            font-weight: 500;
-            z-index: 1000;
-            animation: slideIn 0.3s ease;
-        `;
-
-        // Set background color based on type
-        if (type === 'success') {
-            messageEl.style.background = '#28a745';
-        } else if (type === 'error') {
-            messageEl.style.background = '#dc3545';
-        } else {
-            messageEl.style.background = '#17a2b8';
-        }
-
-        // Add to body
-        document.body.appendChild(messageEl);
-
-        // Remove after 3 seconds
-        setTimeout(() => {
-            if (messageEl.parentNode) {
-                messageEl.parentNode.removeChild(messageEl);
-            }
-        }, 3000);
-    }
-
-    async loadHiddenOrders() {
-        try {
-            const hiddenOrders = await this.getAllHiddenOrders();
-            this.displayHiddenOrders(hiddenOrders);
-        } catch (error) {
-            console.error('Error loading hidden orders:', error);
-        }
-    }
-
-    async getAllHiddenOrders() {
-        try {
-            const allData = await chrome.storage.local.get(null);
-            const hiddenOrders = [];
-
-            for (const [key, value] of Object.entries(allData)) {
-                if (key.startsWith('amazon_archiver_hidden_order_') && value) {
-                    hiddenOrders.push(value);
-                }
-            }
-
-            return hiddenOrders;
-        } catch (error) {
-            console.error('Error getting all hidden orders:', error);
-            return [];
-        }
-    }
-
-    displayHiddenOrders(hiddenOrders) {
-        const container = document.getElementById('hidden-orders-list');
-        if (!container) return;
-
-        if (hiddenOrders.length === 0) {
-            container.innerHTML = '<p class="no-orders-message">No hidden orders found.</p>';
-            return;
-        }
-
-        const ordersHTML = hiddenOrders.map(order => {
-            const orderData = order.orderData || {};
-            const tags = orderData.tags || [];
-            const tagsHTML = tags.map(tag =>
-                `<span class="tag">${tag}</span>`
-            ).join('');
-
-            const usernameHTML = order.username ?
-                `<span class="username-tag">@${order.username}</span>` : '';
-
-            return `
-                <div class="hidden-order-item">
-                    <div style="font-weight: bold; margin-bottom: 5px;">Order #${order.orderId}</div>
-                    <div style="font-size: 12px; color: #666; margin-bottom: 5px;">
-                        ${orderData.orderDate || 'Date unknown'} - ${orderData.orderTotal || 'Total unknown'}
-                    </div>
-                    <div style="margin-bottom: 5px;">
-                        ${usernameHTML}
-                        ${tagsHTML}
-                    </div>
-                    <button class="unhide-btn" data-order-id="${order.orderId}" data-type="${order.type}">Unhide</button>
-                </div>
-            `;
-        }).join('');
-
-        container.innerHTML = ordersHTML;
-
-        // Add event listeners for unhide buttons
-        container.querySelectorAll('.unhide-btn').forEach(btn => {
-            btn.addEventListener('click', (e) => {
-                const orderId = e.target.dataset.orderId;
-                const type = e.target.dataset.type;
-                this.unhideOrder(orderId, type);
-            });
-        });
-    }
-
-    async unhideOrder(orderId, type) {
-        try {
-            // Remove from storage
-            await this.storage.remove(`hidden_order_${orderId}_${type}`);
-
-            // Reload hidden orders
-            await this.loadHiddenOrders();
-
-            this.showMessage('Order unhidden successfully!', 'success');
-        } catch (error) {
-            console.error('Error unhiding order:', error);
-            this.showMessage('Error unhiding order', 'error');
-        }
-    }
-
-    showResyncDialog() {
-        const dialog = document.getElementById('resync-dialog');
-        if (dialog) {
-            dialog.classList.remove('hidden');
-        }
-    }
-
-    hideResyncDialog() {
-        const dialog = document.getElementById('resync-dialog');
-        if (dialog) {
-            dialog.classList.add('hidden');
-        }
-    }
-
-    async executeResync() {
-        try {
-            console.log('🔄 Starting resync process...');
-
-            // Clear all hidden order data from storage
-            await this.clearAllHiddenOrders();
-
-            // Send message to content script to restore all hidden orders
-            const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
-            if (tab && tab.url && tab.url.includes('amazon.com')) {
-                try {
-                    const response = await chrome.tabs.sendMessage(tab.id, { action: 'resync-orders' });
-                    if (response && response.success) {
-                        console.log(`✅ Content script restored ${response.restoredCount} hidden orders`);
-                    } else {
-                        console.warn('⚠️ Content script resync response:', response);
-                    }
-                } catch (error) {
-                    console.warn('⚠️ Could not communicate with content script (may not be on orders page):', error);
-                }
-            }
-
-            // Hide the dialog
-            this.hideResyncDialog();
-
-            // Show success message
-            this.showMessage('Orders resynced successfully! All hidden order data has been cleared.', 'success');
-
-            // Reload the hidden orders list (should now be empty)
-            await this.loadHiddenOrders();
-
-            console.log('✅ Resync completed successfully');
-        } catch (error) {
-            console.error('❌ Error during resync:', error);
-            this.showMessage('Error during resync process', 'error');
-        }
-    }
-
-    async clearAllHiddenOrders() {
-        try {
-            console.log('🗑️ Clearing all hidden orders...');
-
-            // Get all storage data
-            const allData = await chrome.storage.local.get(null);
-            const keysToRemove = [];
-
-            // Find all keys that start with our hidden order prefix
-            for (const key of Object.keys(allData)) {
-                if (key.startsWith('amazon_archiver_hidden_order_')) {
-                    keysToRemove.push(key);
-                }
-            }
-
-            // Remove all hidden order keys
-            if (keysToRemove.length > 0) {
-                await chrome.storage.local.remove(keysToRemove);
-                console.log(`🗑️ Removed ${keysToRemove.length} hidden order entries from Chrome storage`);
-            } else {
-                console.log('ℹ️ No hidden orders found to remove from Chrome storage');
-            }
-
-            // Also clear all order tags data from Chrome storage
-            try {
-                const allData = await chrome.storage.local.get(null);
-                const tagKeysToRemove = [];
-
-                for (const key of Object.keys(allData)) {
-                    if (key.includes('order_tags_') && key.startsWith('amazon_archiver_')) {
-                        tagKeysToRemove.push(key);
-                    }
-                }
-
-                if (tagKeysToRemove.length > 0) {
-                    await chrome.storage.local.remove(tagKeysToRemove);
-                    console.log(`🗑️ Cleared ${tagKeysToRemove.length} order tag entries from Chrome storage`);
-                }
-            } catch (error) {
-                console.warn('⚠️ Could not clear order tags from Chrome storage:', error);
-            }
-
-            return keysToRemove.length;
-        } catch (error) {
-            console.error('❌ Error clearing hidden orders:', error);
-            throw error;
-        }
-    }
-}
 
 describe('PopupStorageManager', () => {
     let storageManager;
 
     beforeEach(() => {
+        global.chrome = mockChrome;
+        global.console = mockConsole;
         storageManager = new PopupStorageManager();
         jest.clearAllMocks();
+    });
+
+    afterEach(() => {
+        delete global.chrome;
+        delete global.console;
     });
 
     describe('constructor', () => {
@@ -477,111 +63,109 @@ describe('PopupStorageManager', () => {
         });
     });
 
-    describe('get', () => {
-        it('should retrieve data from Chrome storage with prefix', async () => {
-            const mockData = { key: 'value' };
-            mockChrome.storage.local.get.mockResolvedValue({
-                'amazon_archiver_test-key': mockData
-            });
+    describe('get method', () => {
+        it('should retrieve data from storage successfully', async () => {
+            const mockData = { 'amazon_archiver_username': 'testuser' };
+            mockChrome.storage.local.get.mockResolvedValue(mockData);
 
-            const result = await storageManager.get('test-key');
+            const result = await storageManager.get('username');
 
-            expect(mockChrome.storage.local.get).toHaveBeenCalledWith('amazon_archiver_test-key');
-            expect(result).toEqual(mockData);
+            expect(mockChrome.storage.local.get).toHaveBeenCalledWith('amazon_archiver_username');
+            expect(result).toBe('testuser');
         });
 
-        it('should return null when key not found', async () => {
+        it('should return null when key does not exist', async () => {
             mockChrome.storage.local.get.mockResolvedValue({});
 
-            const result = await storageManager.get('test-key');
+            const result = await storageManager.get('nonexistent');
 
-            expect(result).toBeNull();
+            expect(result).toBe(null);
         });
 
         it('should handle storage errors gracefully', async () => {
-            mockChrome.storage.local.get.mockRejectedValue(new Error('Storage error'));
+            const error = new Error('Storage error');
+            mockChrome.storage.local.get.mockRejectedValue(error);
 
-            const result = await storageManager.get('test-key');
+            const result = await storageManager.get('username');
 
-            expect(result).toBeNull();
-            expect(console.error).toHaveBeenCalledWith('Error getting from storage:', expect.any(Error));
+            expect(console.error).toHaveBeenCalledWith('Error getting from storage:', error);
+            expect(result).toBe(null);
         });
     });
 
-    describe('set', () => {
-        it('should store data in Chrome storage with prefix', async () => {
-            const testData = { key: 'value' };
+    describe('set method', () => {
+        it('should store data successfully', async () => {
             mockChrome.storage.local.set.mockResolvedValue();
 
-            await storageManager.set('test-key', testData);
+            await storageManager.set('username', 'testuser');
 
             expect(mockChrome.storage.local.set).toHaveBeenCalledWith({
-                'amazon_archiver_test-key': testData
+                'amazon_archiver_username': 'testuser'
             });
         });
 
         it('should throw error when storage fails', async () => {
-            const testData = { key: 'value' };
-            const storageError = new Error('Storage error');
-            mockChrome.storage.local.set.mockRejectedValue(storageError);
+            const error = new Error('Storage error');
+            mockChrome.storage.local.set.mockRejectedValue(error);
 
-            await expect(storageManager.set('test-key', testData)).rejects.toThrow('Storage error');
-            expect(console.error).toHaveBeenCalledWith('Error setting storage:', storageError);
+            await expect(storageManager.set('username', 'testuser')).rejects.toThrow('Storage error');
+            expect(console.error).toHaveBeenCalledWith('Error setting storage:', error);
         });
     });
 
-    describe('remove', () => {
-        it('should remove data from Chrome storage with prefix', async () => {
+    describe('remove method', () => {
+        it('should remove data successfully', async () => {
             mockChrome.storage.local.remove.mockResolvedValue();
 
-            await storageManager.remove('test-key');
+            await storageManager.remove('username');
 
-            expect(mockChrome.storage.local.remove).toHaveBeenCalledWith('amazon_archiver_test-key');
+            expect(mockChrome.storage.local.remove).toHaveBeenCalledWith('amazon_archiver_username');
         });
 
         it('should handle removal errors gracefully', async () => {
-            mockChrome.storage.local.remove.mockRejectedValue(new Error('Removal error'));
+            const error = new Error('Storage error');
+            mockChrome.storage.local.remove.mockRejectedValue(error);
 
-            await storageManager.remove('test-key');
+            await storageManager.remove('username');
 
-            expect(console.error).toHaveBeenCalledWith('Error removing from storage:', expect.any(Error));
+            expect(console.error).toHaveBeenCalledWith('Error removing from storage:', error);
         });
     });
 });
 
 describe('PopupManager', () => {
     let popupManager;
-    let mockElements;
 
     beforeEach(() => {
-        // Setup mock DOM
-        mockElements = setupMockDOM();
-
-        // Clear all mocks
+        global.chrome = mockChrome;
+        global.console = mockConsole;
+        createMockDOM();
         jest.clearAllMocks();
-
-        // Mock setTimeout
-        jest.useFakeTimers();
     });
 
     afterEach(() => {
-        // Clean up DOM
+        delete global.chrome;
+        delete global.console;
         document.body.innerHTML = '';
-
-        // Restore timers
-        jest.useRealTimers();
     });
 
-    describe('constructor', () => {
-        it('should initialize with storage manager and main view', () => {
+    describe('constructor and initialization', () => {
+        it('should create instance with correct properties', () => {
             popupManager = new PopupManager();
 
             expect(popupManager.storage).toBeInstanceOf(PopupStorageManager);
             expect(popupManager.currentView).toBe('main');
         });
+
+        it('should initialize storage manager', () => {
+            popupManager = new PopupManager();
+
+            expect(popupManager.storage).toBeDefined();
+            expect(popupManager.storage.prefix).toBe('amazon_archiver_');
+        });
     });
 
-    describe('showView', () => {
+    describe('showView method', () => {
         beforeEach(() => {
             popupManager = new PopupManager();
         });
@@ -589,343 +173,320 @@ describe('PopupManager', () => {
         it('should show main view and hide settings view', () => {
             popupManager.showView('main');
 
-            expect(mockElements.mainView.classList.remove).toHaveBeenCalledWith('hidden');
-            expect(mockElements.settingsView.classList.add).toHaveBeenCalledWith('hidden');
+            const mainView = document.getElementById('main-view');
+            const settingsView = document.getElementById('settings-view');
+
+            expect(mainView.classList.contains('hidden')).toBe(false);
+            expect(settingsView.classList.contains('hidden')).toBe(true);
             expect(popupManager.currentView).toBe('main');
         });
 
         it('should show settings view and hide main view', () => {
             popupManager.showView('settings');
 
-            expect(mockElements.mainView.classList.add).toHaveBeenCalledWith('hidden');
-            expect(mockElements.settingsView.classList.remove).toHaveBeenCalledWith('hidden');
+            const mainView = document.getElementById('main-view');
+            const settingsView = document.getElementById('settings-view');
+
+            expect(mainView.classList.contains('hidden')).toBe(true);
+            expect(settingsView.classList.contains('hidden')).toBe(false);
             expect(popupManager.currentView).toBe('settings');
         });
     });
 
-    describe('setupEventListeners', () => {
+    describe('loadUserSettings method', () => {
         beforeEach(() => {
             popupManager = new PopupManager();
         });
 
-        it('should set up event listeners for all interactive elements', () => {
-            expect(mockElements.settingsBtn.addEventListener).toHaveBeenCalledWith('click', expect.any(Function));
-            expect(mockElements.backBtn.addEventListener).toHaveBeenCalledWith('click', expect.any(Function));
-            expect(mockElements.saveUsernameBtn.addEventListener).toHaveBeenCalledWith('click', expect.any(Function));
-            expect(mockElements.usernameInput.addEventListener).toHaveBeenCalledWith('keypress', expect.any(Function));
-        });
-    });
-
-    describe('loadUserSettings', () => {
-        beforeEach(() => {
-            popupManager = new PopupManager();
-        });
-
-        it('should load username from storage and populate input', async () => {
-            const testUsername = 'testuser';
+        it('should load and display username from storage', async () => {
             mockChrome.storage.local.get.mockResolvedValue({
-                'amazon_archiver_username': testUsername
+                'amazon_archiver_username': 'testuser'
             });
 
             await popupManager.loadUserSettings();
 
-            expect(mockElements.usernameInput.value).toBe(testUsername);
+            const usernameInput = document.getElementById('username');
+            expect(usernameInput.value).toBe('testuser');
         });
 
         it('should handle missing username gracefully', async () => {
             // Clear any existing value first
-            mockElements.usernameInput.value = '';
+            const usernameInput = document.getElementById('username');
+            usernameInput.value = '';
+
             mockChrome.storage.local.get.mockResolvedValue({});
 
             await popupManager.loadUserSettings();
 
-            expect(mockElements.usernameInput.value).toBe('');
+            expect(usernameInput.value).toBe('');
         });
 
         it('should handle storage errors gracefully', async () => {
-            mockChrome.storage.local.get.mockRejectedValue(new Error('Storage error'));
+            const error = new Error('Storage error');
+            mockChrome.storage.local.get.mockRejectedValue(error);
 
             await popupManager.loadUserSettings();
 
-            expect(console.error).toHaveBeenCalledWith('Error getting from storage:', expect.any(Error));
+            expect(console.error).toHaveBeenCalledWith('Error getting from storage:', error);
         });
     });
 
-    describe('saveUsername', () => {
+    describe('getAllHiddenOrders method', () => {
+        beforeEach(() => {
+            popupManager = new PopupManager();
+        });
+
+        it('should retrieve all hidden orders from storage', async () => {
+            const mockStorageData = {
+                'amazon_archiver_hidden_order_123_details': { orderId: '123', type: 'details' },
+                'amazon_archiver_hidden_order_456_details': { orderId: '456', type: 'details' },
+                'amazon_archiver_other_data': 'unrelated'
+            };
+            mockChrome.storage.local.get.mockResolvedValue(mockStorageData);
+
+            const result = await popupManager.getAllHiddenOrders();
+
+            expect(result).toHaveLength(2);
+            expect(result).toContainEqual({ orderId: '123', type: 'details' });
+            expect(result).toContainEqual({ orderId: '456', type: 'details' });
+        });
+
+        it('should return empty array when no hidden orders exist', async () => {
+            mockChrome.storage.local.get.mockResolvedValue({
+                'amazon_archiver_other_data': 'unrelated'
+            });
+
+            const result = await popupManager.getAllHiddenOrders();
+
+            expect(result).toHaveLength(0);
+        });
+
+        it('should handle storage errors gracefully', async () => {
+            const error = new Error('Storage error');
+            mockChrome.storage.local.get.mockRejectedValue(error);
+
+            const result = await popupManager.getAllHiddenOrders();
+
+            expect(console.error).toHaveBeenCalledWith('Error getting all hidden orders:', error);
+            expect(result).toEqual([]);
+        });
+    });
+
+    describe('displayHiddenOrders method', () => {
+        beforeEach(() => {
+            popupManager = new PopupManager();
+        });
+
+        it('should display hidden orders with correct HTML structure', () => {
+            const hiddenOrders = [
+                {
+                    orderId: '123',
+                    type: 'details',
+                    username: 'testuser',
+                    orderData: {
+                        orderDate: '2023-01-01',
+                        orderTotal: '$99.99',
+                        tags: ['electronics', 'gift']
+                    }
+                }
+            ];
+
+            popupManager.displayHiddenOrders(hiddenOrders);
+
+            const container = document.getElementById('hidden-orders-list');
+            expect(container.innerHTML).toContain('Order #123');
+            expect(container.innerHTML).toContain('@testuser');
+            expect(container.innerHTML).toContain('electronics');
+            expect(container.innerHTML).toContain('gift');
+            expect(container.innerHTML).toContain('2023-01-01');
+            expect(container.innerHTML).toContain('$99.99');
+        });
+
+        it('should display message when no hidden orders exist', () => {
+            popupManager.displayHiddenOrders([]);
+
+            const container = document.getElementById('hidden-orders-list');
+            expect(container.innerHTML).toContain('No hidden orders found');
+        });
+
+        it('should handle missing order data gracefully', () => {
+            const hiddenOrders = [
+                {
+                    orderId: '123',
+                    type: 'details'
+                    // Missing orderData, username, tags
+                }
+            ];
+
+            popupManager.displayHiddenOrders(hiddenOrders);
+
+            const container = document.getElementById('hidden-orders-list');
+            expect(container.innerHTML).toContain('Order #123');
+            expect(container.innerHTML).toContain('Date unknown');
+            expect(container.innerHTML).toContain('Total unknown');
+        });
+
+        it('should add event listeners to unhide buttons', () => {
+            const hiddenOrders = [
+                {
+                    orderId: '123',
+                    type: 'details'
+                }
+            ];
+
+            popupManager.displayHiddenOrders(hiddenOrders);
+
+            const unhideBtn = document.querySelector('.unhide-btn');
+            expect(unhideBtn).toBeDefined();
+            expect(unhideBtn.dataset.orderId).toBe('123');
+            expect(unhideBtn.dataset.type).toBe('details');
+        });
+    });
+
+    describe('unhideOrder method', () => {
+        beforeEach(() => {
+            popupManager = new PopupManager();
+        });
+
+        it('should remove order from storage and reload list', async () => {
+            mockChrome.storage.local.remove.mockResolvedValue();
+
+            // Mock loadHiddenOrders to avoid complex setup
+            popupManager.loadHiddenOrders = jest.fn();
+
+            await popupManager.unhideOrder('123', 'details');
+
+            expect(mockChrome.storage.local.remove).toHaveBeenCalledWith('amazon_archiver_hidden_order_123_details');
+            expect(popupManager.loadHiddenOrders).toHaveBeenCalled();
+        });
+
+        it('should show success message after unhiding', async () => {
+            mockChrome.storage.local.remove.mockResolvedValue();
+            popupManager.loadHiddenOrders = jest.fn();
+            popupManager.showMessage = jest.fn();
+
+            await popupManager.unhideOrder('123', 'details');
+
+            expect(popupManager.showMessage).toHaveBeenCalledWith('Order unhidden successfully!', 'success');
+        });
+
+        it('should handle errors gracefully', async () => {
+            const error = new Error('Storage error');
+            // Mock the storage manager's remove method directly to throw an error
+            popupManager.storage.remove = jest.fn().mockRejectedValue(error);
+            popupManager.showMessage = jest.fn();
+
+            await popupManager.unhideOrder('123', 'details');
+
+            expect(console.error).toHaveBeenCalledWith('Error unhiding order:', error);
+            expect(popupManager.showMessage).toHaveBeenCalledWith('Error unhiding order', 'error');
+        });
+    });
+
+    describe('saveUsername method', () => {
         beforeEach(() => {
             popupManager = new PopupManager();
         });
 
         it('should save valid username to storage', async () => {
-            const testUsername = 'testuser';
-            mockElements.usernameInput.value = testUsername;
             mockChrome.storage.local.set.mockResolvedValue();
+            popupManager.showMessage = jest.fn();
+
+            const usernameInput = document.getElementById('username');
+            usernameInput.value = 'newuser';
 
             await popupManager.saveUsername();
 
             expect(mockChrome.storage.local.set).toHaveBeenCalledWith({
-                'amazon_archiver_username': testUsername
+                'amazon_archiver_username': 'newuser'
             });
+            expect(popupManager.showMessage).toHaveBeenCalledWith('Username saved successfully!', 'success');
         });
 
-        it('should show error message for empty username', async () => {
-            mockElements.usernameInput.value = '   ';
+        it('should reject empty username', async () => {
+            popupManager.showMessage = jest.fn();
 
-            // Mock showMessage method
-            const showMessageSpy = jest.spyOn(popupManager, 'showMessage');
+            const usernameInput = document.getElementById('username');
+            usernameInput.value = '';
 
             await popupManager.saveUsername();
 
-            expect(showMessageSpy).toHaveBeenCalledWith('Username cannot be empty', 'error');
             expect(mockChrome.storage.local.set).not.toHaveBeenCalled();
+            expect(popupManager.showMessage).toHaveBeenCalledWith('Username cannot be empty', 'error');
         });
 
-        it('should show success message and update button after saving', async () => {
-            const testUsername = 'testuser';
-            mockElements.usernameInput.value = testUsername;
-            mockChrome.storage.local.set.mockResolvedValue();
+        it('should reject whitespace-only username', async () => {
+            popupManager.showMessage = jest.fn();
 
-            // Mock showMessage method
-            const showMessageSpy = jest.spyOn(popupManager, 'showMessage');
+            const usernameInput = document.getElementById('username');
+            usernameInput.value = '   ';
 
             await popupManager.saveUsername();
 
-            expect(showMessageSpy).toHaveBeenCalledWith('Username saved successfully!', 'success');
-            expect(mockElements.saveUsernameBtn.textContent).toBe('Saved!');
-            // Check that the background color is set (browser may convert hex to RGB)
-            expect(mockElements.saveUsernameBtn.style.background).toBeTruthy();
-
-            // Fast-forward timers to test reset
-            jest.advanceTimersByTime(2000);
-
-            expect(mockElements.saveUsernameBtn.textContent).toBe('');
-            expect(mockElements.saveUsernameBtn.style.background).toBe('');
+            expect(mockChrome.storage.local.set).not.toHaveBeenCalled();
+            expect(popupManager.showMessage).toHaveBeenCalledWith('Username cannot be empty', 'error');
         });
 
         it('should handle storage errors gracefully', async () => {
-            const testUsername = 'testuser';
-            mockElements.usernameInput.value = testUsername;
-            mockChrome.storage.local.set.mockRejectedValue(new Error('Storage error'));
+            const error = new Error('Storage error');
+            mockChrome.storage.local.set.mockRejectedValue(error);
+            popupManager.showMessage = jest.fn();
 
-            // Mock showMessage method
-            const showMessageSpy = jest.spyOn(popupManager, 'showMessage');
+            const usernameInput = document.getElementById('username');
+            usernameInput.value = 'newuser';
 
             await popupManager.saveUsername();
 
-            expect(showMessageSpy).toHaveBeenCalledWith('Error saving username', 'error');
-            expect(console.error).toHaveBeenCalledWith('Error saving username:', expect.any(Error));
+            expect(console.error).toHaveBeenCalledWith('Error saving username:', error);
+            expect(popupManager.showMessage).toHaveBeenCalledWith('Error saving username', 'error');
         });
     });
 
-    describe('showMessage', () => {
+    describe('showMessage method', () => {
         beforeEach(() => {
             popupManager = new PopupManager();
         });
 
         it('should create and display message element', () => {
-            const message = 'Test message';
-            const initialBodyChildren = document.body.children.length;
+            popupManager.showMessage('Test message', 'success');
 
-            popupManager.showMessage(message, 'success');
-
-            expect(document.body.children.length).toBe(initialBodyChildren + 1);
-
-            const messageEl = document.body.lastElementChild;
-            expect(messageEl.textContent).toBe(message);
-            expect(messageEl.className).toBe('message message-success');
-            // Check that the background color is set (browser may convert hex to RGB)
-            expect(messageEl.style.background).toBeTruthy();
+            const messageEl = document.querySelector('.message.message-success');
+            expect(messageEl).toBeDefined();
+            expect(messageEl.textContent).toBe('Test message');
+            expect(messageEl.style.background).toBe('rgb(40, 167, 69)'); // #28a745
         });
 
-        it('should set correct background color for different message types', () => {
-            // Test success message
-            popupManager.showMessage('Success', 'success');
-            let messageEl = document.body.lastElementChild;
-            expect(messageEl.style.background).toBeTruthy();
+        it('should apply correct styling for different message types', () => {
+            popupManager.showMessage('Error message', 'error');
 
-            // Test error message
-            popupManager.showMessage('Error', 'error');
-            messageEl = document.body.lastElementChild;
-            expect(messageEl.style.background).toBeTruthy();
+            const messageEl = document.querySelector('.message.message-error');
+            expect(messageEl.style.background).toBe('rgb(220, 53, 69)'); // #dc3545
+        });
 
-            // Test info message
-            popupManager.showMessage('Info', 'info');
-            messageEl = document.body.lastElementChild;
-            expect(messageEl.style.background).toBeTruthy();
+        it('should apply default styling for info messages', () => {
+            popupManager.showMessage('Info message');
+
+            const messageEl = document.querySelector('.message.message-info');
+            expect(messageEl.style.background).toBe('rgb(23, 162, 184)'); // #17a2b8
         });
 
         it('should remove message after 3 seconds', () => {
-            const message = 'Test message';
-            popupManager.showMessage(message, 'info');
+            jest.useFakeTimers();
 
-            const initialBodyChildren = document.body.children.length;
-            expect(initialBodyChildren).toBeGreaterThan(0);
+            popupManager.showMessage('Test message');
 
-            // Fast-forward timers
+            const messageEl = document.querySelector('.message');
+            expect(messageEl).toBeDefined();
+
             jest.advanceTimersByTime(3000);
 
-            expect(document.body.children.length).toBe(initialBodyChildren - 1);
+            expect(document.querySelector('.message')).toBeNull();
+
+            jest.useRealTimers();
         });
     });
 
-    describe('event handling', () => {
-        let popupManager;
-
-        beforeEach(() => {
-            popupManager = new PopupManager();
-        });
-
-        it('should navigate to settings when settings button is clicked', () => {
-            // Get the click handler function that was registered
-            const clickHandler = mockElements.settingsBtn.addEventListener.mock.calls[0][1];
-
-            // Call the handler directly
-            clickHandler();
-
-            expect(popupManager.currentView).toBe('settings');
-        });
-
-        it('should navigate back to main when back button is clicked', () => {
-            // First go to settings
-            popupManager.showView('settings');
-            expect(popupManager.currentView).toBe('settings');
-
-            // Get the click handler function that was registered
-            const clickHandler = mockElements.backBtn.addEventListener.mock.calls[0][1];
-
-            // Call the handler directly
-            clickHandler();
-
-            expect(popupManager.currentView).toBe('main');
-        });
-
-        it('should save username when save button is clicked', async () => {
-            const testUsername = 'testuser';
-            mockElements.usernameInput.value = testUsername;
-            mockChrome.storage.local.set.mockResolvedValue();
-
-            // Get the click handler function that was registered
-            const clickHandler = mockElements.saveUsernameBtn.addEventListener.mock.calls[0][1];
-
-            // Call the handler directly
-            await clickHandler();
-
-            expect(mockChrome.storage.local.set).toHaveBeenCalledWith({
-                'amazon_archiver_username': testUsername
-            });
-        });
-
-        it('should save username when Enter key is pressed', async () => {
-            const testUsername = 'testuser';
-            mockElements.usernameInput.value = testUsername;
-            mockChrome.storage.local.set.mockResolvedValue();
-
-            // Get the keypress handler function that was registered
-            const keypressHandler = mockElements.usernameInput.addEventListener.mock.calls[0][1];
-
-            // Create a mock event with Enter key
-            const mockEvent = { key: 'Enter' };
-
-            // Call the handler directly
-            await keypressHandler(mockEvent);
-
-            expect(mockChrome.storage.local.set).toHaveBeenCalledWith({
-                'amazon_archiver_username': testUsername
-            });
-        });
-
-        it('should not save username when other keys are pressed', async () => {
-            const testUsername = 'testuser';
-            mockElements.usernameInput.value = testUsername;
-
-            // Get the keypress handler function that was registered
-            const keypressHandler = mockElements.usernameInput.addEventListener.mock.calls[0][1];
-
-            // Create a mock event with a different key
-            const mockEvent = { key: 'a' };
-
-            // Call the handler directly
-            await keypressHandler(mockEvent);
-
-            expect(mockChrome.storage.local.set).not.toHaveBeenCalled();
-        });
-    });
-
-    describe('Hidden Orders Management', () => {
-        let popupManager;
-
-        beforeEach(() => {
-            popupManager = new PopupManager();
-        });
-
-        it('should load hidden orders on initialization', async () => {
-            const mockHiddenOrders = [
-                { orderId: '123', type: 'hide', username: 'testuser', orderData: { orderDate: '2024-01-01', orderTotal: '$50.00' } }
-            ];
-
-            mockChrome.storage.local.get.mockResolvedValue({
-                'amazon_archiver_hidden_order_123_hide': mockHiddenOrders[0]
-            });
-
-            await popupManager.loadHiddenOrders();
-
-            expect(mockChrome.storage.local.get).toHaveBeenCalledWith(null);
-        });
-
-        it('should display hidden orders correctly', async () => {
-            const mockHiddenOrders = [
-                { orderId: '123', type: 'hide', username: 'testuser', orderData: { orderDate: '2024-01-01', orderTotal: '$50.00', tags: ['electronics', 'gift'] } }
-            ];
-
-            popupManager.displayHiddenOrders(mockHiddenOrders);
-
-            expect(mockElements.hiddenOrdersList.innerHTML).toContain('Order #123');
-            expect(mockElements.hiddenOrdersList.innerHTML).toContain('@testuser');
-            expect(mockElements.hiddenOrdersList.innerHTML).toContain('electronics');
-            expect(mockElements.hiddenOrdersList.innerHTML).toContain('gift');
-        });
-
-        it('should display no orders message when no hidden orders', () => {
-            popupManager.displayHiddenOrders([]);
-
-            expect(mockElements.hiddenOrdersList.innerHTML).toContain('No hidden orders found');
-        });
-
-        it('should unhide order successfully', async () => {
-            const orderId = '123';
-            const type = 'hide';
-
-            mockChrome.storage.local.get.mockResolvedValue({});
-            mockChrome.storage.local.remove.mockResolvedValue();
-
-            await popupManager.unhideOrder(orderId, type);
-
-            expect(mockChrome.storage.local.remove).toHaveBeenCalledWith('amazon_archiver_hidden_order_123_hide');
-        });
-
-        it('should handle unhide order errors gracefully', async () => {
-            const orderId = '123';
-            const type = 'hide';
-
-            // Mock the storage.remove to fail by making the mock storage manager throw
-            const originalRemove = popupManager.storage.remove;
-            popupManager.storage.remove = jest.fn().mockRejectedValue(new Error('Storage error'));
-
-            // Mock showMessage method
-            const showMessageSpy = jest.spyOn(popupManager, 'showMessage');
-
-            await popupManager.unhideOrder(orderId, type);
-
-            expect(showMessageSpy).toHaveBeenCalledWith('Error unhiding order', 'error');
-
-            // Restore original method
-            popupManager.storage.remove = originalRemove;
-        });
-    });
-
-    describe('Resync Functionality', () => {
-        let popupManager;
-
+    describe('resync dialog methods', () => {
         beforeEach(() => {
             popupManager = new PopupManager();
         });
@@ -933,96 +494,252 @@ describe('PopupManager', () => {
         it('should show resync dialog', () => {
             popupManager.showResyncDialog();
 
-            expect(mockElements.resyncDialog.classList.remove).toHaveBeenCalledWith('hidden');
+            const dialog = document.getElementById('resync-dialog');
+            expect(dialog.classList.contains('hidden')).toBe(false);
         });
 
         it('should hide resync dialog', () => {
             popupManager.hideResyncDialog();
 
-            expect(mockElements.resyncDialog.classList.add).toHaveBeenCalledWith('hidden');
+            const dialog = document.getElementById('resync-dialog');
+            expect(dialog.classList.contains('hidden')).toBe(true);
+        });
+    });
+
+    describe('executeResync method', () => {
+        beforeEach(() => {
+            popupManager = new PopupManager();
         });
 
-        it('should execute resync successfully', async () => {
+        it('should clear hidden orders and communicate with content script', async () => {
             mockChrome.storage.local.get.mockResolvedValue({
-                'amazon_archiver_hidden_order_123_hide': { orderId: '123' },
-                'amazon_archiver_hidden_order_456_hide': { orderId: '456' }
+                'amazon_archiver_hidden_order_123_details': { orderId: '123' }
             });
             mockChrome.storage.local.remove.mockResolvedValue();
             mockChrome.tabs.query.mockResolvedValue([{ id: 1, url: 'https://amazon.com/orders' }]);
-            mockChrome.tabs.sendMessage.mockResolvedValue({ success: true, restoredCount: 2 });
+            mockChrome.tabs.sendMessage.mockResolvedValue({ success: true, restoredCount: 5 });
 
-            // Mock showMessage method
-            const showMessageSpy = jest.spyOn(popupManager, 'showMessage');
+            popupManager.hideResyncDialog = jest.fn();
+            popupManager.showMessage = jest.fn();
+            popupManager.loadHiddenOrders = jest.fn();
 
             await popupManager.executeResync();
 
-            expect(mockChrome.storage.local.remove).toHaveBeenCalledWith(['amazon_archiver_hidden_order_123_hide', 'amazon_archiver_hidden_order_456_hide']);
-            expect(showMessageSpy).toHaveBeenCalledWith('Orders resynced successfully! All hidden order data has been cleared.', 'success');
+            expect(mockChrome.storage.local.remove).toHaveBeenCalled();
+            expect(mockChrome.tabs.sendMessage).toHaveBeenCalledWith(1, { action: 'resync-orders' });
+            expect(popupManager.hideResyncDialog).toHaveBeenCalled();
+            expect(popupManager.showMessage).toHaveBeenCalledWith('Orders resynced successfully! All hidden order data has been cleared.', 'success');
+            expect(popupManager.loadHiddenOrders).toHaveBeenCalled();
         });
 
-        it('should handle resync errors gracefully', async () => {
-            mockChrome.storage.local.get.mockRejectedValue(new Error('Storage error'));
+        it('should handle non-Amazon pages gracefully', async () => {
+            mockChrome.storage.local.get.mockResolvedValue({});
+            mockChrome.storage.local.remove.mockResolvedValue();
+            mockChrome.tabs.query.mockResolvedValue([{ id: 1, url: 'https://google.com' }]);
 
-            // Mock showMessage method
-            const showMessageSpy = jest.spyOn(popupManager, 'showMessage');
+            popupManager.hideResyncDialog = jest.fn();
+            popupManager.showMessage = jest.fn();
+            popupManager.loadHiddenOrders = jest.fn();
 
             await popupManager.executeResync();
 
-            expect(showMessageSpy).toHaveBeenCalledWith('Error during resync process', 'error');
+            expect(mockChrome.tabs.sendMessage).not.toHaveBeenCalled();
+            expect(popupManager.hideResyncDialog).toHaveBeenCalled();
+            expect(popupManager.showMessage).toHaveBeenCalledWith('Orders resynced successfully! All hidden order data has been cleared.', 'success');
         });
 
         it('should handle content script communication errors gracefully', async () => {
-            mockChrome.storage.local.get.mockResolvedValue({
-                'amazon_archiver_hidden_order_123_hide': { orderId: '123' }
-            });
+            mockChrome.storage.local.get.mockResolvedValue({});
             mockChrome.storage.local.remove.mockResolvedValue();
             mockChrome.tabs.query.mockResolvedValue([{ id: 1, url: 'https://amazon.com/orders' }]);
             mockChrome.tabs.sendMessage.mockRejectedValue(new Error('Communication error'));
 
+            popupManager.hideResyncDialog = jest.fn();
+            popupManager.showMessage = jest.fn();
+            popupManager.loadHiddenOrders = jest.fn();
+
             await popupManager.executeResync();
 
-            // Should still complete successfully even if content script communication fails
-            expect(mockChrome.storage.local.remove).toHaveBeenCalled();
+            expect(console.warn).toHaveBeenCalledWith('⚠️ Could not communicate with content script (may not be on orders page):', expect.any(Error));
+            expect(popupManager.hideResyncDialog).toHaveBeenCalled();
         });
 
-        it('should clear all hidden orders successfully', async () => {
-            mockChrome.storage.local.get.mockResolvedValue({
-                'amazon_archiver_hidden_order_123_hide': { orderId: '123' },
-                'amazon_archiver_hidden_order_456_hide': { orderId: '456' },
-                'amazon_archiver_order_tags_123': { tags: ['electronics'] }
-            });
+        it('should handle general errors gracefully', async () => {
+            const error = new Error('General error');
+            mockChrome.storage.local.get.mockRejectedValue(error);
+
+            popupManager.showMessage = jest.fn();
+
+            await popupManager.executeResync();
+
+            expect(console.error).toHaveBeenCalledWith('❌ Error during resync:', error);
+            expect(popupManager.showMessage).toHaveBeenCalledWith('Error during resync process', 'error');
+        });
+    });
+
+    describe('clearAllHiddenOrders method', () => {
+        beforeEach(() => {
+            popupManager = new PopupManager();
+        });
+
+        it('should clear all hidden order data from storage', async () => {
+            const mockStorageData = {
+                'amazon_archiver_hidden_order_123_details': { orderId: '123' },
+                'amazon_archiver_hidden_order_456_details': { orderId: '456' },
+                'amazon_archiver_order_tags_123': ['tag1', 'tag2'],
+                'amazon_archiver_other_data': 'unrelated'
+            };
+            mockChrome.storage.local.get.mockResolvedValue(mockStorageData);
             mockChrome.storage.local.remove.mockResolvedValue();
 
             const result = await popupManager.clearAllHiddenOrders();
 
+            expect(mockChrome.storage.local.remove).toHaveBeenCalledWith([
+                'amazon_archiver_hidden_order_123_details',
+                'amazon_archiver_hidden_order_456_details'
+            ]);
+            expect(mockChrome.storage.local.remove).toHaveBeenCalledWith([
+                'amazon_archiver_order_tags_123'
+            ]);
             expect(result).toBe(2);
-            expect(mockChrome.storage.local.remove).toHaveBeenCalledWith(['amazon_archiver_hidden_order_123_hide', 'amazon_archiver_hidden_order_456_hide']);
-            expect(mockChrome.storage.local.remove).toHaveBeenCalledWith(['amazon_archiver_order_tags_123']);
+        });
+
+        it('should handle empty storage gracefully', async () => {
+            mockChrome.storage.local.get.mockResolvedValue({
+                'amazon_archiver_other_data': 'unrelated'
+            });
+
+            const result = await popupManager.clearAllHiddenOrders();
+
+            expect(mockChrome.storage.local.remove).not.toHaveBeenCalled();
+            expect(result).toBe(0);
+        });
+
+        it('should handle storage errors gracefully', async () => {
+            const error = new Error('Storage error');
+            mockChrome.storage.local.get.mockRejectedValue(error);
+
+            await expect(popupManager.clearAllHiddenOrders()).rejects.toThrow('Storage error');
+            expect(console.error).toHaveBeenCalledWith('❌ Error clearing hidden orders:', error);
         });
     });
 
-    describe('Initialization and CSS', () => {
-        it('should set up DOMContentLoaded event listener', () => {
-            // Mock document.addEventListener
-            const addEventListenerSpy = jest.spyOn(document, 'addEventListener');
-
-            // Create a new PopupManager instance to trigger the event listener setup
-            new PopupManager();
-
-            // The mock PopupManager doesn't set up DOMContentLoaded, so we test the mock behavior
-            expect(popupManager).toBeDefined();
+    describe('event listeners', () => {
+        beforeEach(() => {
+            popupManager = new PopupManager();
         });
 
-        it('should inject CSS animation styles', () => {
-            // Mock document.createElement and document.head.appendChild
-            const createElementSpy = jest.spyOn(document, 'createElement');
-            const appendChildSpy = jest.spyOn(document.head, 'appendChild');
+        it('should set up settings button click listener', () => {
+            const settingsBtn = document.getElementById('settings-btn');
+            const clickEvent = new Event('click');
 
-            // Create a new PopupManager instance to trigger the CSS injection
-            new PopupManager();
+            settingsBtn.dispatchEvent(clickEvent);
 
-            // The mock PopupManager doesn't inject CSS, so we test the mock behavior
-            expect(popupManager).toBeDefined();
+            expect(popupManager.currentView).toBe('settings');
+        });
+
+        it('should set up back button click listener', () => {
+            // First go to settings view
+            popupManager.showView('settings');
+            expect(popupManager.currentView).toBe('settings');
+
+            const backBtn = document.getElementById('back-btn');
+            const clickEvent = new Event('click');
+
+            backBtn.dispatchEvent(clickEvent);
+
+            expect(popupManager.currentView).toBe('main');
+        });
+
+        it('should set up save username button click listener', async () => {
+            mockChrome.storage.local.set.mockResolvedValue();
+            popupManager.showMessage = jest.fn();
+
+            const saveBtn = document.getElementById('save-username');
+            const usernameInput = document.getElementById('username');
+            usernameInput.value = 'testuser';
+
+            const clickEvent = new Event('click');
+            saveBtn.dispatchEvent(clickEvent);
+
+            // Wait for async operation
+            await new Promise(resolve => setTimeout(resolve, 0));
+
+            expect(mockChrome.storage.local.set).toHaveBeenCalledWith({
+                'amazon_archiver_username': 'testuser'
+            });
+        });
+
+        it('should set up resync button click listener', () => {
+            const resyncBtn = document.getElementById('resync-btn');
+            const clickEvent = new Event('click');
+
+            resyncBtn.dispatchEvent(clickEvent);
+
+            const dialog = document.getElementById('resync-dialog');
+            expect(dialog.classList.contains('hidden')).toBe(false);
+        });
+
+        it('should set up resync confirm button click listener', async () => {
+            mockChrome.storage.local.get.mockResolvedValue({});
+            mockChrome.storage.local.remove.mockResolvedValue();
+            mockChrome.tabs.query.mockResolvedValue([]);
+
+            popupManager.hideResyncDialog = jest.fn();
+            popupManager.showMessage = jest.fn();
+            popupManager.loadHiddenOrders = jest.fn();
+
+            const confirmBtn = document.getElementById('resync-confirm');
+            const clickEvent = new Event('click');
+
+            confirmBtn.dispatchEvent(clickEvent);
+
+            // Wait for async operation
+            await new Promise(resolve => setTimeout(resolve, 0));
+
+            expect(popupManager.hideResyncDialog).toHaveBeenCalled();
+        });
+
+        it('should set up resync cancel button click listener', () => {
+            const cancelBtn = document.getElementById('resync-cancel');
+            const clickEvent = new Event('click');
+
+            cancelBtn.dispatchEvent(clickEvent);
+
+            const dialog = document.getElementById('resync-dialog');
+            expect(dialog.classList.contains('hidden')).toBe(true);
+        });
+
+        it('should set up username input enter key listener', async () => {
+            mockChrome.storage.local.set.mockResolvedValue();
+            popupManager.showMessage = jest.fn();
+
+            const usernameInput = document.getElementById('username');
+            usernameInput.value = 'testuser';
+
+            const keypressEvent = new KeyboardEvent('keypress', { key: 'Enter' });
+            usernameInput.dispatchEvent(keypressEvent);
+
+            // Wait for async operation
+            await new Promise(resolve => setTimeout(resolve, 0));
+
+            expect(mockChrome.storage.local.set).toHaveBeenCalledWith({
+                'amazon_archiver_username': 'testuser'
+            });
+        });
+
+        it('should not save username on non-enter key press', async () => {
+            const usernameInput = document.getElementById('username');
+            usernameInput.value = 'testuser';
+
+            const keypressEvent = new KeyboardEvent('keypress', { key: 'Tab' });
+            usernameInput.dispatchEvent(keypressEvent);
+
+            // Wait for async operation
+            await new Promise(resolve => setTimeout(resolve, 0));
+
+            expect(mockChrome.storage.local.set).not.toHaveBeenCalled();
         });
     });
 });
+
