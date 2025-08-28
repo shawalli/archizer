@@ -1,7 +1,7 @@
 // Background Script for Amazon Order Archiver
 // Handles Google OAuth and API calls
 
-import { StorageManager } from '../utils/storage.js';
+import { StorageManager } from '../backends/local-storage/storage.js';
 import { specializedLogger as log } from '../utils/logger.js';
 
 log.info('Amazon Order Archiver background script loaded');

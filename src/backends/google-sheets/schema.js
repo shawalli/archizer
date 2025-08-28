@@ -58,7 +58,7 @@ export class GoogleSheetsSchema {
                     displayName: 'Order Date',
                     description: 'Date when the order was placed (YYYY-MM-DD format)',
                     type: 'date',
-                    required: false,
+                    required: true,
                     example: '2024-01-15'
                 },
                 {
@@ -90,7 +90,7 @@ export class GoogleSheetsSchema {
                     name: 'tags',
                     displayName: 'Tags',
                     description: 'Comma-separated list of tags associated with the order',
-                    type: 'string',
+                    type: 'array',
                     required: false,
                     example: 'electronics, gift, expensive'
                 },
@@ -247,6 +247,32 @@ export class GoogleSheetsSchema {
      */
     getSchemaConstraints() {
         return {
+            // Sheet-specific constraints
+            HiddenOrders: {
+                orderId: {
+                    unique: true,
+                    maxLength: 50
+                },
+                username: {
+                    maxLength: 100
+                },
+                tags: {
+                    maxCount: 20,
+                    maxLength: 50
+                }
+            },
+            ActionLog: {
+                actionType: {
+                    allowedValues: ['hide', 'unhide']
+                }
+            },
+            UserSettings: {
+                username: {
+                    unique: true,
+                    maxLength: 100
+                }
+            },
+
             // Data integrity constraints
             integrity: {
                 // Order ID format validation (Amazon order format: XXX-XXXXXXX-XXXXXXX)
@@ -353,7 +379,13 @@ export class GoogleSheetsSchema {
      * @returns {Object} Validation result with errors and warnings
      */
     validateData(sheetName, data) {
-        const schema = this.sheets[sheetName];
+        // Handle both PascalCase and camelCase sheet names
+        let schema = this.sheets[sheetName];
+        if (!schema) {
+            // Try to find the schema by converting to camelCase
+            const camelCaseName = sheetName.charAt(0).toLowerCase() + sheetName.slice(1);
+            schema = this.sheets[camelCaseName];
+        }
         if (!schema) {
             return { valid: false, errors: [`Unknown sheet: ${sheetName}`] };
         }
@@ -373,13 +405,23 @@ export class GoogleSheetsSchema {
             errors.push(`Invalid order ID format: ${data.orderId}`);
         }
 
-        if (data.username && !this.constraints.integrity.usernameFormat.test(data.username)) {
+        // Check username format for different field names based on sheet
+        if (sheetName === 'HiddenOrders' && data.hiddenBy && !this.constraints.integrity.usernameFormat.test(data.hiddenBy)) {
+            errors.push(`Invalid username format: ${data.hiddenBy}`);
+        } else if (sheetName === 'ActionLog' && data.performedBy && !this.constraints.integrity.usernameFormat.test(data.performedBy)) {
+            errors.push(`Invalid username format: ${data.performedBy}`);
+        } else if (sheetName === 'UserSettings' && data.username && !this.constraints.integrity.usernameFormat.test(data.username)) {
             errors.push(`Invalid username format: ${data.username}`);
         }
 
         // Validate hidden type constraints
         if (data.hiddenType && data.hiddenType !== 'details') {
             errors.push(`Invalid hidden type: ${data.hiddenType}. Only 'details' is supported.`);
+        }
+
+        // Validate action constraints for ActionLog
+        if (data.action && !['hide', 'unhide'].includes(data.action)) {
+            errors.push(`Invalid action: ${data.action}. Allowed values: hide, unhide`);
         }
 
         if (data.actionType && data.actionType !== 'details') {

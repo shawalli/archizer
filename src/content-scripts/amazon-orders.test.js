@@ -143,7 +143,7 @@ describe('Amazon Orders Content Script', () => {
             }
         }));
 
-        jest.doMock('../utils/storage.js', () => ({
+        jest.doMock('../backends/local-storage/storage.js', () => ({
             StorageManager: jest.fn(() => mockStorageManager)
         }));
 
@@ -228,7 +228,7 @@ describe('Amazon Orders Content Script', () => {
 
     describe('Dependency Initialization', () => {
         it('should initialize StorageManager, OrderParser, and DOMManipulator', async () => {
-            const { StorageManager } = require('../utils/storage.js');
+            const { StorageManager } = require('../backends/local-storage/storage.js');
             const { OrderParser } = require('../utils/order-parser.js');
             const { DOMManipulator } = require('../utils/dom-manipulator.js');
 

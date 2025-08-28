@@ -1,7 +1,7 @@
 // Storage Management Utilities
 // Local storage for user preferences and caching
 
-import { specializedLogger as log } from './logger.js';
+import { specializedLogger as log } from '../../utils/logger.js';
 
 log.info('Storage utilities loaded');
 
@@ -240,6 +240,84 @@ export class StorageManager {
             return hiddenOrders;
         } catch (error) {
             log.error('Error getting all hidden orders:', error);
+            return [];
+        }
+    }
+
+    /**
+     * Store action log entry
+     * @param {Object} actionData - Action log data to store
+     */
+    async storeActionLog(actionData) {
+        try {
+            const key = this._makeKey(`action_log_${actionData.orderId}_${Date.now()}`);
+            await this.set(key, {
+                ...actionData,
+                timestamp: new Date().toISOString()
+            });
+            log.info(`Stored action log entry for order ${actionData.orderId}`);
+        } catch (error) {
+            log.error(`Error storing action log for order ${actionData.orderId}:`, error);
+        }
+    }
+
+    /**
+     * Get all action log entries from storage
+     * @returns {Array} Array of all action log entries
+     */
+    async getAllActionLog() {
+        try {
+            const allData = await chrome.storage.local.get(null);
+            const actionLog = [];
+
+            for (const [key, value] of Object.entries(allData)) {
+                if (key.startsWith(this._makeKey('action_log_')) && value) {
+                    actionLog.push(value);
+                }
+            }
+
+            return actionLog;
+        } catch (error) {
+            log.error('Error getting all action log entries:', error);
+            return [];
+        }
+    }
+
+    /**
+     * Store user settings
+     * @param {Object} userData - User settings data to store
+     */
+    async storeUserSettings(userData) {
+        try {
+            const key = this._makeKey(`user_settings_${userData.username}`);
+            await this.set(key, {
+                ...userData,
+                timestamp: new Date().toISOString()
+            });
+            log.info(`Stored user settings for ${userData.username}`);
+        } catch (error) {
+            log.error(`Error storing user settings for ${userData.username}:`, error);
+        }
+    }
+
+    /**
+     * Get all user settings from storage
+     * @returns {Array} Array of all user settings
+     */
+    async getAllUserSettings() {
+        try {
+            const allData = await chrome.storage.local.get(null);
+            const userSettings = [];
+
+            for (const [key, value] of Object.entries(allData)) {
+                if (key.startsWith(this._makeKey('user_settings_')) && value) {
+                    userSettings.push(value);
+                }
+            }
+
+            return userSettings;
+        } catch (error) {
+            log.error('Error getting all user settings:', error);
             return [];
         }
     }

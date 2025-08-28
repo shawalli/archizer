@@ -71,12 +71,12 @@
     - [x] 2.6.2 Implement local caching for hidden order details preferences ✅
     - [x] 2.6.3 Design data structure for hidden order details (order number, tags, user, timestamp) ✅
     - [x] 2.6.4 Add methods for storing/retrieving hidden order details data ✅
-    - [ ] 2.6.5 Prepare data format for future Google Sheets integration
-      - [ ] 2.6.5.1 Design normalized data schema for Google Sheets (order ID, date, total, status, tags, username, timestamp, hidden type)
-      - [ ] 2.6.5.2 Implement data export methods that format hidden order data into Google Sheets-compatible format
-      - [ ] 2.6.5.3 Add data validation and sanitization for Google Sheets export (ensure proper date formats, text length limits, etc.)
-      - [ ] 2.6.5.4 Create data transformation utilities to convert between local storage format and Google Sheets format
-      - [ ] 2.6.5.5 Implement batch export functionality for efficient data transfer
+    - [ ] 2.6.5 Prepare data format for Google Sheets backend integration
+      - [x] 2.6.5.1 Design normalized data schema for Google Sheets (order ID, date, total, status, tags, username, timestamp, hidden type) ✅
+      - [x] 2.6.5.2 Implement data import/sync methods for Google Sheets → Browser storage (cache rebuild) ✅
+      - [x] 2.6.5.3 Add data validation and sanitization for Google Sheets import (ensure proper date formats, text length limits, etc.)
+      - [ ] 2.6.5.4 Create data transformation utilities to convert between Google Sheets format and local storage format
+      - [x] 2.6.5.5 Implement resync orchestration (clear cache → pull from sheets → rebuild cache)
     - [x] 2.6.6 Create unit tests for storage functionality ✅
 
 - [ ] 3.0 **Google Sheets API Integration & Authentication**

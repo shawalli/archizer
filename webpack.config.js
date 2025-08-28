@@ -10,7 +10,7 @@ module.exports = {
         'popup/popup': './src/popup/popup.js',
 
         'utils/order-parser': './src/utils/order-parser.js',
-        'utils/storage': './src/utils/storage.js',
+        'utils/storage': './src/backends/local-storage/storage.js',
         'utils/dom-manipulator': './src/utils/dom-manipulator.js',
         'utils/dom-utils': './src/utils/dom-utils.js',
         'utils/validation-utils': './src/utils/validation-utils.js',

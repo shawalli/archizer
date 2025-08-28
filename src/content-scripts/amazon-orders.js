@@ -3,7 +3,7 @@
 
 import { globalExtensionLoader } from '../utils/extension-loader.js';
 import { globalErrorHandler } from '../utils/error-handler.js';
-import { StorageManager } from '../utils/storage.js';
+import { StorageManager } from '../backends/local-storage/storage.js';
 import { OrderParser } from '../utils/order-parser.js';
 import { DOMManipulator } from '../utils/dom-manipulator.js';
 import { TaggingDialog } from '../components/tagging-dialog.js';
