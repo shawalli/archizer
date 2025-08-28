@@ -61,21 +61,23 @@
     - [x] 2.4.3 Implement dialog positioning and Amazon-style theming
     - [x] 2.4.4 Add validation for tag input (length, format, etc.)
     - [x] 2.4.5 Modify hide operations to show tagging dialog instead of separate Tag & Hide button
-    - [ ] 2.4.6 Update unit tests for modified tagging dialog integration
-  - [ ] 2.5 **Dynamic Content Monitoring**
-    - [ ] 2.5.1 Implement MutationObserver for DOM changes
-    - [ ] 2.5.2 Handle pagination and infinite scroll scenarios
-    - [ ] 2.5.3 Apply hiding rules to newly loaded orders
-    - [ ] 2.5.4 Maintain hidden state across page navigation
-    - [ ] 2.5.5 Optimize performance for large order lists
-    - [ ] 2.5.6 Create unit tests for dynamic content handling
-  - [ ] 2.6 **Data Persistence and Sync Preparation**
-    - [ ] 2.6.1 Extend StorageManager for hidden order details data
-    - [ ] 2.6.2 Implement local caching for hidden order details preferences
-    - [ ] 2.6.3 Design data structure for hidden order details (order number, tags, user, timestamp)
-    - [ ] 2.6.4 Add methods for storing/retrieving hidden order details data
+    - [x] 2.4.6 Update unit tests for modified tagging dialog integration
+  - [x] 2.5 **Dynamic Content Monitoring** ✅
+    - [x] 2.5.1 Implement MutationObserver for DOM changes ✅
+    - [x] 2.5.2 Handle pagination and infinite scroll scenarios ✅
+    - [x] 2.5.3 Apply hiding rules to newly loaded orders ✅
+  - [x] 2.6 **Data Persistence and Sync Preparation** ✅
+    - [x] 2.6.1 Extend StorageManager for hidden order details data ✅
+    - [x] 2.6.2 Implement local caching for hidden order details preferences ✅
+    - [x] 2.6.3 Design data structure for hidden order details (order number, tags, user, timestamp) ✅
+    - [x] 2.6.4 Add methods for storing/retrieving hidden order details data ✅
     - [ ] 2.6.5 Prepare data format for future Google Sheets integration
-    - [ ] 2.6.6 Create unit tests for storage functionality
+      - [ ] 2.6.5.1 Design normalized data schema for Google Sheets (order ID, date, total, status, tags, username, timestamp, hidden type)
+      - [ ] 2.6.5.2 Implement data export methods that format hidden order data into Google Sheets-compatible format
+      - [ ] 2.6.5.3 Add data validation and sanitization for Google Sheets export (ensure proper date formats, text length limits, etc.)
+      - [ ] 2.6.5.4 Create data transformation utilities to convert between local storage format and Google Sheets format
+      - [ ] 2.6.5.5 Implement batch export functionality for efficient data transfer
+    - [x] 2.6.6 Create unit tests for storage functionality ✅
 
 - [ ] 3.0 **Google Sheets API Integration & Authentication**
   - [ ] 3.1 Set up Google OAuth 2.0 authentication flow
