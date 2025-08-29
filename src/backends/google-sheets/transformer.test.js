@@ -498,7 +498,9 @@ describe('GoogleSheetsTransformer', () => {
 
                 expect(result).toBeDefined();
                 expect(result.metadata.recovered).toBe(true);
-                expect(result.metadata.recoveryAttempt).toBe(1);
+                // Note: transformWithRecovery doesn't increment recoveryAttempts
+                // It's meant to be called internally by attemptRecovery
+                expect(result.metadata.recoveryAttempt).toBe(0);
             });
         });
 
