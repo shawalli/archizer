@@ -56,7 +56,35 @@
                 <div class="form-group">
                     <label for="username">Username</label>
                     <input type="text" id="username" placeholder="Enter your username" />
-                    <button id="save-username" class="save-btn">Save</button>
+                </div>
+            </div>
+
+            <div class="settings-section">
+                <h2>Google Sheets Integration</h2>
+                <div class="form-group">
+                    <label for="oauth-client-id">OAuth Client ID</label>
+                    <input type="text" id="oauth-client-id" placeholder="YOUR_CLIENT_ID.apps.googleusercontent.com" />
+                    <p class="help-text">Get this from Google Cloud Console → OAuth 2.0 Client IDs</p>
+                </div>
+                <div class="form-group">
+                    <label for="oauth-client-secret">OAuth Client Secret</label>
+                    <input type="password" id="oauth-client-secret" placeholder="Your OAuth Client Secret" />
+                    <p class="help-text">Get this from Google Cloud Console → OAuth 2.0 Client IDs</p>
+                </div>
+                <div class="form-group">
+                    <label for="sheet-url">Google Sheet URL</label>
+                    <input type="text" id="sheet-url"
+                        placeholder="https://docs.google.com/spreadsheets/d/YOUR_SHEET_ID/edit" />
+                    <p class="help-text">Paste the full Google Sheets URL from your browser</p>
+                </div>
+                <div class="form-group">
+                    <label for="sheet-name">Sheet Name</label>
+                    <input type="text" id="sheet-name" placeholder="Orders" value="Orders" />
+                    <p class="help-text">Name of the sheet tab to use (default: Orders)</p>
+                </div>
+                <div class="form-group">
+                    <button id="test-connection-btn" class="test-btn">Test Connection</button>
+                    <div id="connection-status" class="connection-status hidden"></div>
                 </div>
             </div>
 

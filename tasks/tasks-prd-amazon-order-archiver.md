@@ -80,7 +80,7 @@
     - [x] 2.6.6 Create unit tests for storage functionality ✅
 
 - [ ] 3.0 **Google Sheets API Integration & Authentication**
-  - [ ] 3.1 Set up Google OAuth 2.0 authentication flow
+  - [x] 3.1 Set up simple Google Sheets integration (personal account approach)
   - [ ] 3.2 Implement Google Sheets API client with Apps Script web app integration
   - [ ] 3.3 Create CRUD operations for hidden order details (add, remove, get, update)
   - [ ] 3.4 Implement data synchronization between local cache and Google Sheets

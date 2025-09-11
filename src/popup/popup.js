@@ -3,7 +3,9 @@
 
 console.log('Amazon Order Archiver popup script loaded');
 
-// Simple storage manager for popup
+import { configManager } from '../utils/config-manager.js';
+
+// Simple storage manager for popup (for non-config data)
 export class PopupStorageManager {
     constructor() {
         this.prefix = 'amazon_archiver_';
@@ -41,33 +43,63 @@ export class PopupManager {
     constructor() {
         this.storage = new PopupStorageManager();
         this.currentView = 'main';
+        this.lastToastTime = 0; // Track last toast time to prevent duplicates
         this.init();
     }
 
     async init() {
         this.setupEventListeners();
+        this.setupConfigCallbacks();
         await this.loadUserSettings();
         await this.loadHiddenOrders();
         this.showView('main');
     }
 
+    setupConfigCallbacks() {
+        console.log('🔧 Setting up config callbacks...');
+
+        // Register callback for username changes
+        configManager.onAutoSave('username', (value) => {
+            console.log('📢 Username config changed:', value);
+            // Username changes are silent (no toast)
+        });
+
+        // Register callback for Google Sheets changes
+        configManager.onAutoSave('google_sheets', (value) => {
+            console.log('📢 Google Sheets config changed:', value);
+            console.log('📢 About to show toast...');
+
+            // Prevent duplicate toasts within 1 second
+            const now = Date.now();
+            if (now - this.lastToastTime > 1000) {
+                this.showMessage('Configuration saved automatically', 'success');
+                this.lastToastTime = now;
+                console.log('📢 Toast shown');
+            } else {
+                console.log('📢 Toast skipped (duplicate prevention)');
+            }
+        });
+
+        console.log('✅ Config callbacks registered');
+        console.log('📊 Total callbacks registered:', configManager.autoSaveCallbacks.size);
+    }
+
     setupEventListeners() {
+        console.log('🔧 Setting up event listeners...');
+
         // Settings button click
         const settingsBtn = document.getElementById('settings-btn');
         if (settingsBtn) {
+            console.log('✅ Settings button found');
             settingsBtn.addEventListener('click', () => this.showView('settings'));
+        } else {
+            console.error('❌ Settings button not found');
         }
 
         // Back button click
         const backBtn = document.getElementById('back-btn');
         if (backBtn) {
             backBtn.addEventListener('click', () => this.showView('main'));
-        }
-
-        // Save username button click
-        const saveUsernameBtn = document.getElementById('save-username');
-        if (saveUsernameBtn) {
-            saveUsernameBtn.addEventListener('click', () => this.saveUsername());
         }
 
         // Resync button click
@@ -87,15 +119,18 @@ export class PopupManager {
             resyncCancelBtn.addEventListener('click', () => this.hideResyncDialog());
         }
 
-        // Username input enter key
-        const usernameInput = document.getElementById('username');
-        if (usernameInput) {
-            usernameInput.addEventListener('keypress', (e) => {
-                if (e.key === 'Enter') {
-                    this.saveUsername();
-                }
-            });
+        // Google Sheets configuration
+        const testConnectionBtn = document.getElementById('test-connection-btn');
+        if (testConnectionBtn) {
+            console.log('✅ Test connection button found');
+            testConnectionBtn.addEventListener('click', () => this.testGoogleSheetsConnection());
+        } else {
+            console.error('❌ Test connection button not found');
         }
+
+        // Auto-save configuration with debounce
+        this.setupAutoSave();
+
     }
 
     showView(viewName) {
@@ -115,11 +150,15 @@ export class PopupManager {
 
     async loadUserSettings() {
         try {
-            const username = await this.storage.get('username');
+            // Load username from unified config
+            const username = await configManager.get('username');
             const usernameInput = document.getElementById('username');
             if (usernameInput && username) {
                 usernameInput.value = username;
             }
+
+            // Load Google Sheets configuration from unified config
+            await this.loadGoogleSheetsConfig();
         } catch (error) {
             console.error('Error loading user settings:', error);
         }
@@ -213,36 +252,6 @@ export class PopupManager {
         }
     }
 
-    async saveUsername() {
-        try {
-            const usernameInput = document.getElementById('username');
-            const username = usernameInput.value.trim();
-
-            if (!username) {
-                this.showMessage('Username cannot be empty', 'error');
-                return;
-            }
-
-            await this.storage.set('username', username);
-            this.showMessage('Username saved successfully!', 'success');
-
-            // Update the save button text temporarily
-            const saveBtn = document.getElementById('save-username');
-            if (saveBtn) {
-                const originalText = saveBtn.textContent;
-                saveBtn.textContent = 'Saved!';
-                saveBtn.style.background = '#28a745';
-
-                setTimeout(() => {
-                    saveBtn.textContent = originalText;
-                    saveBtn.style.background = '';
-                }, 2000);
-            }
-        } catch (error) {
-            console.error('Error saving username:', error);
-            this.showMessage('Error saving username', 'error');
-        }
-    }
 
     showMessage(message, type = 'info') {
         // Create a temporary message element
@@ -250,7 +259,7 @@ export class PopupManager {
         messageEl.className = `message message-${type}`;
         messageEl.textContent = message;
 
-        // Style the message
+        // Style the message with stacking support
         messageEl.style.cssText = `
             position: fixed;
             top: 20px;
@@ -262,6 +271,8 @@ export class PopupManager {
             font-weight: 500;
             z-index: 1000;
             animation: slideIn 0.3s ease;
+            max-width: 300px;
+            word-wrap: break-word;
         `;
 
         // Set background color based on type
@@ -273,6 +284,9 @@ export class PopupManager {
             messageEl.style.background = '#17a2b8';
         }
 
+        // Push existing toasts down
+        this.pushExistingToastsDown();
+
         // Add to body
         document.body.appendChild(messageEl);
 
@@ -280,8 +294,26 @@ export class PopupManager {
         setTimeout(() => {
             if (messageEl.parentNode) {
                 messageEl.parentNode.removeChild(messageEl);
+                // Adjust remaining toasts when this one is removed
+                this.adjustRemainingToasts();
             }
         }, 3000);
+    }
+
+    pushExistingToastsDown() {
+        const existingToasts = document.querySelectorAll('.message');
+        existingToasts.forEach((toast, index) => {
+            // Each toast gets pushed down by 60px (height + margin)
+            toast.style.top = `${20 + (index + 1) * 60}px`;
+        });
+    }
+
+    adjustRemainingToasts() {
+        const existingToasts = document.querySelectorAll('.message');
+        existingToasts.forEach((toast, index) => {
+            // Recalculate positions after a toast is removed
+            toast.style.top = `${20 + index * 60}px`;
+        });
     }
 
     showResyncDialog() {
@@ -384,11 +416,258 @@ export class PopupManager {
             throw error;
         }
     }
+
+    // Google Sheets Configuration Methods
+    async loadGoogleSheetsConfig() {
+        try {
+            console.log('📥 Loading Google Sheets configuration...');
+
+            // Load from unified config manager
+            const config = await configManager.get('google_sheets');
+            if (config) {
+                this.populateConfigFields(config);
+                console.log('✅ Config loaded from unified config manager');
+            } else {
+                console.log('ℹ️ No configuration found');
+            }
+        } catch (error) {
+            console.error('❌ Error loading Google Sheets config:', error);
+        }
+    }
+
+    populateConfigFields(config) {
+        const oauthClientIdInput = document.getElementById('oauth-client-id');
+        const oauthClientSecretInput = document.getElementById('oauth-client-secret');
+        const sheetUrlInput = document.getElementById('sheet-url');
+        const sheetNameInput = document.getElementById('sheet-name');
+
+        if (oauthClientIdInput && config.oauthClientId) {
+            oauthClientIdInput.value = config.oauthClientId;
+        }
+        if (oauthClientSecretInput && config.oauthClientSecret) {
+            oauthClientSecretInput.value = config.oauthClientSecret;
+        }
+        if (sheetUrlInput && config.sheetUrl) {
+            sheetUrlInput.value = config.sheetUrl;
+        }
+        if (sheetNameInput && config.sheetName) {
+            sheetNameInput.value = config.sheetName;
+        }
+    }
+
+
+    async testGoogleSheetsConnection() {
+        try {
+            console.log('🧪 Testing Google Sheets connection...');
+
+            const oauthClientId = document.getElementById('oauth-client-id').value.trim();
+            const oauthClientSecret = document.getElementById('oauth-client-secret').value.trim();
+            const sheetUrl = document.getElementById('sheet-url').value.trim();
+
+            if (!oauthClientId || !oauthClientSecret || !sheetUrl) {
+                this.showMessage('Please enter OAuth Client ID, Client Secret, and Sheet URL first', 'error');
+                return;
+            }
+
+            // Validate URL format
+            try {
+                configManager.extractSheetId(sheetUrl);
+                console.log('📝 Testing with sheet ID:', configManager.extractSheetId(sheetUrl));
+            } catch (error) {
+                this.showMessage(error.message, 'error');
+                return;
+            }
+
+            // Test connection (without saving)
+            console.log('📤 Sending test connection request...');
+            const response = await chrome.runtime.sendMessage({
+                type: 'GOOGLE_SHEETS_TEST_CONNECTION',
+                testConfig: { oauthClientId, oauthClientSecret, sheetUrl }
+            });
+
+            console.log('📥 Test connection response:', response);
+
+            if (response && response.success) {
+                const successMsg = 'Connection successful! Connected to: ' + response.sheetInfo.title;
+                console.log('✅', successMsg);
+
+                // Show write test results
+                let testDetails = '';
+                if (response.sheetInfo.testResult) {
+                    const result = response.sheetInfo.testResult;
+                    if (result.success) {
+                        testDetails += `\n\n✅ ${result.message}`;
+                    } else {
+                        testDetails += `\n\n❌ ${result.message}`;
+                    }
+                }
+
+                this.showMessage(successMsg + testDetails, 'success');
+            } else {
+                const errorMsg = 'Connection failed: ' + (response?.error || 'Unknown error');
+                console.error('❌', errorMsg);
+                this.showMessage(errorMsg, 'error');
+            }
+        } catch (error) {
+            console.error('❌ Error testing Google Sheets connection:', error);
+            this.showMessage('Error testing connection: ' + error.message, 'error');
+        }
+    }
+
+    showConnectionStatus(message, type) {
+        const statusElement = document.getElementById('connection-status');
+        if (statusElement) {
+            statusElement.textContent = message;
+            statusElement.className = `connection-status ${type}`;
+            statusElement.classList.remove('hidden');
+        }
+    }
+
+    clearConnectionStatus() {
+        const statusElement = document.getElementById('connection-status');
+        if (statusElement) {
+            statusElement.classList.add('hidden');
+        }
+    }
+
+    setupAutoSave() {
+        // Debounce timer for auto-save
+        this.autoSaveTimer = null;
+        this.lastSavedConfig = null; // Track last saved config to prevent duplicate saves
+
+        // Configuration fields to watch
+        const configFields = ['username', 'oauth-client-id', 'oauth-client-secret', 'sheet-url', 'sheet-name'];
+
+        configFields.forEach(fieldId => {
+            const field = document.getElementById(fieldId);
+            if (field) {
+                // Listen for input, paste, and change events
+                field.addEventListener('input', () => this.scheduleAutoSave());
+                field.addEventListener('paste', () => this.scheduleAutoSave());
+                field.addEventListener('change', () => this.scheduleAutoSave());
+            }
+        });
+    }
+
+    scheduleAutoSave() {
+        // Clear existing timer
+        if (this.autoSaveTimer) {
+            clearTimeout(this.autoSaveTimer);
+        }
+
+        // Set new timer for 700ms
+        this.autoSaveTimer = setTimeout(() => {
+            this.autoSaveConfig();
+        }, 700);
+    }
+
+    async autoSaveConfig() {
+        console.log('🔄 autoSaveConfig called');
+        try {
+            // Get current configuration values
+            const username = document.getElementById('username').value.trim();
+            const oauthClientId = document.getElementById('oauth-client-id').value.trim();
+            const oauthClientSecret = document.getElementById('oauth-client-secret').value.trim();
+            const sheetUrl = document.getElementById('sheet-url').value.trim();
+            const sheetName = document.getElementById('sheet-name').value.trim() || 'Orders';
+
+            // Create current config object
+            const currentConfig = {
+                username,
+                google_sheets: { oauthClientId, oauthClientSecret, sheetUrl, sheetName }
+            };
+
+            // Check if configuration has actually changed
+            if (this.lastSavedConfig && JSON.stringify(currentConfig) === JSON.stringify(this.lastSavedConfig)) {
+                console.log('⏭️ Configuration unchanged, skipping save');
+                return;
+            }
+
+            console.log('✅ Configuration changed, proceeding with save');
+
+            // Handle username auto-save (silent, no toast)
+            if (username) {
+                console.log('💾 Saving username:', username);
+                await configManager.setLenient('username', username);
+                console.log('💾 Username auto-saved');
+            }
+
+            // Handle Google Sheets configuration auto-save
+            console.log('📝 Google Sheets fields:', {
+                oauthClientId: oauthClientId ? '***' : 'empty',
+                oauthClientSecret: oauthClientSecret ? '***' : 'empty',
+                sheetUrl: sheetUrl ? '***' : 'empty',
+                sheetName
+            });
+
+            // Auto-save Google Sheets if we have at least one field filled
+            if (oauthClientId || oauthClientSecret || sheetUrl) {
+                console.log('✅ At least one Google Sheets field present, proceeding with save');
+
+                const config = { oauthClientId, oauthClientSecret, sheetUrl, sheetName };
+                console.log('📤 About to call configManager.setLenient with config:', { ...config, oauthClientId: '***', oauthClientSecret: '***' });
+
+                try {
+                    await configManager.setLenient('google_sheets', config);
+                    console.log('💾 Google Sheets configuration auto-saved');
+                    // Toast will be shown via the config callback
+                } catch (error) {
+                    console.warn('⚠️ Error during auto-save:', error.message);
+                    // Don't show error toast for auto-save failures
+                }
+            } else {
+                console.log('⏭️ Skipping Google Sheets save - no fields filled');
+            }
+
+            // Update last saved config
+            this.lastSavedConfig = currentConfig;
+            console.log('💾 Last saved config updated');
+
+        } catch (error) {
+            console.error('❌ Error auto-saving configuration:', error);
+        }
+    }
+
+    // Debug method - call this manually in console to test
+    testDebug() {
+        console.log('🧪 Debug test method called!');
+        console.log('Current view:', this.currentView);
+        console.log('Storage instance:', this.storage);
+        console.log('Test button exists:', !!document.getElementById('test-connection-btn'));
+        console.log('Username field exists:', !!document.getElementById('username'));
+        console.log('Google Sheets fields exist:', {
+            sheetUrl: !!document.getElementById('sheet-url'),
+            sheetName: !!document.getElementById('sheet-name')
+        });
+
+        // Test the toast system directly
+        console.log('🧪 Testing toast system directly...');
+        this.showMessage('Test toast - this should appear!', 'success');
+
+        // Test the Google Sheets callback directly
+        console.log('🧪 Testing Google Sheets callback directly...');
+        const testConfig = {
+            sheetUrl: 'https://docs.google.com/spreadsheets/d/1ABC123/edit',
+            apiKey: 'test-key',
+            sheetName: 'TestOrders'
+        };
+
+        // Trigger the callback manually
+        if (configManager.autoSaveCallbacks && configManager.autoSaveCallbacks.has('google_sheets')) {
+            const callback = configManager.autoSaveCallbacks.get('google_sheets');
+            callback(testConfig);
+            console.log('✅ Google Sheets callback triggered manually');
+        } else {
+            console.log('❌ Google Sheets callback not found');
+        }
+    }
 }
 
 // Initialize popup when DOM is loaded
 document.addEventListener('DOMContentLoaded', () => {
-    new PopupManager();
+    console.log('🚀 DOM loaded, initializing PopupManager...');
+    window.popupManager = new PopupManager();
+    console.log('✅ PopupManager initialized:', window.popupManager);
 });
 
 // Add CSS animation for message
