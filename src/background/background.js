@@ -27,10 +27,10 @@ async function initializeStorage() {
 async function initializeGoogleSheets() {
     try {
         const config = await configManager.get('google_sheets');
-        if (config && config.sheetUrl && config.apiKey) {
+        if (config && config.sheetUrl) {
             const sheetId = configManager.extractSheetId(config.sheetUrl);
             if (sheetId) {
-                googleSheetsClient.configure(sheetId, config.apiKey);
+                googleSheetsClient.configure(sheetId);
                 log.success('Google Sheets client initialized successfully');
             } else {
                 log.error('Could not extract Sheet ID from URL');
@@ -174,7 +174,7 @@ async function handleGoogleSheetsConfigGet(sendResponse) {
     try {
         log.info('📥 Received GOOGLE_SHEETS_CONFIG_GET request');
         const config = await configManager.get('google_sheets');
-        log.info('📤 Sending config response:', { ...config, apiKey: config?.apiKey ? '***' : 'null' });
+        log.info('📤 Sending config response:', { ...config });
         sendResponse({ success: true, config });
     } catch (error) {
         log.error('❌ Error getting Google Sheets config:', error);
@@ -184,16 +184,16 @@ async function handleGoogleSheetsConfigGet(sendResponse) {
 
 async function handleGoogleSheetsConfigSet(config, sendResponse) {
     try {
-        log.info('📥 Received GOOGLE_SHEETS_CONFIG_SET request:', { ...config, apiKey: '***' });
+        log.info('📥 Received GOOGLE_SHEETS_CONFIG_SET request:', { ...config });
 
         await configManager.set('google_sheets', config);
         log.info('💾 Config saved successfully');
 
         // Configure the client with new settings
-        if (config.sheetUrl && config.apiKey) {
+        if (config.sheetUrl) {
             const sheetId = configManager.extractSheetId(config.sheetUrl);
             if (sheetId) {
-                googleSheetsClient.configure(sheetId, config.apiKey);
+                googleSheetsClient.configure(sheetId);
                 log.info('🔧 Google Sheets client configured');
             } else {
                 log.error('❌ Could not extract Sheet ID from URL');
@@ -222,11 +222,10 @@ async function handleGoogleSheetsConfigValidate(sendResponse) {
 /**
  * Set up the 3 required sheets in Google Sheets
  * @param {string} sheetId - Google Sheets ID
- * @param {string} apiKey - Google API key
  * @param {GoogleSheetsSchema} schema - Schema definition
  * @returns {Object} Setup result
  */
-async function setupGoogleSheets(sheetId, apiKey, schema) {
+async function setupGoogleSheets(sheetId, schema) {
     try {
         log.info('🔧 Setting up Google Sheets with 3 required sheets...');
 
@@ -435,7 +434,7 @@ async function handleGoogleSheetsTestConnection(message, sendResponse) {
 
         // Check for and create required sheets
         const schema = new GoogleSheetsSchema();
-        const setupResult = await setupGoogleSheets(sheetId, null, schema);
+        const setupResult = await setupGoogleSheets(sheetId, schema);
 
         log.info('📋 Sheet setup result:', setupResult);
 
@@ -448,8 +447,7 @@ async function handleGoogleSheetsTestConnection(message, sendResponse) {
             await configManager.set('google_sheets', {
                 oauthClientId: config.oauthClientId,
                 oauthClientSecret: config.oauthClientSecret,
-                sheetUrl: config.sheetUrl,
-                sheetName: config.sheetName || 'Orders'
+                sheetUrl: config.sheetUrl
             });
             log.info('✅ Configuration saved successfully');
         }
@@ -526,7 +524,7 @@ async function handleGoogleSheetsSetup(message, sendResponse) {
         // Set up the Google Sheets structure
         log.info('📝 Setting up Google Sheets structure...');
         const schema = new GoogleSheetsSchema();
-        const setupResult = await setupGoogleSheets(sheetId, null, schema);
+        const setupResult = await setupGoogleSheets(sheetId, schema);
 
         sendResponse({
             success: true,

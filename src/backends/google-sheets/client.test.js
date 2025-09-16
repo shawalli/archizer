@@ -29,17 +29,15 @@ describe('GoogleSheetsClient', () => {
     describe('constructor', () => {
         it('should initialize with default values', () => {
             expect(client.sheetId).toBeNull();
-            expect(client.apiKey).toBeNull();
             expect(client.baseUrl).toBe('https://sheets.googleapis.com/v4/spreadsheets');
         });
     });
 
     describe('configure', () => {
-        it('should configure client with sheet ID and API key', () => {
-            client.configure('test_sheet_id', 'test_api_key');
+        it('should configure client with sheet ID', () => {
+            client.configure('test_sheet_id');
 
             expect(client.sheetId).toBe('test_sheet_id');
-            expect(client.apiKey).toBe('test_api_key');
         });
     });
 
@@ -58,8 +56,8 @@ describe('GoogleSheetsClient', () => {
             expect(client.isConfigured()).toBe(false);
         });
 
-        it('should return false when only API key is set', () => {
-            client.apiKey = 'test_api_key';
+        it('should return false when only sheet ID is set but not configured', () => {
+            client.sheetId = 'test_sheet_id';
             expect(client.isConfigured()).toBe(false);
         });
     });

@@ -34,14 +34,12 @@ export class ConfigManager {
             required: false,
             default: {
                 sheetUrl: null,
-                apiKey: null,
                 sheetName: 'Orders',
                 lastSync: null
             },
             description: 'Google Sheets integration settings',
             schema: {
                 sheetUrl: { type: 'string', required: true },
-                apiKey: { type: 'string', required: true },
                 sheetName: { type: 'string', required: false, default: 'Orders' },
                 lastSync: { type: 'string', required: false, default: null }
             }

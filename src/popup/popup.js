@@ -456,7 +456,6 @@ export class PopupManager {
         const oauthClientIdInput = document.getElementById('oauth-client-id');
         const oauthClientSecretInput = document.getElementById('oauth-client-secret');
         const sheetUrlInput = document.getElementById('sheet-url');
-        const sheetNameInput = document.getElementById('sheet-name');
 
         if (oauthClientIdInput && config.oauthClientId) {
             oauthClientIdInput.value = config.oauthClientId;
@@ -466,9 +465,6 @@ export class PopupManager {
         }
         if (sheetUrlInput && config.sheetUrl) {
             sheetUrlInput.value = config.sheetUrl;
-        }
-        if (sheetNameInput && config.sheetName) {
-            sheetNameInput.value = config.sheetName;
         }
     }
 
@@ -541,10 +537,8 @@ export class PopupManager {
 
                 this.showMessage(successMsg + setupDetails + testDetails, 'success');
 
-                // If this was a setup operation, save the configuration and reset button
+                // If this was a setup operation, reset button to normal state
                 if (isSetupOperation) {
-                    await this.saveGoogleSheetsConfig();
-
                     // Reset button to normal state
                     if (testConnectionBtn) {
                         testConnectionBtn.textContent = 'Test Connection';
@@ -610,7 +604,7 @@ export class PopupManager {
                 console.log('🔄 URL not empty, checking against saved config...');
 
                 // Check if URL has changed from saved config
-                const currentConfig = await this.storageManager.get('google_sheets');
+                const currentConfig = await this.storage.get('google_sheets');
                 const savedUrl = currentConfig?.sheetUrl || '';
                 console.log('💾 Saved URL:', savedUrl);
 
@@ -721,7 +715,7 @@ export class PopupManager {
         this.lastSavedConfig = null; // Track last saved config to prevent duplicate saves
 
         // Configuration fields to watch
-        const configFields = ['username', 'oauth-client-id', 'oauth-client-secret', 'sheet-url', 'sheet-name'];
+        const configFields = ['username', 'oauth-client-id', 'oauth-client-secret', 'sheet-url'];
 
         configFields.forEach(fieldId => {
             const field = document.getElementById(fieldId);
@@ -754,12 +748,11 @@ export class PopupManager {
             const oauthClientId = document.getElementById('oauth-client-id').value.trim();
             const oauthClientSecret = document.getElementById('oauth-client-secret').value.trim();
             const sheetUrl = document.getElementById('sheet-url').value.trim();
-            const sheetName = document.getElementById('sheet-name').value.trim() || 'Orders';
 
             // Create current config object
             const currentConfig = {
                 username,
-                google_sheets: { oauthClientId, oauthClientSecret, sheetUrl, sheetName }
+                google_sheets: { oauthClientId, oauthClientSecret, sheetUrl }
             };
 
             // Check if configuration has actually changed
@@ -781,15 +774,14 @@ export class PopupManager {
             console.log('📝 Google Sheets fields:', {
                 oauthClientId: oauthClientId ? '***' : 'empty',
                 oauthClientSecret: oauthClientSecret ? '***' : 'empty',
-                sheetUrl: sheetUrl ? '***' : 'empty',
-                sheetName
+                sheetUrl: sheetUrl ? '***' : 'empty'
             });
 
             // Auto-save Google Sheets if we have at least one field filled
             if (oauthClientId || oauthClientSecret || sheetUrl) {
                 console.log('✅ At least one Google Sheets field present, proceeding with save');
 
-                const config = { oauthClientId, oauthClientSecret, sheetUrl, sheetName };
+                const config = { oauthClientId, oauthClientSecret, sheetUrl };
                 console.log('📤 About to call configManager.setLenient with config:', { ...config, oauthClientId: '***', oauthClientSecret: '***' });
 
                 try {
@@ -821,8 +813,7 @@ export class PopupManager {
         console.log('Test button exists:', !!document.getElementById('test-connection-btn'));
         console.log('Username field exists:', !!document.getElementById('username'));
         console.log('Google Sheets fields exist:', {
-            sheetUrl: !!document.getElementById('sheet-url'),
-            sheetName: !!document.getElementById('sheet-name')
+            sheetUrl: !!document.getElementById('sheet-url')
         });
 
         // Test the toast system directly
@@ -832,9 +823,7 @@ export class PopupManager {
         // Test the Google Sheets callback directly
         console.log('🧪 Testing Google Sheets callback directly...');
         const testConfig = {
-            sheetUrl: 'https://docs.google.com/spreadsheets/d/1ABC123/edit',
-            apiKey: 'test-key',
-            sheetName: 'TestOrders'
+            sheetUrl: 'https://docs.google.com/spreadsheets/d/1ABC123/edit'
         };
 
         // Trigger the callback manually

@@ -9,16 +9,14 @@ import { googleOAuth } from './oauth.js';
 export class GoogleSheetsClient {
     constructor() {
         this.sheetId = null;
-        this.apiKey = null;
         this.baseUrl = 'https://sheets.googleapis.com/v4/spreadsheets';
     }
 
     /**
-     * Configure the client with sheet ID and API key
+     * Configure the client with sheet ID
      */
-    configure(sheetId, apiKey) {
+    configure(sheetId) {
         this.sheetId = sheetId;
-        this.apiKey = apiKey;
         log.info('Google Sheets client configured with sheet ID:', sheetId);
     }
 
@@ -102,11 +100,13 @@ export class GoogleSheetsClient {
         }
 
         try {
-            const url = `${this.baseUrl}/${this.sheetId}/values/${range}?valueInputOption=RAW&key=${this.apiKey}`;
+            const accessToken = await googleOAuth.getAccessToken();
+            const url = `${this.baseUrl}/${this.sheetId}/values/${range}?valueInputOption=RAW`;
             const response = await fetch(url, {
                 method: 'PUT',
                 headers: {
                     'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${accessToken}`
                 },
                 body: JSON.stringify({
                     values: [values]  // Wrap values in an array to create a single row
@@ -181,9 +181,13 @@ export class GoogleSheetsClient {
         }
 
         try {
-            const url = `${this.baseUrl}/${this.sheetId}/values/${range}:clear?key=${this.apiKey}`;
+            const accessToken = await googleOAuth.getAccessToken();
+            const url = `${this.baseUrl}/${this.sheetId}/values/${range}:clear`;
             const response = await fetch(url, {
-                method: 'POST'
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${accessToken}`
+                }
             });
 
             if (!response.ok) {
@@ -267,7 +271,8 @@ export class GoogleSheetsClient {
         }
 
         try {
-            const url = `${this.baseUrl}/${this.sheetId}:batchUpdate?key=${this.apiKey}`;
+            const accessToken = await googleOAuth.getAccessToken();
+            const url = `${this.baseUrl}/${this.sheetId}:batchUpdate`;
 
             const requestBody = {
                 requests: [{
@@ -294,7 +299,8 @@ export class GoogleSheetsClient {
             const response = await fetch(url, {
                 method: 'POST',
                 headers: {
-                    'Content-Type': 'application/json'
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${accessToken}`
                 },
                 body: JSON.stringify(requestBody)
             });

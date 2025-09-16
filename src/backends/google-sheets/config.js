@@ -10,7 +10,6 @@ export class GoogleSheetsConfig {
         this.configKey = 'google_sheets_config';
         this.defaultConfig = {
             sheetUrl: null,
-            apiKey: null,
             sheetName: 'Orders',
             lastSync: null
         };
@@ -67,7 +66,7 @@ export class GoogleSheetsConfig {
      */
     async isConfigured() {
         const config = await this.getConfig();
-        return !!(config.sheetUrl && config.apiKey);
+        return !!(config.sheetUrl);
     }
 
     /**
@@ -90,14 +89,6 @@ export class GoogleSheetsConfig {
     }
 
     /**
-     * Get API key
-     */
-    async getApiKey() {
-        const config = await this.getConfig();
-        return config.apiKey;
-    }
-
-    /**
      * Get sheet name
      */
     async getSheetName() {
@@ -110,13 +101,6 @@ export class GoogleSheetsConfig {
      */
     async setSheetUrl(sheetUrl) {
         await this.updateConfig({ sheetUrl });
-    }
-
-    /**
-     * Set API key
-     */
-    async setApiKey(apiKey) {
-        await this.updateConfig({ apiKey });
     }
 
     /**
@@ -163,10 +147,6 @@ export class GoogleSheetsConfig {
 
         if (!config.sheetUrl) {
             errors.push('Sheet URL is required');
-        }
-
-        if (!config.apiKey) {
-            errors.push('API key is required');
         }
 
         if (!config.sheetName) {
