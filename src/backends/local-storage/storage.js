@@ -38,24 +38,89 @@ export class StorageManager {
         return `order_tags_${orderId}`;
     }
 
+    /**
+     * Check if the extension context is still valid
+     * @returns {boolean} True if context is valid
+     */
+    _isContextValid() {
+        try {
+            // Try to access chrome.runtime to check if context is valid
+            return chrome.runtime && chrome.runtime.id;
+        } catch (error) {
+            console.warn('⚠️ Extension context invalidated:', error.message);
+            return false;
+        }
+    }
+
+    /**
+     * Get a value from storage with context validation
+     * @param {string} key - Storage key
+     * @returns {*} Stored value or null
+     */
     async get(key) {
-        const fullKey = this._makeKey(key);
-        const result = await chrome.storage.local.get(fullKey);
-        return result[fullKey] || null;
+        if (!this._isContextValid()) {
+            console.warn('⚠️ Extension context invalidated, cannot access storage');
+            return null;
+        }
+
+        try {
+            const fullKey = this._makeKey(key);
+            const result = await chrome.storage.local.get(fullKey);
+            return result[fullKey] || null;
+        } catch (error) {
+            console.error('❌ Error getting from storage:', error);
+            return null;
+        }
     }
 
+    /**
+     * Set a value in storage with context validation
+     * @param {string} key - Storage key
+     * @param {*} value - Value to store
+     */
     async set(key, value) {
-        const fullKey = this._makeKey(key);
-        await chrome.storage.local.set({ [fullKey]: value });
+        if (!this._isContextValid()) {
+            console.warn('⚠️ Extension context invalidated, cannot access storage');
+            return;
+        }
+
+        try {
+            const fullKey = this._makeKey(key);
+            await chrome.storage.local.set({ [fullKey]: value });
+        } catch (error) {
+            console.error('❌ Error setting storage:', error);
+        }
     }
 
+    /**
+     * Remove a value from storage with context validation
+     * @param {string} key - Storage key
+     */
     async remove(key) {
-        const fullKey = this._makeKey(key);
-        await chrome.storage.local.remove(fullKey);
+        if (!this._isContextValid()) {
+            console.warn('⚠️ Extension context invalidated, cannot access storage');
+            return;
+        }
+
+        try {
+            const fullKey = this._makeKey(key);
+            await chrome.storage.local.remove(fullKey);
+        } catch (error) {
+            console.error('❌ Error removing from storage:', error);
+        }
     }
 
     async clear() {
-        await chrome.storage.local.clear();
+        if (!this._isContextValid()) {
+            console.warn('⚠️ Extension context invalidated, cannot access storage');
+            return;
+        }
+
+        try {
+            await chrome.storage.local.clear();
+        } catch (error) {
+            console.error('❌ Error clearing storage:', error);
+        }
     }
 
     /**
@@ -83,6 +148,9 @@ export class StorageManager {
 
             // Sync to Google Sheets
             await this.syncHiddenOrderToGoogleSheets(hiddenOrderData);
+
+            // Add audit log entry for hide action
+            await this.addAuditLogEntry('hide', orderId, type, username);
         } catch (error) {
             log.error(`Error storing hidden order ${orderId}:`, error);
         }
@@ -95,9 +163,24 @@ export class StorageManager {
      */
     async removeHiddenOrder(orderId, type) {
         try {
+            console.log(`🔧 removeHiddenOrder called for order ${orderId} (${type})`);
             const key = this._makeHiddenOrderKey(orderId, type);
+
+            // Get the hidden order data before removing it (for audit logging)
+            const hiddenOrderData = await this.get(key);
+            console.log(`🔧 Retrieved hidden order data:`, hiddenOrderData);
+
             await this.remove(key);
             log.info(`Removed hidden order ${orderId} (${type})`);
+
+            // Sync unhide operation to Google Sheets and add audit log
+            if (hiddenOrderData) {
+                console.log(`🔧 Syncing unhide operation to Google Sheets...`);
+                await this.syncUnhideOrderToGoogleSheets(hiddenOrderData);
+                await this.addAuditLogEntry('unhide', orderId, type, hiddenOrderData.username);
+            } else {
+                console.warn(`⚠️ No hidden order data found for order ${orderId}`);
+            }
         } catch (error) {
             log.error(`Error removing hidden order ${orderId}:`, error);
         }
@@ -333,6 +416,11 @@ export class StorageManager {
      */
     async syncHiddenOrderToGoogleSheets(hiddenOrderData) {
         try {
+            if (!this._isContextValid()) {
+                console.warn('⚠️ Extension context invalidated, cannot sync to Google Sheets');
+                return;
+            }
+
             log.info(`📤 Syncing hidden order ${hiddenOrderData.orderId} to Google Sheets...`);
 
             // Send message to background script to sync to Google Sheets
@@ -349,6 +437,77 @@ export class StorageManager {
         } catch (error) {
             log.error(`❌ Error syncing hidden order ${hiddenOrderData.orderId} to Google Sheets:`, error);
             // Don't throw error - sync failure shouldn't break the hide operation
+        }
+    }
+
+    /**
+     * Sync unhide order to Google Sheets
+     * @param {Object} hiddenOrderData - Hidden order data to remove from sheets
+     */
+    async syncUnhideOrderToGoogleSheets(hiddenOrderData) {
+        try {
+            if (!this._isContextValid()) {
+                console.warn('⚠️ Extension context invalidated, cannot sync unhide to Google Sheets');
+                return;
+            }
+
+            log.info(`📤 Syncing unhide operation for order ${hiddenOrderData.orderId} to Google Sheets...`);
+
+            // Send message to background script to remove from Google Sheets
+            const response = await chrome.runtime.sendMessage({
+                type: 'REMOVE_HIDDEN_ORDER_FROM_SHEETS',
+                hiddenOrderData: hiddenOrderData
+            });
+
+            if (response && response.success) {
+                log.info(`✅ Successfully removed hidden order ${hiddenOrderData.orderId} from Google Sheets`);
+            } else {
+                log.warning(`⚠️ Failed to remove hidden order ${hiddenOrderData.orderId} from Google Sheets:`, response?.error);
+            }
+        } catch (error) {
+            log.error(`❌ Error syncing unhide operation for order ${hiddenOrderData.orderId} to Google Sheets:`, error);
+            // Don't throw error - sync failure shouldn't break the unhide operation
+        }
+    }
+
+    /**
+     * Add audit log entry to Google Sheets
+     * @param {string} action - Action performed ('hide' or 'unhide')
+     * @param {string} orderId - Order ID
+     * @param {string} actionType - Type of action ('details')
+     * @param {string} performedBy - Username who performed the action
+     */
+    async addAuditLogEntry(action, orderId, actionType, performedBy) {
+        try {
+            if (!this._isContextValid()) {
+                console.warn('⚠️ Extension context invalidated, cannot add audit log');
+                return;
+            }
+
+            log.info(`📝 Adding audit log entry: ${action} for order ${orderId} by ${performedBy}`);
+
+            const auditLogData = {
+                timestamp: new Date().toISOString(),
+                orderId: orderId,
+                action: action,
+                actionType: actionType,
+                performedBy: performedBy
+            };
+
+            // Send message to background script to add audit log entry
+            const response = await chrome.runtime.sendMessage({
+                type: 'ADD_AUDIT_LOG_ENTRY',
+                auditLogData: auditLogData
+            });
+
+            if (response && response.success) {
+                log.info(`✅ Successfully added audit log entry for ${action} operation on order ${orderId}`);
+            } else {
+                log.warning(`⚠️ Failed to add audit log entry for ${action} operation on order ${orderId}:`, response?.error);
+            }
+        } catch (error) {
+            log.error(`❌ Error adding audit log entry for ${action} operation on order ${orderId}:`, error);
+            // Don't throw error - audit logging failure shouldn't break the operation
         }
     }
 }

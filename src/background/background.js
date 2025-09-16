@@ -98,6 +98,14 @@ async function handleMessage(message, sender, sendResponse) {
             await handleSyncHiddenOrderToSheets(message, sendResponse);
             break;
 
+        case 'REMOVE_HIDDEN_ORDER_FROM_SHEETS':
+            await handleRemoveHiddenOrderFromSheets(message, sendResponse);
+            break;
+
+        case 'ADD_AUDIT_LOG_ENTRY':
+            await handleAddAuditLogEntry(message, sendResponse);
+            break;
+
         default:
             log.warning('Unknown message type:', message.type);
             sendResponse({ success: false, error: 'Unknown message type' });
@@ -608,6 +616,160 @@ async function handleSyncHiddenOrderToSheets(message, sendResponse) {
 
     } catch (error) {
         log.error('❌ Error syncing hidden order to Google Sheets:', error);
+        sendResponse({
+            success: false,
+            error: error.message
+        });
+    }
+}
+
+/**
+ * Handle removing hidden order from Google Sheets
+ */
+async function handleRemoveHiddenOrderFromSheets(message, sendResponse) {
+    try {
+        log.info('📤 Removing hidden order from Google Sheets...');
+        log.info('📤 Message received:', message);
+
+        const hiddenOrderData = message.hiddenOrderData;
+        if (!hiddenOrderData) {
+            sendResponse({
+                success: false,
+                error: 'No hidden order data provided'
+            });
+            return;
+        }
+
+        // Get Google Sheets configuration
+        const config = await configManager.get('google_sheets');
+        if (!config || !config.oauthClientId || !config.oauthClientSecret || !config.sheetUrl) {
+            log.warning('⚠️ Google Sheets not configured, skipping removal');
+            sendResponse({
+                success: false,
+                error: 'Google Sheets not configured'
+            });
+            return;
+        }
+
+        // Extract Sheet ID from URL
+        const sheetId = configManager.extractSheetId(config.sheetUrl);
+        if (!sheetId) {
+            sendResponse({
+                success: false,
+                error: 'Invalid Google Sheets URL format'
+            });
+            return;
+        }
+
+        // Configure OAuth2 client
+        googleOAuth.configure(config.oauthClientId, config.oauthClientSecret);
+        googleSheetsClient.configure(sheetId);
+
+        // Find and remove the order from HiddenOrders sheet
+        // We need to find the row with the matching order ID and delete it
+        const sheetInfo = await googleSheetsClient.getSheetInfo();
+        const hiddenOrdersSheet = sheetInfo.sheets.find(sheet => sheet.properties.title === 'HiddenOrders');
+
+        if (!hiddenOrdersSheet) {
+            log.warning('⚠️ HiddenOrders sheet not found');
+            sendResponse({
+                success: false,
+                error: 'HiddenOrders sheet not found'
+            });
+            return;
+        }
+
+        // Get all data from HiddenOrders sheet to find the row to delete
+        const range = `HiddenOrders!A:A`; // Get all order IDs from column A
+        const response = await googleSheetsClient.getRange(range);
+
+        if (response && response.values) {
+            let rowToDelete = -1;
+            for (let i = 0; i < response.values.length; i++) {
+                if (response.values[i][0] === hiddenOrderData.orderId) {
+                    rowToDelete = i + 1; // Google Sheets is 1-indexed
+                    break;
+                }
+            }
+
+            if (rowToDelete > 0) {
+                // Delete the row
+                await googleSheetsClient.deleteRow('HiddenOrders', rowToDelete);
+                log.info(`✅ Successfully removed hidden order ${hiddenOrderData.orderId} from Google Sheets`);
+            } else {
+                log.warning(`⚠️ Order ${hiddenOrderData.orderId} not found in HiddenOrders sheet`);
+            }
+        }
+
+        sendResponse({ success: true });
+
+    } catch (error) {
+        log.error('❌ Error removing hidden order from Google Sheets:', error);
+        sendResponse({
+            success: false,
+            error: error.message
+        });
+    }
+}
+
+/**
+ * Handle adding audit log entry to Google Sheets
+ */
+async function handleAddAuditLogEntry(message, sendResponse) {
+    try {
+        log.info('📝 Adding audit log entry to Google Sheets...');
+
+        const auditLogData = message.auditLogData;
+        if (!auditLogData) {
+            sendResponse({
+                success: false,
+                error: 'No audit log data provided'
+            });
+            return;
+        }
+
+        // Get Google Sheets configuration
+        const config = await configManager.get('google_sheets');
+        if (!config || !config.oauthClientId || !config.oauthClientSecret || !config.sheetUrl) {
+            log.warning('⚠️ Google Sheets not configured, skipping audit log');
+            sendResponse({
+                success: false,
+                error: 'Google Sheets not configured'
+            });
+            return;
+        }
+
+        // Extract Sheet ID from URL
+        const sheetId = configManager.extractSheetId(config.sheetUrl);
+        if (!sheetId) {
+            sendResponse({
+                success: false,
+                error: 'Invalid Google Sheets URL format'
+            });
+            return;
+        }
+
+        // Configure OAuth2 client
+        googleOAuth.configure(config.oauthClientId, config.oauthClientSecret);
+        googleSheetsClient.configure(sheetId);
+
+        // Prepare audit log data for Google Sheets
+        const auditLogRow = [
+            auditLogData.timestamp,     // Timestamp
+            auditLogData.orderId,       // Order ID
+            auditLogData.action,        // Action (hide/unhide)
+            auditLogData.actionType,    // Action Type (details)
+            auditLogData.performedBy    // Performed By (username)
+        ];
+
+        // Append to ActionLog sheet
+        await googleSheetsClient.appendData('ActionLog', auditLogRow);
+
+        log.info(`✅ Successfully added audit log entry for ${auditLogData.action} operation on order ${auditLogData.orderId}`);
+        sendResponse({ success: true });
+
+    } catch (error) {
+        log.error('❌ Error adding audit log entry to Google Sheets:', error);
         sendResponse({
             success: false,
             error: error.message

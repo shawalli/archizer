@@ -318,6 +318,87 @@ export class GoogleSheetsClient {
     }
 
     /**
+     * Get data from a specific range in a sheet
+     * @param {string} range - Range to read (e.g., 'Sheet1!A1:C10')
+     * @returns {Object} Response data
+     */
+    async getRange(range) {
+        if (!this.isConfigured()) {
+            throw new Error('Google Sheets client not configured. Please set sheet ID.');
+        }
+
+        try {
+            const accessToken = await googleOAuth.getAccessToken();
+            const url = `${this.baseUrl}/${this.sheetId}/values/${range}`;
+
+            const response = await fetch(url, {
+                method: 'GET',
+                headers: {
+                    'Authorization': `Bearer ${accessToken}`
+                }
+            });
+
+            if (!response.ok) {
+                throw new Error(`Failed to get range: ${response.status} ${response.statusText}`);
+            }
+
+            const data = await response.json();
+            log.info(`Retrieved data from range ${range}`);
+            return data;
+        } catch (error) {
+            log.error(`Error getting range ${range}:`, error);
+            throw error;
+        }
+    }
+
+    /**
+     * Delete a specific row from a sheet
+     * @param {string} sheetName - Name of the sheet
+     * @param {number} rowIndex - Row index to delete (1-based)
+     */
+    async deleteRow(sheetName, rowIndex) {
+        if (!this.isConfigured()) {
+            throw new Error('Google Sheets client not configured. Please set sheet ID.');
+        }
+
+        try {
+            const accessToken = await googleOAuth.getAccessToken();
+            const url = `${this.baseUrl}/${this.sheetId}:batchUpdate`;
+
+            const requestBody = {
+                requests: [{
+                    deleteDimension: {
+                        range: {
+                            sheetId: await this.getSheetIdByName(sheetName),
+                            dimension: 'ROWS',
+                            startIndex: rowIndex - 1, // Convert to 0-based
+                            endIndex: rowIndex // Delete only one row
+                        }
+                    }
+                }]
+            };
+
+            const response = await fetch(url, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${accessToken}`
+                },
+                body: JSON.stringify(requestBody)
+            });
+
+            if (!response.ok) {
+                throw new Error(`Failed to delete row: ${response.status} ${response.statusText}`);
+            }
+
+            log.info(`Deleted row ${rowIndex} from sheet "${sheetName}"`);
+        } catch (error) {
+            log.error(`Error deleting row ${rowIndex} from sheet "${sheetName}":`, error);
+            throw error;
+        }
+    }
+
+    /**
      * Get sheet ID by sheet name
      */
     async getSheetIdByName(sheetName) {

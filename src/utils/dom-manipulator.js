@@ -275,7 +275,7 @@ export class DOMManipulator {
                     }
                     break;
                 case 'show-details':
-                    this.showOrderDetails(orderId, button);
+                    await this.showOrderDetails(orderId, button);
                     break;
                 default:
                     console.warn(`Unknown button type: ${buttonType}`);
@@ -1511,7 +1511,7 @@ export class DOMManipulator {
      * @param {string} orderId - Order ID to show details for
      * @param {Element} button - The button that was clicked
      */
-    showOrderDetails(orderId, button) {
+    async showOrderDetails(orderId, button) {
         try {
             const buttonInfo = this.injectedButtons.get(orderId);
             if (!buttonInfo) {
@@ -1575,6 +1575,19 @@ export class DOMManipulator {
 
             // Remove from hidden state tracking
             this.hiddenOrders.delete(`${orderId}-details`);
+
+            // Remove from storage and sync to Google Sheets
+            if (this.storage) {
+                console.log(`🔧 Removing order ${orderId} from storage...`);
+                try {
+                    await this.storage.removeHiddenOrder(orderId, 'details');
+                    console.log(`✅ Successfully removed order ${orderId} from storage`);
+                } catch (error) {
+                    console.error(`❌ Error removing order ${orderId} from storage:`, error);
+                }
+            } else {
+                console.warn(`⚠️ No storage manager available for order ${orderId}`);
+            }
 
             // Reset the button info to ensure proper state for future hiding
             if (buttonInfo) {
