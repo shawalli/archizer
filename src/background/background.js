@@ -90,6 +90,14 @@ async function handleMessage(message, sender, sendResponse) {
             await handleGoogleSheetsTestConnection(message, sendResponse);
             break;
 
+        case 'GOOGLE_SHEETS_SETUP':
+            await handleGoogleSheetsSetup(message, sendResponse);
+            break;
+
+        case 'SYNC_HIDDEN_ORDER_TO_SHEETS':
+            await handleSyncHiddenOrderToSheets(message, sendResponse);
+            break;
+
         default:
             log.warning('Unknown message type:', message.type);
             sendResponse({ success: false, error: 'Unknown message type' });
@@ -448,7 +456,140 @@ async function handleGoogleSheetsTestConnection(message, sendResponse) {
     }
 }
 
+async function handleGoogleSheetsSetup(message, sendResponse) {
+    try {
+        log.info('🔧 Handling Google Sheets setup request...');
 
+        const config = message.config;
+        if (!config || !config.oauthClientId || !config.oauthClientSecret || !config.sheetUrl) {
+            sendResponse({
+                success: false,
+                error: 'Configuration incomplete. Please provide OAuth Client ID, Client Secret, and Sheet URL.'
+            });
+            return;
+        }
+
+        // Extract Sheet ID from URL
+        const sheetId = configManager.extractSheetId(config.sheetUrl);
+        if (!sheetId) {
+            sendResponse({
+                success: false,
+                error: 'Invalid Google Sheets URL format. Please provide the full URL.'
+            });
+            return;
+        }
+
+        // Configure OAuth2 client
+        googleOAuth.configure(config.oauthClientId, config.oauthClientSecret);
+
+        // Configure client with sheet ID
+        googleSheetsClient.configure(sheetId, null);
+
+        // Test OAuth2 authentication first
+        log.info('🔐 Testing OAuth2 authentication...');
+        const isAuthenticated = await googleOAuth.isAuthenticated();
+        if (!isAuthenticated) {
+            sendResponse({
+                success: false,
+                error: 'OAuth2 authentication failed. Please check your Google account permissions.'
+            });
+            return;
+        }
+        log.info('✅ OAuth2 authentication successful');
+
+        // Set up the Google Sheets structure
+        log.info('📝 Setting up Google Sheets structure...');
+        const schema = new GoogleSheetsSchema();
+        const setupResult = await setupGoogleSheets(sheetId, null, schema);
+
+        sendResponse({
+            success: true,
+            setupResult: setupResult
+        });
+
+    } catch (error) {
+        log.error('❌ Error setting up Google Sheets:', error);
+
+        let errorMessage = error.message;
+        if (error.message.includes('401')) {
+            errorMessage = 'OAuth2 authentication failed (401). Please check your Google account permissions and try again.';
+        } else if (error.message.includes('403')) {
+            errorMessage = 'Access denied (403). Please check: 1) Sheet is shared with "Anyone with the link can view", 2) Your Google account has access to the sheet';
+        } else if (error.message.includes('404')) {
+            errorMessage = 'Sheet not found (404). Please check the Sheet URL is correct';
+        } else if (error.message.includes('400')) {
+            errorMessage = 'Bad request (400). Please check your Sheet URL format';
+        }
+
+        sendResponse({ success: false, error: errorMessage });
+    }
+}
+
+async function handleSyncHiddenOrderToSheets(message, sendResponse) {
+    try {
+        log.info('📤 Syncing hidden order to Google Sheets...');
+
+        const hiddenOrderData = message.hiddenOrderData;
+        if (!hiddenOrderData) {
+            sendResponse({
+                success: false,
+                error: 'No hidden order data provided'
+            });
+            return;
+        }
+
+        // Get Google Sheets configuration
+        const config = await configManager.get('google_sheets');
+        if (!config || !config.oauthClientId || !config.oauthClientSecret || !config.sheetUrl) {
+            log.warning('⚠️ Google Sheets not configured, skipping sync');
+            sendResponse({
+                success: false,
+                error: 'Google Sheets not configured'
+            });
+            return;
+        }
+
+        // Extract Sheet ID from URL
+        const sheetId = configManager.extractSheetId(config.sheetUrl);
+        if (!sheetId) {
+            sendResponse({
+                success: false,
+                error: 'Invalid Google Sheets URL format'
+            });
+            return;
+        }
+
+        // Configure OAuth2 client
+        googleOAuth.configure(config.oauthClientId, config.oauthClientSecret);
+        googleSheetsClient.configure(sheetId, null);
+
+        // Prepare data for Google Sheets
+        const orderData = hiddenOrderData.orderData || {};
+        const sheetRow = [
+            hiddenOrderData.orderId,                    // Order ID
+            orderData.orderDate || '',                  // Order Date
+            hiddenOrderData.username,                   // Hidden By
+            hiddenOrderData.timestamp,                  // Hidden At
+            hiddenOrderData.type,                       // Hidden Type
+            orderData.tags ? orderData.tags.join(',') : '', // Tags
+            orderData.notes || '',                      // Notes
+            hiddenOrderData.timestamp                   // Last Modified
+        ];
+
+        // Append to HiddenOrders sheet
+        await googleSheetsClient.appendData('HiddenOrders', sheetRow);
+
+        log.info(`✅ Successfully synced hidden order ${hiddenOrderData.orderId} to Google Sheets`);
+        sendResponse({ success: true });
+
+    } catch (error) {
+        log.error('❌ Error syncing hidden order to Google Sheets:', error);
+        sendResponse({
+            success: false,
+            error: error.message
+        });
+    }
+}
 
 // Extension startup handler
 chrome.runtime.onStartup.addListener(async () => {

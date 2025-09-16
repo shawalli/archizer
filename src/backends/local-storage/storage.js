@@ -70,14 +70,19 @@ export class StorageManager {
             const username = await this.get('username') || 'Unknown User';
 
             const key = this._makeHiddenOrderKey(orderId, type);
-            await this.set(key, {
+            const hiddenOrderData = {
                 orderId,
                 type,
                 orderData,
                 username,
                 timestamp: new Date().toISOString()
-            });
+            };
+
+            await this.set(key, hiddenOrderData);
             log.info(`Stored hidden order ${orderId} (${type}):`, orderData);
+
+            // Sync to Google Sheets
+            await this.syncHiddenOrderToGoogleSheets(hiddenOrderData);
         } catch (error) {
             log.error(`Error storing hidden order ${orderId}:`, error);
         }
@@ -319,6 +324,31 @@ export class StorageManager {
         } catch (error) {
             log.error('Error getting all user settings:', error);
             return [];
+        }
+    }
+
+    /**
+     * Sync hidden order to Google Sheets
+     * @param {Object} hiddenOrderData - Hidden order data to sync
+     */
+    async syncHiddenOrderToGoogleSheets(hiddenOrderData) {
+        try {
+            log.info(`📤 Syncing hidden order ${hiddenOrderData.orderId} to Google Sheets...`);
+
+            // Send message to background script to sync to Google Sheets
+            const response = await chrome.runtime.sendMessage({
+                type: 'SYNC_HIDDEN_ORDER_TO_SHEETS',
+                hiddenOrderData: hiddenOrderData
+            });
+
+            if (response && response.success) {
+                log.info(`✅ Successfully synced hidden order ${hiddenOrderData.orderId} to Google Sheets`);
+            } else {
+                log.warning(`⚠️ Failed to sync hidden order ${hiddenOrderData.orderId} to Google Sheets:`, response?.error);
+            }
+        } catch (error) {
+            log.error(`❌ Error syncing hidden order ${hiddenOrderData.orderId} to Google Sheets:`, error);
+            // Don't throw error - sync failure shouldn't break the hide operation
         }
     }
 }

@@ -26,6 +26,7 @@ describe('GoogleSheetsSchema', () => {
             expect(completeSchema.sheets).toHaveProperty('hiddenOrders');
             expect(completeSchema.sheets).toHaveProperty('actionLog');
             expect(completeSchema.sheets).toHaveProperty('userSettings');
+            expect(completeSchema.sheets).toHaveProperty('testConnection');
             expect(completeSchema).toHaveProperty('constraints');
             expect(completeSchema).toHaveProperty('version');
             expect(completeSchema).toHaveProperty('description');
@@ -171,6 +172,37 @@ describe('GoogleSheetsSchema', () => {
         });
     });
 
+    describe('getTestConnectionSchema', () => {
+        it('should return TestConnection schema with correct properties', () => {
+            const testConnectionSchema = schema.getTestConnectionSchema();
+
+            expect(testConnectionSchema).toHaveProperty('name', 'TestConnection');
+            expect(testConnectionSchema).toHaveProperty('description', 'Test connection to Google Sheets');
+            expect(testConnectionSchema).toHaveProperty('columns');
+            expect(Array.isArray(testConnectionSchema.columns)).toBe(true);
+        });
+
+        it('should have empty columns array for test connection', () => {
+            const testConnectionSchema = schema.getTestConnectionSchema();
+
+            expect(testConnectionSchema.columns).toHaveLength(0);
+        });
+
+        it('should be included in main schema', () => {
+            const completeSchema = schema.getSchema();
+
+            expect(completeSchema.sheets).toHaveProperty('testConnection');
+            expect(completeSchema.sheets.testConnection).toEqual(schema.getTestConnectionSchema());
+        });
+
+        it('should have consistent structure across calls', () => {
+            const schema1 = schema.getTestConnectionSchema();
+            const schema2 = schema.getTestConnectionSchema();
+
+            expect(schema1).toEqual(schema2);
+        });
+    });
+
     describe('getSchemaConstraints', () => {
         it('should return schema constraints object', () => {
             const constraints = schema.getSchemaConstraints();
@@ -217,6 +249,7 @@ describe('GoogleSheetsSchema', () => {
             expect(sampleData).toHaveProperty('hiddenOrders');
             expect(sampleData).toHaveProperty('actionLog');
             expect(sampleData).toHaveProperty('userSettings');
+            // Note: testConnection is intentionally not included in sample data as it has no columns
         });
 
         it('should have correct sample data structure for HiddenOrders', () => {
@@ -291,6 +324,13 @@ describe('GoogleSheetsSchema', () => {
             // Check UserSettings sample
             const userSettingsSample = sampleData.userSettings[0];
             expect(userSettingsSample.username).toMatch(/^[a-z_]+$/);
+        });
+
+        it('should not include testConnection in sample data (no columns)', () => {
+            const sampleData = schema.getSampleData();
+
+            expect(sampleData).not.toHaveProperty('testConnection');
+            // This is intentional since testConnection has no columns and is used only for connection testing
         });
     });
 
@@ -385,6 +425,26 @@ describe('GoogleSheetsSchema', () => {
             expect(result.errors.length).toBeGreaterThan(0);
         });
 
+        it('should validate TestConnection data correctly (empty data)', () => {
+            const emptyData = {};
+
+            const result = schema.validateData('TestConnection', emptyData);
+            expect(result.valid).toBe(true);
+            expect(result.errors).toHaveLength(0);
+        });
+
+        it('should validate TestConnection data correctly (any data)', () => {
+            const anyData = {
+                testField: 'test value',
+                anotherField: 123,
+                someArray: [1, 2, 3]
+            };
+
+            const result = schema.validateData('TestConnection', anyData);
+            expect(result.valid).toBe(true);
+            expect(result.errors).toHaveLength(0);
+        });
+
         it('should reject unknown sheet names', () => {
             const validData = { orderId: '123-4567890-1234567' };
 
@@ -404,6 +464,7 @@ describe('GoogleSheetsSchema', () => {
             expect(typeof defaultSchema.getHiddenOrdersSchema).toBe('function');
             expect(typeof defaultSchema.getActionLogSchema).toBe('function');
             expect(typeof defaultSchema.getUserSettingsSchema).toBe('function');
+            expect(typeof defaultSchema.getTestConnectionSchema).toBe('function');
             expect(typeof defaultSchema.getSchemaConstraints).toBe('function');
             expect(typeof defaultSchema.getSampleData).toBe('function');
             expect(typeof defaultSchema.validateData).toBe('function');
@@ -481,6 +542,33 @@ describe('GoogleSheetsSchema', () => {
 
             const result = schema.validateData('HiddenOrders', dataWithMissingFields);
             expect(result.valid).toBe(true);
+        });
+
+        it('should handle testConnection sheet with any data structure', () => {
+            const testData = {
+                randomField: 'any value',
+                numberField: 42,
+                booleanField: true,
+                arrayField: [1, 2, 3],
+                objectField: { nested: 'value' }
+            };
+
+            const result = schema.validateData('TestConnection', testData);
+            expect(result.valid).toBe(true);
+            expect(result.errors).toHaveLength(0);
+        });
+
+        it('should handle testConnection sheet with null/undefined values', () => {
+            const testData = {
+                nullField: null,
+                undefinedField: undefined,
+                emptyString: '',
+                zeroValue: 0
+            };
+
+            const result = schema.validateData('TestConnection', testData);
+            expect(result.valid).toBe(true);
+            expect(result.errors).toHaveLength(0);
         });
     });
 });

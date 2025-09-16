@@ -14,7 +14,8 @@ export class GoogleSheetsSchema {
         this.sheets = {
             hiddenOrders: this.getHiddenOrdersSchema(),
             actionLog: this.getActionLogSchema(),
-            userSettings: this.getUserSettingsSchema()
+            userSettings: this.getUserSettingsSchema(),
+            testConnection: this.getTestConnectionSchema()
         };
 
         // Define data relationships and constraints
@@ -238,6 +239,18 @@ export class GoogleSheetsSchema {
                     example: true
                 }
             ]
+        };
+    }
+
+    /**
+     * Test Connection Sheet Schema
+     * @returns {Object} Schema definition
+     */
+    getTestConnectionSchema() {
+        return {
+            name: 'TestConnection',
+            description: 'Test connection to Google Sheets',
+            columns: []
         };
     }
 

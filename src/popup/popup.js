@@ -128,6 +128,14 @@ export class PopupManager {
             console.error('❌ Test connection button not found');
         }
 
+        const setupSheetsBtn = document.getElementById('setup-sheets-btn');
+        if (setupSheetsBtn) {
+            console.log('✅ Setup sheets button found');
+            setupSheetsBtn.addEventListener('click', () => this.setupGoogleSheets());
+        } else {
+            console.error('❌ Setup sheets button not found');
+        }
+
         // Auto-save configuration with debounce
         this.setupAutoSave();
 
@@ -511,6 +519,67 @@ export class PopupManager {
         } catch (error) {
             console.error('❌ Error testing Google Sheets connection:', error);
             this.showMessage('Error testing connection: ' + error.message, 'error');
+        }
+    }
+
+    async setupGoogleSheets() {
+        try {
+            console.log('🔧 Setting up Google Sheets structure...');
+
+            const oauthClientId = document.getElementById('oauth-client-id').value.trim();
+            const oauthClientSecret = document.getElementById('oauth-client-secret').value.trim();
+            const sheetUrl = document.getElementById('sheet-url').value.trim();
+
+            if (!oauthClientId || !oauthClientSecret || !sheetUrl) {
+                this.showMessage('Please enter OAuth Client ID, Client Secret, and Sheet URL first', 'error');
+                return;
+            }
+
+            // Validate URL format
+            try {
+                configManager.extractSheetId(sheetUrl);
+                console.log('📝 Setting up sheets with ID:', configManager.extractSheetId(sheetUrl));
+            } catch (error) {
+                this.showMessage(error.message, 'error');
+                return;
+            }
+
+            // Send setup request to background script
+            console.log('📤 Sending setup sheets request...');
+            const response = await chrome.runtime.sendMessage({
+                type: 'GOOGLE_SHEETS_SETUP',
+                config: { oauthClientId, oauthClientSecret, sheetUrl }
+            });
+
+            console.log('📥 Setup sheets response:', response);
+
+            if (response && response.success) {
+                const successMsg = 'Google Sheets setup completed successfully!';
+                console.log('✅', successMsg);
+
+                let setupDetails = '';
+                if (response.setupResult) {
+                    const result = response.setupResult;
+                    if (result.sheetsCreated && result.sheetsCreated.length > 0) {
+                        setupDetails += `\n\n📝 Created sheets: ${result.sheetsCreated.join(', ')}`;
+                    }
+                    if (result.sheetsSkipped && result.sheetsSkipped.length > 0) {
+                        setupDetails += `\n\n⏭️ Skipped existing sheets: ${result.sheetsSkipped.join(', ')}`;
+                    }
+                    if (result.errors && result.errors.length > 0) {
+                        setupDetails += `\n\n❌ Errors: ${result.errors.map(e => e.sheet + ': ' + e.error).join(', ')}`;
+                    }
+                }
+
+                this.showMessage(successMsg + setupDetails, 'success');
+            } else {
+                const errorMsg = 'Setup failed: ' + (response?.error || 'Unknown error');
+                console.error('❌', errorMsg);
+                this.showMessage(errorMsg, 'error');
+            }
+        } catch (error) {
+            console.error('❌ Error setting up Google Sheets:', error);
+            this.showMessage('Error setting up sheets: ' + error.message, 'error');
         }
     }
 
