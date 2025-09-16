@@ -267,6 +267,27 @@
     background: #117a8b;
 }
 
+.setup-btn {
+    background: #28a745;
+    color: white;
+    border: none;
+    padding: 8px 16px;
+    border-radius: 4px;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background 0.2s ease;
+    margin-right: 8px;
+}
+
+.setup-btn:hover {
+    background: #218838;
+}
+
+.setup-btn:active {
+    background: #1e7e34;
+}
+
 .connection-status {
     margin-top: 12px;
     padding: 8px 12px;

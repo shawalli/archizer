@@ -128,12 +128,21 @@ export class PopupManager {
             console.error('❌ Test connection button not found');
         }
 
-        const setupSheetsBtn = document.getElementById('setup-sheets-btn');
-        if (setupSheetsBtn) {
-            console.log('✅ Setup sheets button found');
-            setupSheetsBtn.addEventListener('click', () => this.setupGoogleSheets());
+        // Set up sheet URL change detection for first-time setup
+        const sheetUrlInput = document.getElementById('sheet-url');
+        if (sheetUrlInput) {
+            console.log('✅ Setting up sheet URL change listener');
+            sheetUrlInput.addEventListener('input', () => {
+                console.log('📝 Sheet URL input changed');
+                this.handleSheetUrlChangeImmediate();
+            });
+            // Check initial state when page loads
+            setTimeout(() => {
+                console.log('🔄 Checking initial button state');
+                this.handleSheetUrlChange();
+            }, 100);
         } else {
-            console.error('❌ Setup sheets button not found');
+            console.error('❌ Sheet URL input not found');
         }
 
         // Auto-save configuration with debounce
@@ -486,11 +495,16 @@ export class PopupManager {
                 return;
             }
 
-            // Test connection (without saving)
+            // Check if this is a setup operation (button class indicates setup)
+            const testConnectionBtn = document.getElementById('test-connection-btn');
+            const isSetupOperation = testConnectionBtn && testConnectionBtn.classList.contains('setup-btn');
+
+            // Test connection (and optionally save)
             console.log('📤 Sending test connection request...');
             const response = await chrome.runtime.sendMessage({
                 type: 'GOOGLE_SHEETS_TEST_CONNECTION',
-                testConfig: { oauthClientId, oauthClientSecret, sheetUrl }
+                testConfig: { oauthClientId, oauthClientSecret, sheetUrl },
+                saveConfig: isSetupOperation
             });
 
             console.log('📥 Test connection response:', response);
@@ -498,6 +512,21 @@ export class PopupManager {
             if (response && response.success) {
                 const successMsg = 'Connection successful! Connected to: ' + response.sheetInfo.title;
                 console.log('✅', successMsg);
+
+                // Show sheet setup results
+                let setupDetails = '';
+                if (response.sheetInfo.setupResult) {
+                    const setup = response.sheetInfo.setupResult;
+                    if (setup.sheetsCreated.length > 0) {
+                        setupDetails += `\n\n📝 Created sheets: ${setup.sheetsCreated.join(', ')}`;
+                    }
+                    if (setup.sheetsSkipped.length > 0) {
+                        setupDetails += `\n\n⏭️ Existing sheets: ${setup.sheetsSkipped.join(', ')}`;
+                    }
+                    if (setup.errors.length > 0) {
+                        setupDetails += `\n\n❌ Errors: ${setup.errors.map(e => `${e.sheet}: ${e.error}`).join(', ')}`;
+                    }
+                }
 
                 // Show write test results
                 let testDetails = '';
@@ -510,7 +539,19 @@ export class PopupManager {
                     }
                 }
 
-                this.showMessage(successMsg + testDetails, 'success');
+                this.showMessage(successMsg + setupDetails + testDetails, 'success');
+
+                // If this was a setup operation, save the configuration and reset button
+                if (isSetupOperation) {
+                    await this.saveGoogleSheetsConfig();
+
+                    // Reset button to normal state
+                    if (testConnectionBtn) {
+                        testConnectionBtn.textContent = 'Test Connection';
+                        testConnectionBtn.classList.add('test-btn');
+                        testConnectionBtn.classList.remove('setup-btn');
+                    }
+                }
             } else {
                 const errorMsg = 'Connection failed: ' + (response?.error || 'Unknown error');
                 console.error('❌', errorMsg);
@@ -519,6 +560,81 @@ export class PopupManager {
         } catch (error) {
             console.error('❌ Error testing Google Sheets connection:', error);
             this.showMessage('Error testing connection: ' + error.message, 'error');
+        }
+    }
+
+    handleSheetUrlChangeImmediate() {
+        try {
+            const sheetUrlInput = document.getElementById('sheet-url');
+            const testConnectionBtn = document.getElementById('test-connection-btn');
+
+            if (!sheetUrlInput || !testConnectionBtn) {
+                return;
+            }
+
+            const currentUrl = sheetUrlInput.value.trim();
+            console.log('⚡ Immediate check - Current URL:', currentUrl);
+
+            // For immediate response, if URL is not empty, show setup mode
+            if (currentUrl) {
+                console.log('⚡ Immediate change to setup mode');
+                testConnectionBtn.textContent = 'Save and Complete Setup';
+                testConnectionBtn.classList.add('setup-btn');
+                testConnectionBtn.classList.remove('test-btn');
+            } else {
+                console.log('⚡ Immediate change to test mode');
+                testConnectionBtn.textContent = 'Test Connection';
+                testConnectionBtn.classList.add('test-btn');
+                testConnectionBtn.classList.remove('setup-btn');
+            }
+        } catch (error) {
+            console.error('Error in immediate sheet URL change:', error);
+        }
+    }
+
+    async handleSheetUrlChange() {
+        try {
+            const sheetUrlInput = document.getElementById('sheet-url');
+            const testConnectionBtn = document.getElementById('test-connection-btn');
+
+            if (!sheetUrlInput || !testConnectionBtn) {
+                console.log('❌ Missing elements:', { sheetUrlInput: !!sheetUrlInput, testConnectionBtn: !!testConnectionBtn });
+                return;
+            }
+
+            const currentUrl = sheetUrlInput.value.trim();
+            console.log('🔍 Current URL:', currentUrl);
+
+            // For immediate response, check if URL is not empty
+            if (currentUrl) {
+                console.log('🔄 URL not empty, checking against saved config...');
+
+                // Check if URL has changed from saved config
+                const currentConfig = await this.storageManager.get('google_sheets');
+                const savedUrl = currentConfig?.sheetUrl || '';
+                console.log('💾 Saved URL:', savedUrl);
+
+                // If URL is different from saved URL, show setup mode
+                if (currentUrl !== savedUrl) {
+                    console.log('🔄 Changing to setup mode (URL different from saved)');
+                    testConnectionBtn.textContent = 'Save and Complete Setup';
+                    testConnectionBtn.classList.add('setup-btn');
+                    testConnectionBtn.classList.remove('test-btn');
+                } else {
+                    console.log('🔄 Changing to test mode (URL same as saved)');
+                    testConnectionBtn.textContent = 'Test Connection';
+                    testConnectionBtn.classList.add('test-btn');
+                    testConnectionBtn.classList.remove('setup-btn');
+                }
+            } else {
+                console.log('🔄 Changing to test mode (URL empty)');
+                // URL is empty - show normal test mode
+                testConnectionBtn.textContent = 'Test Connection';
+                testConnectionBtn.classList.add('test-btn');
+                testConnectionBtn.classList.remove('setup-btn');
+            }
+        } catch (error) {
+            console.error('Error handling sheet URL change:', error);
         }
     }
 

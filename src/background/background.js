@@ -240,7 +240,7 @@ async function setupGoogleSheets(sheetId, apiKey, schema) {
         const sheetNames = await googleSheetsClient.getSheetNames();
         log.info('📋 Existing sheets:', sheetNames);
 
-        // Define the 3 sheets we need to create
+        // Define the 4 sheets we need to create
         const requiredSheets = [
             {
                 name: 'HiddenOrders',
@@ -256,6 +256,11 @@ async function setupGoogleSheets(sheetId, apiKey, schema) {
                 name: 'UserSettings',
                 schema: schema.sheets.userSettings,
                 headers: ['Username', 'Created At', 'Last Active', 'Is Active']
+            },
+            {
+                name: 'TestConnection',
+                schema: schema.sheets.testConnection,
+                headers: [] // TestConnection sheet has no columns
             }
         ];
 
@@ -271,11 +276,13 @@ async function setupGoogleSheets(sheetId, apiKey, schema) {
                     // Create the sheet
                     await googleSheetsClient.createSheet(sheet.name);
 
-                    // Add headers to the sheet
-                    await googleSheetsClient.writeRange(`${sheet.name}!A1:H1`, [sheet.headers]);
+                    // Add headers to the sheet (only if it has headers)
+                    if (sheet.headers && sheet.headers.length > 0) {
+                        await googleSheetsClient.writeRange(`${sheet.name}!A1:H1`, [sheet.headers]);
 
-                    // Format the header row (bold)
-                    await googleSheetsClient.formatHeaderRow(sheet.name);
+                        // Format the header row (bold)
+                        await googleSheetsClient.formatHeaderRow(sheet.name);
+                    }
 
                     log.success(`✅ Sheet "${sheet.name}" created successfully`);
                     setupResult.sheetsCreated.push(sheet.name);
@@ -424,17 +431,36 @@ async function handleGoogleSheetsTestConnection(message, sendResponse) {
 
         // Test basic connection (read operation)
         const sheetInfo = await googleSheetsClient.getSheetInfo();
-        log.info('✅ Basic connection successful, testing write permissions...');
+        log.info('✅ Basic connection successful, checking required sheets...');
 
-        // Test writing a single row to the default sheet
-        const testResult = await testWritePermissions(config.sheetName || 'Sheet1');
+        // Check for and create required sheets
+        const schema = new GoogleSheetsSchema();
+        const setupResult = await setupGoogleSheets(sheetId, null, schema);
+
+        log.info('📋 Sheet setup result:', setupResult);
+
+        // Test writing a single row to the TestConnection sheet
+        const testResult = await testWritePermissions('TestConnection');
+
+        // Save configuration if requested
+        if (message.saveConfig) {
+            log.info('💾 Saving Google Sheets configuration...');
+            await configManager.set('google_sheets', {
+                oauthClientId: config.oauthClientId,
+                oauthClientSecret: config.oauthClientSecret,
+                sheetUrl: config.sheetUrl,
+                sheetName: config.sheetName || 'Orders'
+            });
+            log.info('✅ Configuration saved successfully');
+        }
 
         sendResponse({
             success: true,
             sheetInfo: {
                 title: sheetInfo.properties.title,
                 sheetCount: sheetInfo.sheets.length,
-                testResult: testResult
+                testResult: testResult,
+                setupResult: setupResult
             }
         });
     } catch (error) {
