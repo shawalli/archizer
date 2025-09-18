@@ -288,6 +288,24 @@
     background: #1e7e34;
 }
 
+.test-btn:disabled,
+.setup-btn:disabled {
+    background: #6c757d;
+    color: #ffffff;
+    cursor: not-allowed;
+    opacity: 0.6;
+}
+
+.test-btn:disabled:hover,
+.setup-btn:disabled:hover {
+    background: #6c757d;
+}
+
+.test-btn:disabled:active,
+.setup-btn:disabled:active {
+    background: #6c757d;
+}
+
 .connection-status {
     margin-top: 12px;
     padding: 8px 12px;

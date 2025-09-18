@@ -136,10 +136,10 @@ export class PopupManager {
                 console.log('📝 Sheet URL input changed');
                 this.handleSheetUrlChangeImmediate();
             });
-            // Check initial state when page loads
+            // Set initial button state when page loads
             setTimeout(() => {
-                console.log('🔄 Checking initial button state');
-                this.handleSheetUrlChange();
+                console.log('🔄 Setting initial button state');
+                this.setInitialButtonState();
             }, 100);
         } else {
             console.error('❌ Sheet URL input not found');
@@ -698,14 +698,51 @@ export class PopupManager {
                 testConnectionBtn.textContent = 'Save and Complete Setup';
                 testConnectionBtn.classList.add('setup-btn');
                 testConnectionBtn.classList.remove('test-btn');
+                testConnectionBtn.disabled = false; // Enable when URL is not empty
             } else {
-                console.log('⚡ Immediate change to test mode');
+                console.log('⚡ Immediate change to test mode (disabled)');
                 testConnectionBtn.textContent = 'Test Connection';
                 testConnectionBtn.classList.add('test-btn');
                 testConnectionBtn.classList.remove('setup-btn');
+                testConnectionBtn.disabled = true; // Disable when URL is empty
             }
         } catch (error) {
             console.error('Error in immediate sheet URL change:', error);
+        }
+    }
+
+    async setInitialButtonState() {
+        try {
+            const sheetUrlInput = document.getElementById('sheet-url');
+            const testConnectionBtn = document.getElementById('test-connection-btn');
+
+            if (!sheetUrlInput || !testConnectionBtn) {
+                console.log('❌ Missing elements for initial button state:', {
+                    sheetUrlInput: !!sheetUrlInput,
+                    testConnectionBtn: !!testConnectionBtn
+                });
+                return;
+            }
+
+            const currentUrl = sheetUrlInput.value.trim();
+            console.log('🔄 Setting initial button state, current URL:', currentUrl);
+
+            // Always start with "Test Connection" button
+            testConnectionBtn.textContent = 'Test Connection';
+            testConnectionBtn.classList.add('test-btn');
+            testConnectionBtn.classList.remove('setup-btn');
+
+            // Disable button if URL is empty
+            if (!currentUrl) {
+                console.log('🔄 Disabling button (URL is empty)');
+                testConnectionBtn.disabled = true;
+            } else {
+                console.log('🔄 Enabling button (URL is not empty)');
+                testConnectionBtn.disabled = false;
+            }
+
+        } catch (error) {
+            console.error('Error setting initial button state:', error);
         }
     }
 
@@ -737,18 +774,21 @@ export class PopupManager {
                     testConnectionBtn.textContent = 'Save and Complete Setup';
                     testConnectionBtn.classList.add('setup-btn');
                     testConnectionBtn.classList.remove('test-btn');
+                    testConnectionBtn.disabled = false; // Enable when URL is not empty
                 } else {
                     console.log('🔄 Changing to test mode (URL same as saved)');
                     testConnectionBtn.textContent = 'Test Connection';
                     testConnectionBtn.classList.add('test-btn');
                     testConnectionBtn.classList.remove('setup-btn');
+                    testConnectionBtn.disabled = false; // Enable when URL is not empty
                 }
             } else {
                 console.log('🔄 Changing to test mode (URL empty)');
-                // URL is empty - show normal test mode
+                // URL is empty - show normal test mode but disabled
                 testConnectionBtn.textContent = 'Test Connection';
                 testConnectionBtn.classList.add('test-btn');
                 testConnectionBtn.classList.remove('setup-btn');
+                testConnectionBtn.disabled = true; // Disable when URL is empty
             }
         } catch (error) {
             console.error('Error handling sheet URL change:', error);
