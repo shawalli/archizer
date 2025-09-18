@@ -87,13 +87,13 @@
       - [x] 2.6.5.5 Implement resync orchestration (clear cache → pull from sheets → rebuild cache)
     - [x] 2.6.6 Create unit tests for storage functionality ✅
 
-- [ ] 3.0 **Google Sheets API Integration & Authentication**
-  - [x] 3.1 Set up simple Google Sheets integration (personal account approach)
-  - [ ] 3.2 Implement Google Sheets API client with Apps Script web app integration
-  - [ ] 3.3 Create CRUD operations for hidden order details (add, remove, get, update)
-  - [ ] 3.4 Implement data synchronization between local cache and Google Sheets
-  - [ ] 3.5 Add error handling for API failures and network issues
-  - [ ] 3.6 Implement retry logic and offline fallback mechanisms
+- [x] 3.0 **Google Sheets API Integration & Authentication** ✅
+  - [x] 3.1 Set up Google OAuth2 authentication with Chrome Identity API ✅
+  - [x] 3.2 Implement Google Sheets API client with OAuth2 support ✅
+  - [x] 3.3 Create basic CRUD operations (readRange, writeRange, appendData, clearRange) ✅
+  - [x] 3.4 Implement data synchronization infrastructure with cache management ✅
+  - [x] 3.5 Add comprehensive error handling for API failures and network issues ✅
+  - [x] 3.6 Implement retry logic and token refresh mechanisms ✅
 
 - [ ] 4.0 **Extension Popup Interface Development**
   - [ ] 4.1 Design and implement popup HTML structure with pagination
