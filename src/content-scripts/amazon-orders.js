@@ -94,6 +94,17 @@ async function initializeContentScript() {
                     sendResponse({ success: false, error: error.message });
                 }
                 return true; // Keep message channel open for async response
+            } else if (message.action === 'apply-hidden-orders') {
+                console.log('🔄 Received apply hidden orders request from popup');
+                try {
+                    const hiddenCount = domManipulator.applyHiddenOrdersFromData(message.hiddenOrders);
+                    sendResponse({ success: true, hiddenCount });
+                    console.log(`✅ Applied hiding to ${hiddenCount} orders`);
+                } catch (error) {
+                    console.error('❌ Error applying hidden orders:', error);
+                    sendResponse({ success: false, error: error.message });
+                }
+                return true; // Keep message channel open for async response
             }
         });
 

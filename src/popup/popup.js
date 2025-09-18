@@ -349,12 +349,14 @@ export class PopupManager {
 
     async executeResync() {
         try {
-            console.log('🔄 Starting resync process...');
+            console.log('🔄 Starting comprehensive resync process...');
 
-            // Clear all hidden order data from storage
+            // Step 1: Clear all hidden order data from storage
+            console.log('🔄 Step 1: Clearing browser storage...');
             await this.clearAllHiddenOrders();
 
-            // Send message to content script to restore all hidden orders
+            // Step 2: Send message to content script to restore all hidden orders (clear page state)
+            console.log('🔄 Step 2: Clearing page hiding state...');
             const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
             if (tab && tab.url && tab.url.includes('amazon.com')) {
                 try {
@@ -369,19 +371,52 @@ export class PopupManager {
                 }
             }
 
+            // Step 3: Fetch hidden orders from Google Sheets
+            console.log('🔄 Step 3: Fetching hidden orders from Google Sheets...');
+            const hiddenOrdersData = await this.fetchHiddenOrdersFromSheets();
+
+            if (hiddenOrdersData && hiddenOrdersData.length > 0) {
+                console.log(`📥 Fetched ${hiddenOrdersData.length} hidden orders from Google Sheets`);
+
+                // Step 4: Store fetched data in browser storage
+                console.log('🔄 Step 4: Storing fetched data in browser storage...');
+                await this.storeFetchedHiddenOrders(hiddenOrdersData);
+
+                // Step 5: Apply hiding to current page
+                console.log('🔄 Step 5: Applying hiding to current page...');
+                if (tab && tab.url && tab.url.includes('amazon.com')) {
+                    try {
+                        const response = await chrome.tabs.sendMessage(tab.id, {
+                            action: 'apply-hidden-orders',
+                            hiddenOrders: hiddenOrdersData
+                        });
+                        if (response && response.success) {
+                            console.log(`✅ Applied hiding to ${response.hiddenCount} orders on page`);
+                        }
+                    } catch (error) {
+                        console.warn('⚠️ Could not apply hiding to page:', error);
+                    }
+                }
+            } else {
+                console.log('📥 No hidden orders found in Google Sheets');
+            }
+
             // Hide the dialog
             this.hideResyncDialog();
 
             // Show success message
-            this.showMessage('Orders resynced successfully! All hidden order data has been cleared.', 'success');
+            const message = hiddenOrdersData && hiddenOrdersData.length > 0
+                ? `Orders resynced successfully! Loaded ${hiddenOrdersData.length} hidden orders from Google Sheets.`
+                : 'Orders resynced successfully! No hidden orders found in Google Sheets.';
+            this.showMessage(message, 'success');
 
-            // Reload the hidden orders list (should now be empty)
+            // Reload the hidden orders list
             await this.loadHiddenOrders();
 
-            console.log('✅ Resync completed successfully');
+            console.log('✅ Comprehensive resync completed successfully');
         } catch (error) {
             console.error('❌ Error during resync:', error);
-            this.showMessage('Error during resync process', 'error');
+            this.showMessage('Error during resync process: ' + error.message, 'error');
         }
     }
 
@@ -430,6 +465,94 @@ export class PopupManager {
             return keysToRemove.length;
         } catch (error) {
             console.error('❌ Error clearing hidden orders:', error);
+            throw error;
+        }
+    }
+
+    /**
+     * Fetch hidden orders from Google Sheets
+     * @returns {Array} Array of hidden order data
+     */
+    async fetchHiddenOrdersFromSheets() {
+        try {
+            console.log('📥 Fetching hidden orders from Google Sheets...');
+
+            const response = await chrome.runtime.sendMessage({
+                type: 'FETCH_HIDDEN_ORDERS_FROM_SHEETS'
+            });
+
+            console.log('📊 Raw response from background script:', response);
+
+            if (response && response.success) {
+                console.log(`✅ Successfully fetched ${response.hiddenOrders.length} hidden orders from Google Sheets`);
+                console.log('📊 Fetched hidden orders:', response.hiddenOrders);
+                return response.hiddenOrders;
+            } else {
+                console.warn('⚠️ Failed to fetch hidden orders from Google Sheets:', response?.error);
+                return [];
+            }
+        } catch (error) {
+            console.error('❌ Error fetching hidden orders from Google Sheets:', error);
+            return [];
+        }
+    }
+
+    /**
+     * Store fetched hidden orders in browser storage
+     * @param {Array} hiddenOrdersData - Array of hidden order data from Google Sheets
+     */
+    async storeFetchedHiddenOrders(hiddenOrdersData) {
+        try {
+            console.log(`💾 Storing ${hiddenOrdersData.length} hidden orders in browser storage...`);
+            console.log(`📊 Raw hidden orders data:`, hiddenOrdersData);
+
+            for (const orderData of hiddenOrdersData) {
+                console.log(`📊 Processing order data:`, orderData);
+                // Convert Google Sheets data format to storage format
+                const storageData = {
+                    orderId: orderData.orderId,
+                    type: orderData.type || 'details',
+                    orderData: {
+                        orderNumber: orderData.orderId,
+                        orderDate: orderData.orderDate,
+                        orderTotal: orderData.orderTotal,
+                        orderStatus: orderData.orderStatus,
+                        orderItems: orderData.orderItems || [],
+                        tags: orderData.tags ? orderData.tags.split(',').map(tag => tag.trim()) : [],
+                        notes: orderData.notes || ''
+                    },
+                    username: orderData.hiddenBy || 'Unknown User',
+                    timestamp: orderData.hiddenAt || new Date().toISOString()
+                };
+
+                // Store in browser storage using the correct key format
+                const key = `amazon_archiver_hidden_order_${orderData.orderId}_${storageData.type}`;
+
+                // Check if this order already exists in storage
+                const existingData = await chrome.storage.local.get(key);
+                if (existingData[key]) {
+                    console.log(`⚠️ Order ${orderData.orderId} already exists in storage, updating...`);
+                } else {
+                    console.log(`➕ Adding new order ${orderData.orderId} to storage`);
+                }
+
+                await chrome.storage.local.set({ [key]: storageData });
+            }
+
+            console.log(`✅ Successfully stored ${hiddenOrdersData.length} hidden orders in browser storage`);
+
+            // Debug: Check what was actually stored
+            console.log(`🔍 Debug: Checking stored data...`);
+            const storedKeys = Object.keys(await chrome.storage.local.get(null))
+                .filter(key => key.includes('hidden_order_'));
+            console.log(`📊 Stored hidden order keys:`, storedKeys);
+
+            for (const key of storedKeys) {
+                const storedData = await chrome.storage.local.get(key);
+                console.log(`📊 Stored data for ${key}:`, storedData[key]);
+            }
+        } catch (error) {
+            console.error('❌ Error storing fetched hidden orders:', error);
             throw error;
         }
     }

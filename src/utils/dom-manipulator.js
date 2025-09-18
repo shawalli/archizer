@@ -2514,4 +2514,82 @@ export class DOMManipulator {
         console.log(`📢 Shown dialog already open message for order ${orderId}`);
     }
 
+    /**
+     * Apply hidden orders from fetched data (used during resync)
+     * @param {Array} hiddenOrdersData - Array of hidden order data from Google Sheets
+     * @returns {number} Number of orders successfully hidden
+     */
+    applyHiddenOrdersFromData(hiddenOrdersData) {
+        try {
+            console.log(`🔄 Applying ${hiddenOrdersData.length} hidden orders from fetched data...`);
+            console.log(`📊 Raw hidden orders data for application:`, hiddenOrdersData);
+
+            let hiddenCount = 0;
+
+            for (const orderData of hiddenOrdersData) {
+                try {
+                    const orderId = orderData.orderId;
+                    console.log(`🔄 Processing order ${orderId} for hiding...`);
+                    console.log(`📊 Order data:`, orderData);
+
+                    // Find the order card on the page
+                    console.log(`🔍 Searching for order card with ID: ${orderId}`);
+                    const orderCard = this.findOrderCardById(orderId);
+                    if (!orderCard) {
+                        console.log(`⚠️ Order card not found for order ${orderId} (may not be on current page)`);
+
+                        // Debug: Show all available order IDs on the page
+                        const allOrderElements = document.querySelectorAll('[data-order-id]');
+                        console.log(`🔍 Available order elements with data-order-id:`, allOrderElements);
+
+                        const allOrderIds = Array.from(allOrderElements).map(el => el.getAttribute('data-order-id'));
+                        console.log(`🔍 Available order IDs on page:`, allOrderIds);
+
+                        // Also check for order cards that might have order IDs in their text
+                        const allOrderCards = document.querySelectorAll('.order-card, .js-order-card');
+                        console.log(`🔍 All order cards on page:`, allOrderCards);
+
+                        for (const card of allOrderCards) {
+                            const extractedId = this.getOrderIdFromElement(card);
+                            if (extractedId) {
+                                console.log(`🔍 Order card with ID "${extractedId}":`, card);
+                            }
+                        }
+
+                        continue;
+                    } else {
+                        console.log(`✅ Found order card for order ${orderId}:`, orderCard);
+                    }
+
+                    // Check if order is already hidden
+                    if (orderCard.classList.contains('archivaz-details-hidden')) {
+                        console.log(`⚠️ Order ${orderId} is already hidden, skipping`);
+                        continue;
+                    }
+
+                    // Prepare tag data if available
+                    const tagData = {
+                        tags: orderData.tags ? orderData.tags.split(',').map(tag => tag.trim()) : [],
+                        notes: orderData.notes || ''
+                    };
+
+                    // Hide the order details
+                    this.performHideOrderDetailsWithCard(orderId, orderCard, tagData, orderData.hiddenBy);
+                    hiddenCount++;
+
+                    console.log(`✅ Successfully hid order ${orderId}`);
+                } catch (error) {
+                    console.error(`❌ Error hiding order ${orderData.orderId}:`, error);
+                }
+            }
+
+            console.log(`✅ Successfully applied hiding to ${hiddenCount} orders from fetched data`);
+            return hiddenCount;
+
+        } catch (error) {
+            console.error('❌ Error applying hidden orders from data:', error);
+            return 0;
+        }
+    }
+
 }

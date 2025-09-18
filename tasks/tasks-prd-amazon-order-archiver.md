@@ -15,6 +15,14 @@
 - `src/components/tagging-dialog.js` - JavaScript functionality for the tagging dialog
 - `src/components/tagging-dialog.test.js` - Unit tests for tagging dialog functionality
 - `src/utils/extension-loader.js` - Enhanced extension loader with order monitoring capabilities
+- `src/backends/google-sheets/oauth.js` - Google OAuth2 authentication client with Chrome Identity API integration
+- `src/backends/google-sheets/client.js` - Google Sheets API client with OAuth2 support and CRUD operations
+- `src/backends/google-sheets/sync.js` - Data synchronization infrastructure for Google Sheets integration
+- `src/backends/google-sheets/schema.js` - Data schema definition for Google Sheets integration
+- `src/backends/google-sheets/importer.js` - Data import utilities for Google Sheets to browser storage
+- `src/backends/google-sheets/transformer.js` - Data transformation utilities between Google Sheets and local storage formats
+- `src/backends/google-sheets/validation.js` - Data validation utilities for Google Sheets integration
+- `src/backends/google-sheets/config.js` - Configuration management for Google Sheets backend
 
 ### Notes
 
