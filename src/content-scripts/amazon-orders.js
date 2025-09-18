@@ -7,38 +7,39 @@ import { StorageManager } from '../backends/local-storage/storage.js';
 import { OrderParser } from '../utils/order-parser.js';
 import { DOMManipulator } from '../utils/dom-manipulator.js';
 import { TaggingDialog } from '../components/tagging-dialog.js';
+import { specializedLogger as log } from '../utils/logger.js';
 
-console.log('🔧 Amazon Order Archiver content script loaded');
+log.info('🔧 Amazon Order Archiver content script loaded');
 
 // Initialize the extension when the content script loads
 (async () => {
     try {
-        console.log('🔧 Starting content script initialization...');
-        console.log('🔧 Current URL:', window.location.href);
-        console.log('🔧 Page title:', document.title);
+        log.info('🔧 Starting content script initialization...');
+        log.info('🔧 Current URL:', window.location.href);
+        log.info('🔧 Page title:', document.title);
 
         // Wait for the extension loader to initialize
         await globalExtensionLoader.initialize();
 
         if (globalExtensionLoader.isInitialized) {
-            console.log('✅ Content script initialized successfully');
+            log.success('✅ Content script initialized successfully');
 
             // Initialize content script functionality directly
             await initializeContentScript();
         } else {
-            console.log('⚠️ Content script initialization skipped - page not supported');
+            log.warn('⚠️ Content script initialization skipped - page not supported');
         }
 
     } catch (error) {
         globalErrorHandler.handleError(error, 'content-script', 'error');
-        console.error('❌ Content script initialization failed:', error);
+        log.error('❌ Content script initialization failed:', error);
     }
 })();
 
 // Initialize content script specific functionality
 async function initializeContentScript() {
     try {
-        console.log('🔧 Initializing content script functionality...');
+        log.info('🔧 Initializing content script functionality...');
 
         // Initialize dependencies directly since we imported them
         const storage = new StorageManager();

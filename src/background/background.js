@@ -278,17 +278,17 @@ async function setupGoogleSheets(sheetId, schema) {
         // Create each required sheet
         for (const sheet of requiredSheets) {
             try {
-                console.log(`🔧 Processing sheet: ${sheet.name}, headers:`, sheet.headers);
+                log.info(`🔧 Processing sheet: ${sheet.name}, headers:`, sheet.headers);
                 if (sheetNames.includes(sheet.name)) {
                     log.info(`⏭️ Sheet "${sheet.name}" already exists, ensuring headers...`);
 
                     // Ensure headers exist in existing sheet
                     if (sheet.headers && sheet.headers.length > 0) {
-                        console.log(`🔧 Calling ensureSheetHeaders for "${sheet.name}" with headers:`, sheet.headers);
+                        log.info(`🔧 Calling ensureSheetHeaders for "${sheet.name}" with headers:`, sheet.headers);
                         await ensureSheetHeaders(sheet.name, sheet.headers);
-                        console.log(`✅ Completed ensureSheetHeaders for "${sheet.name}"`);
+                        log.info(`✅ Completed ensureSheetHeaders for "${sheet.name}"`);
                     } else {
-                        console.log(`⚠️ Sheet "${sheet.name}" has no headers defined`);
+                        log.info(`⚠️ Sheet "${sheet.name}" has no headers defined`);
                     }
 
                     setupResult.sheetsSkipped.push(sheet.name);
@@ -301,8 +301,8 @@ async function setupGoogleSheets(sheetId, schema) {
                     // Add headers to the sheet (only if it has headers)
                     if (sheet.headers && sheet.headers.length > 0) {
                         const rangeToWrite = `${sheet.name}!A1:${String.fromCharCode(65 + sheet.headers.length - 1)}1`;
-                        console.log(`📝 Writing headers to range: ${rangeToWrite}`);
-                        console.log(`📝 Headers data:`, sheet.headers);
+                        log.info(`📝 Writing headers to range: ${rangeToWrite}`);
+                        log.info(`📝 Headers data:`, sheet.headers);
                         await googleSheetsClient.writeRange(rangeToWrite, sheet.headers);
 
                         // Format the header row (bold)
@@ -829,55 +829,55 @@ async function handleAddAuditLogEntry(message, sendResponse) {
  */
 async function ensureSheetHeaders(sheetName, expectedHeaders) {
     try {
-        console.log(`🔍 ensureSheetHeaders called for "${sheetName}" with headers:`, expectedHeaders);
-        console.log(`🔍 Checking headers for sheet "${sheetName}"...`);
+        log.info(`🔍 ensureSheetHeaders called for "${sheetName}" with headers:`, expectedHeaders);
+        log.info(`🔍 Checking headers for sheet "${sheetName}"...`);
 
         // Check if client is configured
         if (!googleSheetsClient.isConfigured()) {
-            console.error(`❌ Google Sheets client not configured when ensuring headers for "${sheetName}"`);
+            log.error(`❌ Google Sheets client not configured when ensuring headers for "${sheetName}"`);
             return;
         }
 
-        console.log(`🔍 Google Sheets client is configured, sheet ID: ${googleSheetsClient.sheetId}`);
+        log.info(`🔍 Google Sheets client is configured, sheet ID: ${googleSheetsClient.sheetId}`);
 
         // Get the first row to check if headers exist
         const headerRange = `${sheetName}!A1:Z1`; // Use a wider range to avoid column issues
-        console.log(`🔍 Attempting to get range: ${headerRange}`);
+        log.info(`🔍 Attempting to get range: ${headerRange}`);
         const headerResponse = await googleSheetsClient.getRange(headerRange);
-        console.log(`🔍 getRange response for "${sheetName}":`, headerResponse);
+        log.info(`🔍 getRange response for "${sheetName}":`, headerResponse);
 
         if (!headerResponse || !headerResponse.values || headerResponse.values.length === 0) {
             // No data in first row, add headers
-            console.log(`📝 Adding headers to sheet "${sheetName}"...`);
+            log.info(`📝 Adding headers to sheet "${sheetName}"...`);
             const rangeToWrite = `${sheetName}!A1:${String.fromCharCode(65 + expectedHeaders.length - 1)}1`;
-            console.log(`📝 Writing headers to range: ${rangeToWrite}`);
-            console.log(`📝 Headers data:`, expectedHeaders);
+            log.info(`📝 Writing headers to range: ${rangeToWrite}`);
+            log.info(`📝 Headers data:`, expectedHeaders);
             await googleSheetsClient.writeRange(rangeToWrite, expectedHeaders);
             await googleSheetsClient.formatHeaderRow(sheetName);
-            console.log(`✅ Headers added to sheet "${sheetName}"`);
+            log.info(`✅ Headers added to sheet "${sheetName}"`);
         } else {
             const existingHeaders = headerResponse.values[0];
-            console.log(`📊 Existing headers in "${sheetName}":`, existingHeaders);
+            log.info(`📊 Existing headers in "${sheetName}":`, existingHeaders);
 
             // Check if headers match expected format
             const hasValidHeaders = existingHeaders.length >= expectedHeaders.length &&
                 existingHeaders[0] && existingHeaders[0].toLowerCase().includes('order');
 
             if (!hasValidHeaders) {
-                console.log(`📝 Headers don't match expected format, adding proper headers...`);
+                log.info(`📝 Headers don't match expected format, adding proper headers...`);
                 const rangeToWrite = `${sheetName}!A1:${String.fromCharCode(65 + expectedHeaders.length - 1)}1`;
-                console.log(`📝 Writing headers to range: ${rangeToWrite}`);
-                console.log(`📝 Headers data:`, expectedHeaders);
+                log.info(`📝 Writing headers to range: ${rangeToWrite}`);
+                log.info(`📝 Headers data:`, expectedHeaders);
                 await googleSheetsClient.writeRange(rangeToWrite, expectedHeaders);
                 await googleSheetsClient.formatHeaderRow(sheetName);
-                console.log(`✅ Headers updated in sheet "${sheetName}"`);
+                log.info(`✅ Headers updated in sheet "${sheetName}"`);
             } else {
-                console.log(`✅ Sheet "${sheetName}" already has proper headers`);
+                log.info(`✅ Sheet "${sheetName}" already has proper headers`);
             }
         }
     } catch (error) {
-        console.error(`❌ Error ensuring headers for sheet "${sheetName}":`, error);
-        console.error(`❌ Error details:`, {
+        log.error(`❌ Error ensuring headers for sheet "${sheetName}":`, error);
+        log.error(`❌ Error details:`, {
             message: error.message,
             stack: error.stack,
             sheetName: sheetName,
@@ -926,13 +926,13 @@ async function handleFetchHiddenOrdersFromSheets(message, sendResponse) {
         const range = 'HiddenOrders!A:H'; // Get all columns (assuming 8 columns based on schema)
         const response = await googleSheetsClient.getRange(range);
 
-        console.log('📊 Raw Google Sheets response:', response);
-        console.log('📊 Response values:', response?.values);
-        console.log('📊 Number of rows:', response?.values?.length);
+        log.info('📊 Raw Google Sheets response:', response);
+        log.info('📊 Response values:', response?.values);
+        log.info('📊 Number of rows:', response?.values?.length);
 
         if (!response || !response.values || response.values.length <= 1) {
             // No data or only header row
-            console.log('📥 No hidden orders found in Google Sheets');
+            log.info('📥 No hidden orders found in Google Sheets');
             sendResponse({
                 success: true,
                 hiddenOrders: []
@@ -945,11 +945,11 @@ async function handleFetchHiddenOrdersFromSheets(message, sendResponse) {
 
         // Always expect the first row to be a header - skip it
         const dataRows = response.values.slice(1); // Skip header row
-        console.log(`📊 Processing ${dataRows.length} data rows from Google Sheets (skipped header)`);
+        log.info(`📊 Processing ${dataRows.length} data rows from Google Sheets (skipped header)`);
 
         for (let i = 0; i < dataRows.length; i++) {
             const row = dataRows[i];
-            console.log(`📊 Processing row ${i + 1}:`, row);
+            log.info(`📊 Processing row ${i + 1}:`, row);
 
             if (row.length >= 8 && row[0]) { // Ensure we have order ID
                 // Additional validation: check if the first column looks like an order ID
@@ -968,18 +968,18 @@ async function handleFetchHiddenOrdersFromSheets(message, sendResponse) {
                         lastModified: row[7] || '' // Last Modified
                     };
 
-                    console.log(`✅ Converted row ${i + 1} to hidden order:`, hiddenOrder);
+                    log.info(`✅ Converted row ${i + 1} to hidden order:`, hiddenOrder);
                     hiddenOrders.push(hiddenOrder);
                 } else {
-                    console.log(`⚠️ Skipping row ${i + 1} - invalid order ID format: "${orderId}"`);
+                    log.info(`⚠️ Skipping row ${i + 1} - invalid order ID format: "${orderId}"`);
                 }
             } else {
-                console.log(`⚠️ Skipping invalid row ${i + 1}:`, row);
+                log.info(`⚠️ Skipping invalid row ${i + 1}:`, row);
             }
         }
 
-        console.log(`✅ Successfully fetched ${hiddenOrders.length} hidden orders from Google Sheets`);
-        console.log('📊 Final hidden orders array:', hiddenOrders);
+        log.info(`✅ Successfully fetched ${hiddenOrders.length} hidden orders from Google Sheets`);
+        log.info('📊 Final hidden orders array:', hiddenOrders);
 
         sendResponse({
             success: true,

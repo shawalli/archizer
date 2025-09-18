@@ -4,6 +4,7 @@
  */
 
 import { createElement, createButton, createContainer, safeAddEventListener, safeSetStyles, hideElementsBySelectors, containsEssentialInfo, isElementWithinContainer, safeModifyClasses, safeSetMultipleStyles } from './dom-utils.js';
+import { specializedLogger as log } from './logger.js';
 
 
 export class DOMManipulator {
@@ -89,7 +90,7 @@ export class DOMManipulator {
 
             return 'unknown';
         } catch (error) {
-            console.error('Error detecting page format:', error);
+            log.error('Error detecting page format:', error);
             return 'unknown';
         }
     }
@@ -129,11 +130,11 @@ export class DOMManipulator {
      */
     createButtons(orderId) {
         try {
-            console.log(`🔧 Creating buttons for order ${orderId}`);
+            log.info(`🔧 Creating buttons for order ${orderId}`);
 
             // Check if buttons already exist for this order
             if (this.injectedButtons.has(orderId)) {
-                console.warn(`⚠️ Buttons already exist for order ${orderId}, skipping creation`);
+                log.warn(`⚠️ Buttons already exist for order ${orderId}, skipping creation`);
                 return null;
             }
 
@@ -201,25 +202,25 @@ export class DOMManipulator {
                 // CRITICAL: Ensure this button click only affects the specific order
                 const clickedOrderId = hideDetailsBtn.getAttribute('data-archivaz-order-id');
                 if (clickedOrderId !== orderId) {
-                    console.error(`❌ Button click order ID mismatch: expected ${orderId}, got ${clickedOrderId}`);
+                    log.error(`❌ Button click order ID mismatch: expected ${orderId}, got ${clickedOrderId}`);
                     return;
                 }
 
                 // CRITICAL: Verify the button is in the correct order card
                 const orderCard = hideDetailsBtn.closest('.order-card');
                 if (!orderCard) {
-                    console.error(`❌ Button not found within an order card`);
+                    log.error(`❌ Button not found within an order card`);
                     return;
                 }
 
                 const orderCardOrderId = orderCard.querySelector('.yohtmlc-order-id span.a-color-secondary[dir="ltr"]')?.textContent;
                 if (orderCardOrderId !== orderId) {
-                    console.error(`❌ Order card order ID mismatch: expected ${orderId}, got ${orderCardOrderId}`);
+                    log.error(`❌ Order card order ID mismatch: expected ${orderId}, got ${orderCardOrderId}`);
                     return;
                 }
 
                 // Add debugging to track button clicks
-                console.log(`🔍 Button clicked:`, {
+                log.info(`🔍 Button clicked:`, {
                     button: hideDetailsBtn,
                     orderId: orderId,
                     buttonType: hideDetailsBtn.getAttribute('data-archivaz-type'),
@@ -234,7 +235,7 @@ export class DOMManipulator {
                 this.handleButtonClick(buttonType, orderId, hideDetailsBtn);
             });
 
-            console.log(`✅ Buttons created successfully for order ${orderId}`);
+            log.info(`✅ Buttons created successfully for order ${orderId}`);
 
             return {
                 buttonContainer,
@@ -242,7 +243,7 @@ export class DOMManipulator {
                 hideDetailsBtn,
             };
         } catch (error) {
-            console.error(`Error creating buttons for order ${orderId}:`, error);
+            log.error(`Error creating buttons for order ${orderId}:`, error);
             return null;
         }
     }
@@ -253,7 +254,7 @@ export class DOMManipulator {
      */
     setStorage(storage) {
         this.storage = storage;
-        console.log('🔧 Storage manager set for DOM manipulator');
+        log.info('🔧 Storage manager set for DOM manipulator');
     }
 
     /**
@@ -264,24 +265,24 @@ export class DOMManipulator {
      */
     async handleButtonClick(buttonType, orderId, button) {
         try {
-            console.log(`Button clicked: ${buttonType} for order ${orderId}`);
+            log.info(`Button clicked: ${buttonType} for order ${orderId}`);
 
             switch (buttonType) {
                 case 'hide-details':
                     if (this.storage) {
                         await this.hideOrderDetails(orderId, button, this.storage);
                     } else {
-                        console.error('No storage manager available');
+                        log.error('No storage manager available');
                     }
                     break;
                 case 'show-details':
                     await this.showOrderDetails(orderId, button);
                     break;
                 default:
-                    console.warn(`Unknown button type: ${buttonType}`);
+                    log.warn(`Unknown button type: ${buttonType}`);
             }
         } catch (error) {
-            console.error(`Error handling button click for ${buttonType} on order ${orderId}:`, error);
+            log.error(`Error handling button click for ${buttonType} on order ${orderId}:`, error);
         }
     }
 
@@ -293,23 +294,23 @@ export class DOMManipulator {
      */
     async showTaggingDialogForHide(orderId, button, storage) {
         try {
-            console.log(`🔍 showTaggingDialogForHide called for order ${orderId}`);
-            console.log(`🔍 Current time: ${new Date().toISOString()}`);
-            console.log(`🔍 Button clicked:`, button);
-            console.log(`🔍 Button text: "${button.textContent}"`);
-            console.log(`🔍 Button classes: "${button.className}"`);
+            log.info(`🔍 showTaggingDialogForHide called for order ${orderId}`);
+            log.info(`🔍 Current time: ${new Date().toISOString()}`);
+            log.info(`🔍 Button clicked:`, button);
+            log.info(`🔍 Button text: "${button.textContent}"`);
+            log.info(`🔍 Button classes: "${button.className}"`);
 
             // Get order data from the OrderParser
             const orderData = this.getOrderData(orderId);
             if (!orderData) {
-                console.warn(`No order data found for order ${orderId}`);
+                log.warn(`No order data found for order ${orderId}`);
                 return;
             }
 
             // Get the global tagging dialog manager instance
             const taggingDialogManager = window.taggingDialogManager;
             if (!taggingDialogManager) {
-                console.warn('TaggingDialogManager instance not available - popup cannot be shown');
+                log.warn('TaggingDialogManager instance not available - popup cannot be shown');
                 return;
             }
 
@@ -330,54 +331,54 @@ export class DOMManipulator {
             // Find the order card that contains this button
             const orderCard = button.closest('.order-card, .js-order-card, [data-order-id]');
             if (!orderCard) {
-                console.warn('Could not find order card for button');
+                log.warn('Could not find order card for button');
                 return;
             }
 
             // Open the tagging dialog using the manager
             const dialogOpened = taggingDialogManager.openDialog(dialogData, orderCard);
             if (!dialogOpened) {
-                console.warn(`Failed to open tagging dialog for order ${orderId}`);
+                log.warn(`Failed to open tagging dialog for order ${orderId}`);
                 return;
             }
 
-            console.log(`🔍 Tagging dialog opened for order ${orderId}`);
-            console.log(`🔍 Dialog data:`, dialogData);
+            log.info(`🔍 Tagging dialog opened for order ${orderId}`);
+            log.info(`🔍 Dialog data:`, dialogData);
 
             // Create a unique event listener for this order
             const handleTagsSaved = async (event) => {
-                console.log(`🔍 EVENT RECEIVED: ${event.type} for order ${orderId}`);
-                console.log(`🔍 Event detail:`, event.detail);
-                console.log(`🔍 Event target:`, event.target);
-                console.log(`🔍 Event currentTarget:`, event.currentTarget);
+                log.info(`🔍 EVENT RECEIVED: ${event.type} for order ${orderId}`);
+                log.info(`🔍 Event detail:`, event.detail);
+                log.info(`🔍 Event target:`, event.target);
+                log.info(`🔍 Event currentTarget:`, event.currentTarget);
 
                 const tagData = event.detail;
-                console.log(`🔍 Tags saved event received for order ${orderId}:`, tagData);
+                log.info(`🔍 Tags saved event received for order ${orderId}:`, tagData);
 
                 // CRITICAL: Verify this event is for the correct order
                 if (tagData.orderNumber !== orderId) {
-                    console.warn(`⚠️ Tags saved event for wrong order: expected ${orderId}, got ${tagData.orderNumber}`);
+                    log.warn(`⚠️ Tags saved event for wrong order: expected ${orderId}, got ${tagData.orderNumber}`);
                     return;
                 }
 
-                console.log(`✅ Tags saved for order ${orderId}:`, tagData);
+                log.info(`✅ Tags saved for order ${orderId}:`, tagData);
 
                 // Store the tag data
                 if (this.storage) {
                     await this.storeOrderTags(orderId, tagData, this.storage);
                 } else {
-                    console.warn('No storage manager available for storing order tags');
+                    log.warn('No storage manager available for storing order tags');
                 }
 
                 // Get username from storage and pass it to performHideOperation
                 try {
                     const username = await storage.get('username') || 'Unknown User';
-                    console.log(`🔧 Retrieved username from storage: "${username}" for order ${orderId}`);
+                    log.info(`🔧 Retrieved username from storage: "${username}" for order ${orderId}`);
 
                     // Now perform the hide operation with the username
                     await this.performHideOperation(orderId, tagData, username);
                 } catch (error) {
-                    console.error(`Error getting username for order ${orderId}:`, error);
+                    log.error(`Error getting username for order ${orderId}:`, error);
                     // Fallback to hiding without username
                     await this.performHideOperation(orderId, tagData, 'Unknown User');
                 }
@@ -393,15 +394,15 @@ export class DOMManipulator {
             // Add the event listener for the order-specific event
             const eventName = `tagsSaved-${orderId}`;
             document.addEventListener(eventName, handleTagsSaved);
-            console.log(`✅ Added ${eventName} event listener for order ${orderId}`);
+            log.info(`✅ Added ${eventName} event listener for order ${orderId}`);
 
             // DEBUG: Log all current event listeners
-            console.log(`🔍 Current tagsSavedListeners map:`, Array.from(this.tagsSavedListeners.keys()));
-            console.log(`🔍 Total event listeners registered: ${this.tagsSavedListeners.size}`);
-            console.log(`🔍 Event listener function:`, handleTagsSaved.toString().substring(0, 100) + '...');
+            log.info(`🔍 Current tagsSavedListeners map:`, Array.from(this.tagsSavedListeners.keys()));
+            log.info(`🔍 Total event listeners registered: ${this.tagsSavedListeners.size}`);
+            log.info(`🔍 Event listener function:`, handleTagsSaved.toString().substring(0, 100) + '...');
 
         } catch (error) {
-            console.error(`Error showing tagging dialog for order ${orderId}:`, error);
+            log.error(`Error showing tagging dialog for order ${orderId}:`, error);
             // Don't fallback to hiding - just log the error
         }
     }
@@ -416,10 +417,10 @@ export class DOMManipulator {
             const eventName = `tagsSaved-${orderId}`;
             document.removeEventListener(eventName, existingListener);
             this.tagsSavedListeners.delete(orderId);
-            console.log(`🗑️ Removed existing ${eventName} event listener for order ${orderId}`);
-            console.log(`🔍 Remaining event listeners:`, Array.from(this.tagsSavedListeners.keys()));
+            log.info(`🗑️ Removed existing ${eventName} event listener for order ${orderId}`);
+            log.info(`🔍 Remaining event listeners:`, Array.from(this.tagsSavedListeners.keys()));
         } else {
-            console.log(`🔍 No existing event listener found for order ${orderId}`);
+            log.info(`🔍 No existing event listener found for order ${orderId}`);
         }
     }
 
@@ -431,52 +432,52 @@ export class DOMManipulator {
      */
     async performHideOperation(orderId, tagData = null, username = null) {
         try {
-            console.log(`🔍 performHideOperation called with:`, { orderId, tagData, username });
+            log.info(`🔍 performHideOperation called with:`, { orderId, tagData, username });
 
             // IMPORTANT: This function should ONLY be called when the user explicitly clicks "Save & Hide"
             // in the tagging dialog, NOT automatically when the dialog opens
 
             // DEBUG: Check if this order is already hidden
             if (this.hiddenOrders.has(`${orderId}-details`)) {
-                console.warn(`⚠️ Order ${orderId} is already hidden - this indicates incorrect flow!`);
-                console.warn(`⚠️ Current hidden orders:`, Array.from(this.hiddenOrders));
+                log.warn(`⚠️ Order ${orderId} is already hidden - this indicates incorrect flow!`);
+                log.warn(`⚠️ Current hidden orders:`, Array.from(this.hiddenOrders));
                 return;
             }
 
             // Get the button from the injected buttons map
             const buttonInfo = this.injectedButtons.get(orderId);
             if (!buttonInfo || !buttonInfo.hideDetailsBtn) {
-                console.warn(`No button info found for order ${orderId}`);
+                log.warning(`No button info found for order ${orderId}`);
                 return;
             }
 
             // Set username if provided, otherwise use stored username
             if (username) {
-                console.log(`🔧 Setting provided username: "${username}" for order ${orderId}`);
+                log.info(`🔧 Setting provided username: "${username}" for order ${orderId}`);
                 this.setUsernameForOrder(orderId, username);
             } else {
-                console.log(`🔧 No username provided, using stored username for order ${orderId}`);
+                log.info(`🔧 No username provided, using stored username for order ${orderId}`);
                 const storedUsername = this.getUsernameForOrder(orderId);
-                console.log(`🔧 Stored username for order ${orderId}: "${storedUsername}"`);
+                log.info(`🔧 Stored username for order ${orderId}: "${storedUsername}"`);
             }
 
             // If no tag data provided, try to retrieve stored tags
             if (!tagData) {
-                console.log('🔍 No tagData provided, retrieving from storage...');
+                log.info('🔍 No tagData provided, retrieving from storage...');
                 if (this.storage) {
                     tagData = await this.getOrderTags(orderId, this.storage);
                 }
-                console.log('🔍 Retrieved tagData from storage:', tagData);
+                log.info('🔍 Retrieved tagData from storage:', tagData);
             }
 
             // Verify username is set before proceeding
             const finalUsername = this.getUsernameForOrder(orderId);
-            console.log(`🔧 Final username verification for order ${orderId}: "${finalUsername}"`);
+            log.info(`🔧 Final username verification for order ${orderId}: "${finalUsername}"`);
 
-            console.log('🔍 Calling performHideOrderDetails with:', { orderId, button: buttonInfo.hideDetailsBtn, tagData, username: finalUsername });
+            log.info('🔍 Calling performHideOrderDetails with:', { orderId, button: buttonInfo.hideDetailsBtn, tagData, username: finalUsername });
             this.performHideOrderDetails(orderId, buttonInfo.hideDetailsBtn, tagData);
         } catch (error) {
-            console.error(`Error performing hide operation for order ${orderId}:`, error);
+            log.error(`Error performing hide operation for order ${orderId}:`, error);
         }
     }
 
@@ -487,16 +488,16 @@ export class DOMManipulator {
      */
     getOrderData(orderId) {
         try {
-            console.log(`🔍 Getting order data for order ID: ${orderId}`);
+            log.info(`🔍 Getting order data for order ID: ${orderId}`);
 
             if (!this.orderParser) {
-                console.warn('OrderParser not available');
+                log.warn('OrderParser not available');
                 return null;
             }
 
             // Find the order card for this order ID
             const orderCards = this.orderParser.findOrderCards();
-            console.log(`🔍 Found ${orderCards.length} order cards`);
+            log.info(`🔍 Found ${orderCards.length} order cards`);
 
             // First, try to find the order card that actually contains this order ID
             // This is more reliable than parsing all cards
@@ -507,42 +508,42 @@ export class DOMManipulator {
                 const cardText = orderCard.textContent;
                 if (cardText.includes(orderId)) {
                     targetOrderCard = orderCard;
-                    console.log(`✅ Found order card containing order ID ${orderId}`);
+                    log.info(`✅ Found order card containing order ID ${orderId}`);
                     break;
                 }
             }
 
             if (!targetOrderCard) {
-                console.warn(`⚠️ Could not find order card containing order ID ${orderId}`);
+                log.warn(`⚠️ Could not find order card containing order ID ${orderId}`);
                 // Fall back to the old method
                 for (const orderCard of orderCards) {
-                    console.log(`🔍 Processing order card:`, orderCard);
+                    log.info(`🔍 Processing order card:`, orderCard);
                     const extractedData = this.orderParser.parseOrderCard(orderCard);
-                    console.log(`🔍 Extracted data:`, extractedData);
+                    log.info(`🔍 Extracted data:`, extractedData);
 
                     if (extractedData && extractedData.orderNumber === orderId) {
-                        console.log(`✅ Found matching order data for ${orderId}`);
+                        log.info(`✅ Found matching order data for ${orderId}`);
                         return extractedData;
                     }
                 }
             } else {
                 // Parse only the target order card
-                console.log(`🔍 Parsing target order card for order ID ${orderId}:`, targetOrderCard);
+                log.info(`🔍 Parsing target order card for order ID ${orderId}:`, targetOrderCard);
                 const extractedData = this.orderParser.parseOrderCard(targetOrderCard);
-                console.log(`🔍 Extracted data from target card:`, extractedData);
+                log.info(`🔍 Extracted data from target card:`, extractedData);
 
                 if (extractedData && extractedData.orderNumber === orderId) {
-                    console.log(`✅ Found matching order data for ${orderId}`);
+                    log.info(`✅ Found matching order data for ${orderId}`);
                     return extractedData;
                 } else {
-                    console.warn(`⚠️ Order number mismatch: expected ${orderId}, got ${extractedData?.orderNumber}`);
+                    log.warn(`⚠️ Order number mismatch: expected ${orderId}, got ${extractedData?.orderNumber}`);
                 }
             }
 
-            console.log(`❌ No matching order data found for ${orderId}`);
+            log.info(`❌ No matching order data found for ${orderId}`);
             return null;
         } catch (error) {
-            console.error(`Error getting order data for ${orderId}:`, error);
+            log.error(`Error getting order data for ${orderId}:`, error);
             return null;
         }
     }
@@ -556,12 +557,12 @@ export class DOMManipulator {
     async storeOrderTags(orderId, tagData, storage) {
         try {
             if (!storage) {
-                console.warn('No storage manager provided for storeOrderTags');
+                log.warn('No storage manager provided for storeOrderTags');
                 return;
             }
             await storage.storeOrderTags(orderId, tagData);
         } catch (error) {
-            console.error(`Error storing tags for order ${orderId}:`, error);
+            log.error(`Error storing tags for order ${orderId}:`, error);
         }
     }
 
@@ -574,16 +575,16 @@ export class DOMManipulator {
     async getOrderTags(orderId, storage) {
         try {
             if (!storage) {
-                console.warn('No storage manager provided for getOrderTags');
+                log.warn('No storage manager provided for getOrderTags');
                 return null;
             }
             const tagData = await storage.getOrderTags(orderId);
             if (tagData) {
-                console.log(`Retrieved tags for order ${orderId}:`, tagData);
+                log.info(`Retrieved tags for order ${orderId}:`, tagData);
             }
             return tagData;
         } catch (error) {
-            console.error(`Error retrieving tags for order ${orderId}:`, error);
+            log.error(`Error retrieving tags for order ${orderId}:`, error);
             return null;
         }
     }
@@ -596,7 +597,7 @@ export class DOMManipulator {
      */
     async hideOrderDetails(orderId, button, storage) {
         try {
-            console.log(`🔍 hideOrderDetails called for order ${orderId} - opening tagging dialog only`);
+            log.info(`🔍 hideOrderDetails called for order ${orderId} - opening tagging dialog only`);
 
             // IMPORTANT: Do NOT hide the order yet - just show the tagging dialog
             // The order will only be hidden when the user clicks "Save & Hide" in the dialog
@@ -604,7 +605,7 @@ export class DOMManipulator {
             // Show tagging dialog first, then hide details after tags are saved
             this.showTaggingDialogForHide(orderId, button, storage);
         } catch (error) {
-            console.error(`Error showing tagging dialog for order ${orderId}:`, error);
+            log.error(`Error showing tagging dialog for order ${orderId}:`, error);
         }
     }
 
@@ -617,24 +618,24 @@ export class DOMManipulator {
     performHideOrderDetails(orderId, button, tagData = null) {
         let orderCard = null;
         try {
-            console.log('🔍 performHideOrderDetails called with:', { orderId, button, tagData });
+            log.info('🔍 performHideOrderDetails called with:', { orderId, button, tagData });
 
             const buttonInfo = this.injectedButtons.get(orderId);
             if (!buttonInfo) {
-                console.warn(`No button info found for order ${orderId}`);
+                log.warning(`No button info found for order ${orderId}`);
                 return;
             }
 
             orderCard = buttonInfo.orderCard;
-            console.log('🔍 Order card found:', orderCard);
-            console.log('🔍 Order card outerHTML preview:', orderCard.outerHTML.substring(0, 200) + '...');
-            console.log('🔍 Order card classes:', orderCard.className);
-            console.log('🔍 Order card ID:', orderCard.id);
+            log.info('🔍 Order card found:', orderCard);
+            log.info('🔍 Order card outerHTML preview:', orderCard.outerHTML.substring(0, 200) + '...');
+            log.info('🔍 Order card classes:', orderCard.className);
+            log.info('🔍 Order card ID:', orderCard.id);
 
             // CRITICAL CHECK: Prevent hiding if order is already hidden
             if (orderCard.classList.contains('archivaz-details-hidden')) {
-                console.warn(`⚠️ Order ${orderId} is already hidden - this indicates a duplicate operation or incorrect flow`);
-                console.warn(`⚠️ The order should NOT be hidden until the user clicks "Save & Hide" in the tagging dialog`);
+                log.warn(`⚠️ Order ${orderId} is already hidden - this indicates a duplicate operation or incorrect flow`);
+                log.warn(`⚠️ The order should NOT be hidden until the user clicks "Save & Hide" in the tagging dialog`);
                 return;
             }
 
@@ -644,7 +645,7 @@ export class DOMManipulator {
 
             // Check if this order is already being processed
             if (orderCard.hasAttribute('data-archivaz-hiding')) {
-                console.warn(`⚠️ Order ${orderId} is already being hidden, skipping duplicate operation`);
+                log.warn(`⚠️ Order ${orderId} is already being hidden, skipping duplicate operation`);
                 return;
             }
 
@@ -681,7 +682,7 @@ export class DOMManipulator {
             selectorsToHide.forEach(selector => {
                 try {
                     const elements = orderCard.querySelectorAll(selector);
-                    console.log(`🔍 Selector "${selector}" found ${elements.length} elements in order ${orderId}`);
+                    log.info(`🔍 Selector "${selector}" found ${elements.length} elements in order ${orderId}`);
                     elements.forEach(element => {
                         // Skip if already hidden or if it's our injected buttons
                         if (element.classList.contains('archivaz-hidden-details') ||
@@ -691,7 +692,7 @@ export class DOMManipulator {
 
                         // Verify the element is within the order card boundaries
                         if (!this.isElementWithinOrderCard(element, orderCard)) {
-                            console.warn(`⚠️ Element outside order card boundaries in order ${orderId}:`, element);
+                            log.warn(`⚠️ Element outside order card boundaries in order ${orderId}:`, element);
                             return;
                         }
 
@@ -705,7 +706,7 @@ export class DOMManipulator {
 
                         hiddenElements.push(element);
                         totalHidden++;
-                        console.log(`🔍 Hidden element with selector "${selector}" in order ${orderId}:`, element);
+                        log.info(`🔍 Hidden element with selector "${selector}" in order ${orderId}:`, element);
                     });
                 } catch (selectorError) {
                     // Continue with next selector if one fails
@@ -728,7 +729,7 @@ export class DOMManipulator {
 
             // Handle order-item containers intelligently to preserve essential status
             const orderItemElements = orderCard.querySelectorAll('.order-item');
-            console.log(`🔍 Found ${orderItemElements.length} order-item elements in order ${orderId}`);
+            log.info(`🔍 Found ${orderItemElements.length} order-item elements in order ${orderId}`);
 
             orderItemElements.forEach((element) => {
                 // Skip if already hidden or if it's our injected buttons
@@ -739,7 +740,7 @@ export class DOMManipulator {
 
                 // Verify the element is within the order card boundaries
                 if (!this.isElementWithinOrderCard(element, orderCard)) {
-                    console.warn(`⚠️ Order-item element outside order card boundaries in order ${orderId}:`, element);
+                    log.warn(`⚠️ Order-item element outside order card boundaries in order ${orderId}:`, element);
                     return;
                 }
 
@@ -760,22 +761,22 @@ export class DOMManipulator {
 
                     hiddenElements.push(element);
                     totalHidden++;
-                    console.log(`🔍 Hidden order-item element in order ${orderId}:`, element);
+                    log.info(`🔍 Hidden order-item element in order ${orderId}:`, element);
                 }
             });
 
             // Special handling: Preserve the delivery status column (left column) in the delivery-box
             const deliveryBox = orderCard.querySelector('.delivery-box');
-            console.log('🔍 Looking for delivery-box:', deliveryBox);
+            log.info('🔍 Looking for delivery-box:', deliveryBox);
 
             if (deliveryBox) {
                 const leftColumn = deliveryBox.querySelector('.a-fixed-right-grid-col.a-col-left');
-                console.log('🔍 Looking for left column:', leftColumn);
+                log.info('🔍 Looking for left column:', leftColumn);
 
                 if (leftColumn) {
                     // Check if left column was hidden and needs restoration
                     if (leftColumn.classList.contains('archivaz-hidden-details')) {
-                        console.log('🔍 Left column was hidden, restoring it...');
+                        log.info('🔍 Left column was hidden, restoring it...');
                         // Restore the left column if it was hidden - it contains essential delivery status
                         leftColumn.classList.remove('archivaz-hidden-details');
                         leftColumn.style.display = leftColumn.getAttribute('data-archivaz-original-display') || 'block';
@@ -787,25 +788,25 @@ export class DOMManipulator {
                             totalHidden--;
                         }
                     } else {
-                        console.log('🔍 Left column is already visible, no restoration needed');
+                        log.info('🔍 Left column is already visible, no restoration needed');
                     }
 
                     // Always add tags and username below the delivery status if available
-                    console.log('🔍 Checking if tags/username should be added:', { tagData, hasTags: tagData && tagData.tags && tagData.tags.length > 0 });
+                    log.info('🔍 Checking if tags/username should be added:', { tagData, hasTags: tagData && tagData.tags && tagData.tags.length > 0 });
 
                     // Get username from stored data and pass it to the method
                     const username = this.getUsernameForOrder(orderId);
-                    console.log(`🔍 Username for order ${orderId}: "${username}" (from stored data)`);
-                    console.log(`🔍 Current orderUsernames map:`, Array.from(this.orderUsernames.entries()));
+                    log.info(`🔍 Username for order ${orderId}: "${username}" (from stored data)`);
+                    log.info(`🔍 Current orderUsernames map:`, Array.from(this.orderUsernames.entries()));
 
                     const tags = tagData && tagData.tags ? tagData.tags : [];
-                    console.log(`🔍 About to call addTagsToDeliveryStatus with username: "${username}"`);
+                    log.info(`🔍 About to call addTagsToDeliveryStatus with username: "${username}"`);
                     this.addTagsToDeliveryStatus(leftColumn, tags, username);
                 } else {
-                    console.log('⚠️ Left column not found');
+                    log.info('⚠️ Left column not found');
                 }
             } else {
-                console.log('⚠️ No delivery-box found in order card');
+                log.info('⚠️ No delivery-box found in order card');
             }
 
             // Update button text and type
@@ -829,10 +830,10 @@ export class DOMManipulator {
             // Clean up processing flag
             orderCard.removeAttribute('data-archivaz-hiding');
 
-            console.log(`Hidden ${totalHidden} detail elements for order ${orderId}`);
+            log.info(`Hidden ${totalHidden} detail elements for order ${orderId}`);
 
         } catch (error) {
-            console.error(`Error hiding details for order ${orderId}:`, error);
+            log.error(`Error hiding details for order ${orderId}:`, error);
             // Clean up processing flag on error
             if (orderCard) {
                 orderCard.removeAttribute('data-archivaz-hiding');
@@ -865,7 +866,7 @@ export class DOMManipulator {
         const hiddenElements = [];
         const orderId = this.getOrderIdFromElement(orderCard) || 'unknown';
 
-        console.log(`🔍 hideAdditionalOrderElements called for order ${orderId}`);
+        log.info(`🔍 hideAdditionalOrderElements called for order ${orderId}`);
 
         try {
             // Find and hide return/replace text
@@ -881,10 +882,10 @@ export class DOMManipulator {
             this.findAndHideActionButtons(orderCard, hiddenElements);
 
         } catch (error) {
-            console.error('Error hiding additional order elements:', error);
+            log.error('Error hiding additional order elements:', error);
         }
 
-        console.log(`🔍 hideAdditionalOrderElements completed for order ${orderId}, hidden ${hiddenElements.length} elements`);
+        log.info(`🔍 hideAdditionalOrderElements completed for order ${orderId}, hidden ${hiddenElements.length} elements`);
         return hiddenElements;
     }
 
@@ -896,22 +897,22 @@ export class DOMManipulator {
      */
     addTagsToDeliveryStatus(leftColumn, tags, username = null) {
         try {
-            console.log('🔍 addTagsToDeliveryStatus called with:', { leftColumn, tags, username });
-            console.log(`🔍 Username parameter received: "${username}"`);
+            log.info('🔍 addTagsToDeliveryStatus called with:', { leftColumn, tags, username });
+            log.info(`🔍 Username parameter received: "${username}"`);
 
             // Check if tags container already exists
             if (leftColumn.querySelector('.archivaz-delivery-status-tags')) {
-                console.log('⚠️ Tags container already displayed, skipping');
+                log.info('⚠️ Tags container already displayed, skipping');
                 return;
             }
 
             // Only create container if we have tags or username to show
             if ((!tags || tags.length === 0) && !username) {
-                console.log('⚠️ No tags or username to display, skipping');
+                log.info('⚠️ No tags or username to display, skipping');
                 return;
             }
 
-            console.log(`🔍 Creating tags container with username: "${username}"`);
+            log.info(`🔍 Creating tags container with username: "${username}"`);
 
             // Create tags container
             const tagsContainer = document.createElement('div');
@@ -1004,30 +1005,30 @@ export class DOMManipulator {
 
             // Insert tags directly below the delivery status text
             const deliveryStatusText = leftColumn.querySelector('.yohtmlc-shipment-status-secondaryText');
-            console.log('🔍 Looking for delivery status text:', deliveryStatusText);
+            log.info('🔍 Looking for delivery status text:', deliveryStatusText);
 
             if (deliveryStatusText) {
                 // Insert tags right after the delivery status text
                 deliveryStatusText.parentNode.insertBefore(tagsContainer, deliveryStatusText.nextSibling);
-                console.log('✅ Tags inserted after delivery status text');
+                log.info('✅ Tags inserted after delivery status text');
             } else {
-                console.log('⚠️ Delivery status text not found, using fallback positioning');
+                log.info('⚠️ Delivery status text not found, using fallback positioning');
                 // Fallback: insert after the last row in the left column
                 const lastRow = leftColumn.querySelector('.a-row:last-child');
                 if (lastRow) {
                     lastRow.parentNode.insertBefore(tagsContainer, lastRow.nextSibling);
-                    console.log('✅ Tags inserted after last row (fallback)');
+                    log.info('✅ Tags inserted after last row (fallback)');
                 } else {
                     // Final fallback: append to the end of the left column
                     leftColumn.appendChild(tagsContainer);
-                    console.log('✅ Tags appended to end of left column (final fallback)');
+                    log.info('✅ Tags appended to end of left column (final fallback)');
                 }
             }
 
-            console.log(`Added ${tags.length} tags to delivery status for order`);
+            log.info(`Added ${tags.length} tags to delivery status for order`);
 
         } catch (error) {
-            console.error('Error adding tags to delivery status:', error);
+            log.error('Error adding tags to delivery status:', error);
         }
     }
 
@@ -1040,10 +1041,10 @@ export class DOMManipulator {
             const tagsContainer = orderCard.querySelector('.archivaz-delivery-status-tags');
             if (tagsContainer) {
                 tagsContainer.remove();
-                console.log('Removed tags from delivery status');
+                log.info('Removed tags from delivery status');
             }
         } catch (error) {
-            console.error('Error removing tags from delivery status:', error);
+            log.error('Error removing tags from delivery status:', error);
         }
     }
 
@@ -1055,9 +1056,9 @@ export class DOMManipulator {
      */
     findAndHideTextElements(container, textToFind, hiddenElements) {
         const orderId = this.getOrderIdFromElement(container) || 'unknown';
-        console.log(`🔍 findAndHideTextElements called for order ${orderId}, container:`, container);
-        console.log(`🔍 Container classes:`, container.className);
-        console.log(`🔍 Container ID:`, container.id);
+        log.info(`🔍 findAndHideTextElements called for order ${orderId}, container:`, container);
+        log.info(`🔍 Container classes:`, container.className);
+        log.info(`🔍 Container ID:`, container.id);
 
         // Walk through all text nodes and their parent elements
         const walker = document.createTreeWalker(
@@ -1073,7 +1074,7 @@ export class DOMManipulator {
             textNodes.push(node);
         }
 
-        console.log(`🔍 TreeWalker found ${textNodes.length} text nodes in order ${orderId}`);
+        log.info(`🔍 TreeWalker found ${textNodes.length} text nodes in order ${orderId}`);
 
         textNodes.forEach(textNode => {
             const text = textNode.textContent.trim();
@@ -1082,7 +1083,7 @@ export class DOMManipulator {
                 if (parentElement && !parentElement.classList.contains('archivaz-hidden-details')) {
                     // Verify the element is within the order card boundaries
                     if (!this.isElementWithinOrderCard(parentElement, container)) {
-                        console.warn(`⚠️ Element outside order card boundaries in order ${orderId}:`, parentElement);
+                        log.warn(`⚠️ Element outside order card boundaries in order ${orderId}:`, parentElement);
                         return;
                     }
 
@@ -1112,7 +1113,7 @@ export class DOMManipulator {
                     parentElement.style.display = 'none';
 
                     hiddenElements.push(parentElement);
-                    console.log(`🔍 Hidden text element in order ${orderId}: "${text}"`, parentElement);
+                    log.info(`🔍 Hidden text element in order ${orderId}: "${text}"`, parentElement);
                 }
             }
         });
@@ -1125,7 +1126,7 @@ export class DOMManipulator {
  */
     findAndHideActionButtons(container, hiddenElements) {
         const orderId = this.getOrderIdFromElement(container) || 'unknown';
-        console.log(`🔍 findAndHideActionButtons called for order ${orderId}, container:`, container);
+        log.info(`🔍 findAndHideActionButtons called for order ${orderId}, container:`, container);
 
         // Common Amazon action button text patterns - expanded list
         // Excluding essential order header links that should remain visible
@@ -1174,7 +1175,7 @@ export class DOMManipulator {
             }
         });
 
-        console.log(`🔍 Found ${allButtons.size} total buttons in order ${orderId}`);
+        log.info(`🔍 Found ${allButtons.size} total buttons in order ${orderId}`);
 
         allButtons.forEach(button => {
             // Skip if it's our extension button
@@ -1189,7 +1190,7 @@ export class DOMManipulator {
 
             // Verify the button is within the order card boundaries
             if (!this.isElementWithinOrderCard(button, container)) {
-                console.warn(`⚠️ Button outside order card boundaries in order ${orderId}:`, button);
+                log.warn(`⚠️ Button outside order card boundaries in order ${orderId}:`, button);
                 return;
             }
 
@@ -1206,13 +1207,13 @@ export class DOMManipulator {
                 button.style.display = 'none';
 
                 hiddenElements.push(button);
-                console.log(`🔍 Hidden button in order ${orderId}: "${buttonText}" with classes: ${button.className}`);
+                log.info(`🔍 Hidden button in order ${orderId}: "${buttonText}" with classes: ${button.className}`);
             }
         });
 
         // Also look for button containers that might contain action buttons
         const buttonContainers = container.querySelectorAll('.a-box-group, .order-actions, .a-unordered-list, .a-fixed-right-grid-col');
-        console.log(`🔍 Found ${buttonContainers.length} button containers in order ${orderId}`);
+        log.info(`🔍 Found ${buttonContainers.length} button containers in order ${orderId}`);
 
         buttonContainers.forEach(buttonContainer => {
             // Skip containers that contain essential order header information
@@ -1222,7 +1223,7 @@ export class DOMManipulator {
 
             // Verify the container is within the order card boundaries
             if (!this.isElementWithinOrderCard(buttonContainer, container)) {
-                console.warn(`⚠️ Button container outside order card boundaries in order ${orderId}:`, buttonContainer);
+                log.warn(`⚠️ Button container outside order card boundaries in order ${orderId}:`, buttonContainer);
                 return;
             }
 
@@ -1246,7 +1247,7 @@ export class DOMManipulator {
                     buttonContainer.style.display = 'none';
 
                     hiddenElements.push(buttonContainer);
-                    console.log(`🔍 Hidden button container in order ${orderId}:`, buttonContainer);
+                    log.info(`🔍 Hidden button container in order ${orderId}:`, buttonContainer);
                 }
             }
         });
@@ -1291,22 +1292,22 @@ export class DOMManipulator {
     async performHideOrderDetailsWithCard(orderId, orderCard, tagData = null, username = null) {
         // UNIQUE IDENTIFIER: This is the performHideOrderDetailsWithCard method
         try {
-            console.log('🔍 performHideOrderDetailsWithCard called with:', { orderId, orderCard, tagData });
+            log.info('🔍 performHideOrderDetailsWithCard called with:', { orderId, orderCard, tagData });
 
             if (!orderCard) {
-                console.warn(`No order card provided for order ${orderId}`);
+                log.warn(`No order card provided for order ${orderId}`);
                 return;
             }
 
             // CRITICAL CHECK: Prevent hiding if order is already hidden
             if (orderCard.classList.contains('archivaz-details-hidden')) {
-                console.warn(`⚠️ Order ${orderId} is already hidden - skipping restoration`);
+                log.warn(`⚠️ Order ${orderId} is already hidden - skipping restoration`);
                 return;
             }
 
             // Check if this order is already being processed
             if (orderCard.hasAttribute('data-archivaz-hiding')) {
-                console.warn(`⚠️ Order ${orderId} is already being hidden, skipping duplicate operation`);
+                log.warn(`⚠️ Order ${orderId} is already being hidden, skipping duplicate operation`);
                 return;
             }
 
@@ -1359,7 +1360,7 @@ export class DOMManipulator {
 
             // Handle order-item containers intelligently to preserve essential status
             const orderItemElements = orderCard.querySelectorAll('.order-item');
-            console.log(`🔍 Found ${orderItemElements.length} order-item elements in order ${orderId}`);
+            log.info(`🔍 Found ${orderItemElements.length} order-item elements in order ${orderId}`);
 
             orderItemElements.forEach((element) => {
                 // Skip if already hidden or if it's our injected buttons
@@ -1370,7 +1371,7 @@ export class DOMManipulator {
 
                 // Verify the element is within the order card boundaries
                 if (!isElementWithinContainer(element, orderCard)) {
-                    console.warn(`⚠️ Order-item element outside order card boundaries in order ${orderId}:`, element);
+                    log.warn(`⚠️ Order-item element outside order card boundaries in order ${orderId}:`, element);
                     return;
                 }
 
@@ -1389,16 +1390,16 @@ export class DOMManipulator {
 
             // Special handling: Preserve the delivery status column (left column) in the delivery-box
             const deliveryBox = orderCard.querySelector('.delivery-box');
-            console.log('🔍 Looking for delivery-box:', deliveryBox);
+            log.info('🔍 Looking for delivery-box:', deliveryBox);
 
             if (deliveryBox) {
                 const leftColumn = deliveryBox.querySelector('.a-fixed-right-grid-col.a-col-left');
-                console.log('🔍 Looking for left column:', leftColumn);
+                log.info('🔍 Looking for left column:', leftColumn);
 
                 if (leftColumn) {
                     // Check if left column was hidden and needs restoration
                     if (leftColumn.classList.contains('archivaz-hidden-details')) {
-                        console.log('🔍 Left column was hidden, restoring it...');
+                        log.info('🔍 Left column was hidden, restoring it...');
                         // Restore the left column if it was hidden - it contains essential delivery status
                         leftColumn.classList.remove('archivaz-hidden-details');
                         leftColumn.style.display = leftColumn.getAttribute('data-archivaz-original-display') || 'block';
@@ -1410,18 +1411,18 @@ export class DOMManipulator {
                             totalHidden--;
                         }
                     } else {
-                        console.log('🔍 Left column is already visible, no restoration needed');
+                        log.info('🔍 Left column is already visible, no restoration needed');
                     }
 
                     // Always add tags and username below the delivery status if available
-                    console.log('🔍 Checking if tags/username should be added:', { tagData, hasTags: tagData && tagData.tags && tagData.tags.length > 0 });
+                    log.info('🔍 Checking if tags/username should be added:', { tagData, hasTags: tagData && tagData.tags && tagData.tags.length > 0 });
 
                     // Use passed username or get from stored data
                     const finalUsername = username || this.getUsernameForOrder(orderId);
-                    console.log(`🔍 Username for order ${orderId}: "${finalUsername}" (${username ? 'from parameter' : 'from stored data'})`);
+                    log.info(`🔍 Username for order ${orderId}: "${finalUsername}" (${username ? 'from parameter' : 'from stored data'})`);
 
                     const tags = tagData && tagData.tags ? tagData.tags : [];
-                    console.log(`🔍 About to call addTagsToDeliveryStatus with username: "${finalUsername}"`);
+                    log.info(`🔍 About to call addTagsToDeliveryStatus with username: "${finalUsername}"`);
 
                     // Add tags and username to the delivery status
                     this.addTagsToDeliveryStatus(leftColumn, tags, finalUsername);
@@ -1469,7 +1470,7 @@ export class DOMManipulator {
             // Update button state to reflect hidden status
             // Look for any button with our extension attributes, regardless of current type
             const extensionButton = orderCard.querySelector('button[data-archivaz-type]');
-            console.log(`🔍 Looking for extension button in order ${orderId}:`, {
+            log.info(`🔍 Looking for extension button in order ${orderId}:`, {
                 found: !!extensionButton,
                 buttonType: extensionButton?.getAttribute('data-archivaz-type'),
                 buttonText: extensionButton?.textContent,
@@ -1480,12 +1481,12 @@ export class DOMManipulator {
                 extensionButton.textContent = 'Show details';
                 extensionButton.setAttribute('data-archivaz-type', 'show-details');
                 extensionButton.classList.add('archivaz-details-hidden');
-                console.log(`✅ Updated button state to "Show details" for order ${orderId}`);
+                log.info(`✅ Updated button state to "Show details" for order ${orderId}`);
             } else {
-                console.warn(`⚠️ Could not find extension button to update for order ${orderId}`);
+                log.warn(`⚠️ Could not find extension button to update for order ${orderId}`);
                 // Debug: check what buttons exist in the order card
                 const allButtons = orderCard.querySelectorAll('button');
-                console.log(`🔍 All buttons in order card ${orderId}:`, Array.from(allButtons).map(btn => ({
+                log.info(`🔍 All buttons in order card ${orderId}:`, Array.from(allButtons).map(btn => ({
                     text: btn.textContent,
                     type: btn.getAttribute('data-archivaz-type'),
                     classes: btn.className
@@ -1495,10 +1496,10 @@ export class DOMManipulator {
             // Clean up processing flag
             orderCard.removeAttribute('data-archivaz-hiding');
 
-            console.log(`Hidden ${totalHidden} detail elements for order ${orderId} during restoration`);
+            log.info(`Hidden ${totalHidden} detail elements for order ${orderId} during restoration`);
 
         } catch (error) {
-            console.error(`Error hiding details for order ${orderId} during restoration:`, error);
+            log.error(`Error hiding details for order ${orderId} during restoration:`, error);
             // Clean up processing flag on error
             if (orderCard) {
                 orderCard.removeAttribute('data-archivaz-hiding');
@@ -1515,7 +1516,7 @@ export class DOMManipulator {
         try {
             const buttonInfo = this.injectedButtons.get(orderId);
             if (!buttonInfo) {
-                console.warn(`No button info found for order ${orderId}`);
+                log.warning(`No button info found for order ${orderId}`);
                 return;
             }
 
@@ -1578,15 +1579,15 @@ export class DOMManipulator {
 
             // Remove from storage and sync to Google Sheets
             if (this.storage) {
-                console.log(`🔧 Removing order ${orderId} from storage...`);
+                log.info(`🔧 Removing order ${orderId} from storage...`);
                 try {
                     await this.storage.removeHiddenOrder(orderId, 'details');
-                    console.log(`✅ Successfully removed order ${orderId} from storage`);
+                    log.info(`✅ Successfully removed order ${orderId} from storage`);
                 } catch (error) {
-                    console.error(`❌ Error removing order ${orderId} from storage:`, error);
+                    log.error(`❌ Error removing order ${orderId} from storage:`, error);
                 }
             } else {
-                console.warn(`⚠️ No storage manager available for order ${orderId}`);
+                log.warn(`⚠️ No storage manager available for order ${orderId}`);
             }
 
             // Reset the button info to ensure proper state for future hiding
@@ -1598,7 +1599,7 @@ export class DOMManipulator {
                     hiddenElements: []
                 });
 
-                console.log(`🔧 Reset button info for order ${orderId}:`, {
+                log.info(`🔧 Reset button info for order ${orderId}:`, {
                     hasOrderCard: !!buttonInfo.orderCard,
                     hasButton: !!buttonInfo.button,
                     hiddenElementsCount: buttonInfo.hiddenElements?.length || 0
@@ -1611,10 +1612,10 @@ export class DOMManipulator {
                 this.onOrderShown(orderId, 'details', orderData);
             }
 
-            console.log(`Showed ${totalShown} detail elements for order ${orderId}`);
+            log.info(`Showed ${totalShown} detail elements for order ${orderId}`);
 
         } catch (error) {
-            console.error(`Error showing details for order ${orderId}:`, error);
+            log.error(`Error showing details for order ${orderId}:`, error);
         }
     }
 
@@ -1638,7 +1639,7 @@ export class DOMManipulator {
     extractOrderData(orderCard, orderId) {
         try {
             if (!this.orderParser) {
-                console.warn('OrderParser not available for data extraction');
+                log.warn('OrderParser not available for data extraction');
                 return { orderId };
             }
 
@@ -1647,7 +1648,7 @@ export class DOMManipulator {
             return orderData || { orderId };
 
         } catch (error) {
-            console.error(`Error extracting order data for ${orderId}:`, error);
+            log.error(`Error extracting order data for ${orderId}:`, error);
             return { orderId };
         }
     }
@@ -1679,24 +1680,24 @@ export class DOMManipulator {
         try {
             // Check if buttons are already injected for this order
             if (this.injectedButtons.has(orderId)) {
-                console.log(`Buttons already injected for order ${orderId}`);
+                log.info(`Buttons already injected for order ${orderId}`);
                 return true;
             }
 
             // Check if this order card already has buttons
             if (orderCard.querySelector('.archivaz-button-container')) {
-                console.warn(`⚠️ Order card already has buttons for order ${orderId}, skipping injection`);
+                log.warn(`⚠️ Order card already has buttons for order ${orderId}, skipping injection`);
                 return true;
             }
 
-            console.log(`🔧 Injecting buttons for order ${orderId}`);
+            log.info(`🔧 Injecting buttons for order ${orderId}`);
 
             // Create buttons
             const { hideDetailsLi, hideDetailsBtn } = this.createButtons(orderId);
 
             // Detect page format and use optimal injection strategy
             const pageFormat = this.detectPageFormat(orderCard);
-            console.log(`🔍 Detected page format: ${pageFormat} for order ${orderId}`);
+            log.info(`🔍 Detected page format: ${pageFormat} for order ${orderId}`);
 
             const strategy = this.getFormatSpecificStrategy(pageFormat);
             let injectionSuccess = false;
@@ -1706,7 +1707,7 @@ export class DOMManipulator {
                 const container = orderCard.querySelector(strategy.container);
                 if (container) {
                     container.appendChild(hideDetailsLi);
-                    console.log(`✅ Successfully injected buttons for order ${orderId} into ${strategy.container}`);
+                    log.info(`✅ Successfully injected buttons for order ${orderId} into ${strategy.container}`);
                     injectionSuccess = true;
                 }
             }
@@ -1716,7 +1717,7 @@ export class DOMManipulator {
                 const fallbackContainer = orderCard.querySelector(strategy.fallback);
                 if (fallbackContainer) {
                     fallbackContainer.appendChild(hideDetailsLi);
-                    console.log(`✅ Successfully injected buttons for order ${orderId} into fallback container ${strategy.fallback}`);
+                    log.info(`✅ Successfully injected buttons for order ${orderId} into fallback container ${strategy.fallback}`);
                     injectionSuccess = true;
                 }
             }
@@ -1733,7 +1734,7 @@ export class DOMManipulator {
                         deliveryBox.appendChild(actionContainer);
                     }
                     actionContainer.appendChild(hideDetailsLi);
-                    console.log(`✅ Successfully injected buttons for order ${orderId} into .delivery-box actions`);
+                    log.info(`✅ Successfully injected buttons for order ${orderId} into .delivery-box actions`);
                     injectionSuccess = true;
                 }
             }
@@ -1741,12 +1742,12 @@ export class DOMManipulator {
             // Strategy 4: Fallback - append to the end of the order card
             if (!injectionSuccess) {
                 orderCard.appendChild(hideDetailsLi);
-                console.log(`🔍 Fallback: injected buttons for order ${orderId} to end of order card`);
+                log.info(`🔍 Fallback: injected buttons for order ${orderId} to end of order card`);
                 injectionSuccess = true;
             }
 
             if (!injectionSuccess) {
-                console.error(`❌ Failed to inject buttons for order ${orderId} with any strategy`);
+                log.error(`❌ Failed to inject buttons for order ${orderId} with any strategy`);
                 return false;
             }
 
@@ -1757,18 +1758,18 @@ export class DOMManipulator {
                 orderCard: orderCard
             };
             this.injectedButtons.set(orderId, buttonInfo);
-            console.log(`🔧 Stored button info for order ${orderId}:`, {
+            log.info(`🔧 Stored button info for order ${orderId}:`, {
                 hasHideDetailsLi: !!buttonInfo.hideDetailsLi,
                 hasHideDetailsBtn: !!buttonInfo.hideDetailsBtn,
                 hasOrderCard: !!buttonInfo.orderCard,
                 totalInjectedButtons: this.injectedButtons.size
             });
 
-            console.log(`✅ Successfully injected buttons for order ${orderId}`);
+            log.info(`✅ Successfully injected buttons for order ${orderId}`);
             return true;
 
         } catch (error) {
-            console.error(`Error injecting buttons for order ${orderId}:`, error);
+            log.error(`Error injecting buttons for order ${orderId}:`, error);
             return false;
         }
     }
@@ -1798,11 +1799,11 @@ export class DOMManipulator {
             }
 
             this.injectedButtons.delete(orderId);
-            console.log(`✅ Removed buttons for order ${orderId}`);
+            log.info(`✅ Removed buttons for order ${orderId}`);
             return true;
 
         } catch (error) {
-            console.error(`Error removing buttons for order ${orderId}:`, error);
+            log.error(`Error removing buttons for order ${orderId}:`, error);
             return false;
         }
     }
@@ -1892,7 +1893,7 @@ export class DOMManipulator {
             this.observer.disconnect();
             this.observer = null;
             this.isObserving = false;
-            console.log('DOMManipulator: Stopped observing DOM changes');
+            log.info('DOMManipulator: Stopped observing DOM changes');
         }
     }
 
@@ -1948,8 +1949,8 @@ export class DOMManipulator {
      * @returns {string|null} Order ID or null if not found
      */
     getOrderIdFromElement(orderElement) {
-        console.log('🔍 Extracting order ID from element:', orderElement);
-        console.log('🔍 Element HTML:', orderElement.outerHTML.substring(0, 500) + '...');
+        log.info('🔍 Extracting order ID from element:', orderElement);
+        log.info('🔍 Element HTML:', orderElement.outerHTML.substring(0, 500) + '...');
 
         // Try multiple selectors for order ID - more targeted approach
         const selectors = [
@@ -1973,30 +1974,30 @@ export class DOMManipulator {
             'div[class*="number"]'
         ];
 
-        console.log('🔍 Trying selectors:', selectors);
+        log.info('🔍 Trying selectors:', selectors);
 
         for (const selector of selectors) {
             const element = orderElement.querySelector(selector);
             if (element) {
-                console.log(`🔍 Found element with selector "${selector}":`, element);
-                console.log(`🔍 Element text: "${element.textContent?.trim()}"`);
-                console.log(`🔍 Element attributes:`, element.attributes);
+                log.info(`🔍 Found element with selector "${selector}":`, element);
+                log.info(`🔍 Element text: "${element.textContent?.trim()}"`);
+                log.info(`🔍 Element attributes:`, element.attributes);
 
                 // Special handling for .yohtmlc-order-id - find the span with the actual order ID
                 if (selector === '.yohtmlc-order-id' && element.classList.contains('yohtmlc-order-id')) {
-                    console.log('🔍 Found yohtmlc-order-id div, searching for order ID span...');
+                    log.info('🔍 Found yohtmlc-order-id div, searching for order ID span...');
                     const spans = element.querySelectorAll('span.a-color-secondary');
-                    console.log(`🔍 Found ${spans.length} spans with class a-color-secondary`);
+                    log.info(`🔍 Found ${spans.length} spans with class a-color-secondary`);
 
                     for (const span of spans) {
                         const spanText = span.textContent?.trim();
-                        console.log(`🔍 Span text: "${spanText}"`);
+                        log.info(`🔍 Span text: "${spanText}"`);
 
                         // Skip spans that contain "Order #" or other non-order ID text
                         if (spanText && !spanText.includes('Order #') && !spanText.includes('Ordered') && !spanText.includes('Delivered')) {
                             // Check if this looks like an order ID
                             if (this.isValidOrderId(spanText)) {
-                                console.log(`✅ Found valid order ID in span: "${spanText}"`);
+                                log.info(`✅ Found valid order ID in span: "${spanText}"`);
                                 return spanText;
                             }
                         }
@@ -2011,10 +2012,10 @@ export class DOMManipulator {
                 if (orderId) {
                     // Validate that this looks like an actual order ID, not a date or other text
                     if (this.isValidOrderId(orderId)) {
-                        console.log(`✅ Found valid order ID: "${orderId}"`);
+                        log.info(`✅ Found valid order ID: "${orderId}"`);
                         return orderId;
                     } else {
-                        console.log(`⚠️ Found text but not a valid order ID: "${orderId}"`);
+                        log.info(`⚠️ Found text but not a valid order ID: "${orderId}"`);
                     }
                 }
             }
@@ -2022,7 +2023,7 @@ export class DOMManipulator {
 
         // If no order ID found with selectors, try to find it in the text content
         const allText = orderElement.textContent || '';
-        console.log('🔍 Searching all text content for order patterns...');
+        log.info('🔍 Searching all text content for order patterns...');
 
         // Look for various order ID patterns
         const orderPatterns = [
@@ -2038,7 +2039,7 @@ export class DOMManipulator {
             if (match && match[1]) {
                 const potentialOrderId = match[1];
                 if (this.isValidOrderId(potentialOrderId)) {
-                    console.log(`✅ Found order ID via text pattern "${pattern.source}": "${potentialOrderId}"`);
+                    log.info(`✅ Found order ID via text pattern "${pattern.source}": "${potentialOrderId}"`);
                     return potentialOrderId;
                 }
             }
@@ -2050,7 +2051,7 @@ export class DOMManipulator {
         if (orderHashMatch && orderHashMatch[1]) {
             const orderId = orderHashMatch[1];
             if (this.isValidOrderId(orderId)) {
-                console.log(`✅ Found order ID via "Order #" pattern: "${orderId}"`);
+                log.info(`✅ Found order ID via "Order #" pattern: "${orderId}"`);
                 return orderId;
             }
         }
@@ -2060,12 +2061,12 @@ export class DOMManipulator {
         if (amazonPattern && amazonPattern[1]) {
             const orderId = amazonPattern[1];
             if (this.isValidOrderId(orderId)) {
-                console.log(`✅ Found order ID via Amazon pattern: "${orderId}"`);
+                log.info(`✅ Found order ID via Amazon pattern: "${orderId}"`);
                 return orderId;
             }
         }
 
-        console.log('❌ No valid order ID found with any selector or pattern');
+        log.info('❌ No valid order ID found with any selector or pattern');
         return null;
     }
 
@@ -2075,15 +2076,15 @@ export class DOMManipulator {
      * @returns {boolean} True if it looks like a valid order ID
      */
     isValidOrderId(text) {
-        console.log(`🔍 Validating order ID: "${text}"`);
+        log.info(`🔍 Validating order ID: "${text}"`);
 
         if (!text || typeof text !== 'string') {
-            console.log('❌ Rejected: not a string or empty');
+            log.info('❌ Rejected: not a string or empty');
             return false;
         }
 
         const trimmed = text.trim();
-        console.log(`🔍 Trimmed text: "${trimmed}"`);
+        log.info(`🔍 Trimmed text: "${trimmed}"`);
 
         // Reject common non-order ID text
         const rejectPatterns = [
@@ -2097,7 +2098,7 @@ export class DOMManipulator {
 
         for (const pattern of rejectPatterns) {
             if (pattern.test(trimmed)) {
-                console.log(`❌ Rejected by pattern "${pattern.source}": "${trimmed}"`);
+                log.info(`❌ Rejected by pattern "${pattern.source}": "${trimmed}"`);
                 return false;
             }
         }
@@ -2112,12 +2113,12 @@ export class DOMManipulator {
 
         for (const pattern of acceptPatterns) {
             if (pattern.test(trimmed)) {
-                console.log(`✅ Accepted by pattern "${pattern.source}": "${trimmed}"`);
+                log.info(`✅ Accepted by pattern "${pattern.source}": "${trimmed}"`);
                 return true;
             }
         }
 
-        console.log(`❌ Rejected: no accept pattern matched`);
+        log.info(`❌ Rejected: no accept pattern matched`);
         return false;
     }
 
@@ -2137,7 +2138,7 @@ export class DOMManipulator {
             for (const [orderId, listener] of this.tagsSavedListeners) {
                 const eventName = `tagsSaved-${orderId}`;
                 document.removeEventListener(eventName, listener);
-                console.log(`🗑️ Cleaned up ${eventName} event listener for order ${orderId}`);
+                log.info(`🗑️ Cleaned up ${eventName} event listener for order ${orderId}`);
             }
             this.tagsSavedListeners.clear();
         }
@@ -2146,9 +2147,9 @@ export class DOMManipulator {
         if (window.taggingDialogManager && typeof window.taggingDialogManager.cleanup === 'function') {
             try {
                 window.taggingDialogManager.cleanup();
-                console.log('✅ TaggingDialogManager cleanup completed');
+                log.info('✅ TaggingDialogManager cleanup completed');
             } catch (error) {
-                console.warn('⚠️ Error cleaning up TaggingDialogManager:', error);
+                log.warn('⚠️ Error cleaning up TaggingDialogManager:', error);
             }
         }
 
@@ -2156,7 +2157,7 @@ export class DOMManipulator {
         this.hiddenOrders.clear();
         this.orderUsernames.clear();
 
-        console.log('DOMManipulator: Cleanup completed');
+        log.info('DOMManipulator: Cleanup completed');
     }
 
     /**
@@ -2165,13 +2166,13 @@ export class DOMManipulator {
      * @param {string} username - Username for the order
      */
     setUsernameForOrder(orderId, username) {
-        console.log(`🔧 setUsernameForOrder called: orderId="${orderId}", username="${username}"`);
-        console.log(`🔧 Before setting - orderUsernames map:`, Array.from(this.orderUsernames.entries()));
+        log.info(`🔧 setUsernameForOrder called: orderId="${orderId}", username="${username}"`);
+        log.info(`🔧 Before setting - orderUsernames map:`, Array.from(this.orderUsernames.entries()));
 
         this.orderUsernames.set(orderId, username);
 
-        console.log(`🔧 After setting - orderUsernames map:`, Array.from(this.orderUsernames.entries()));
-        console.log(`🔧 Set username for order ${orderId}: ${username}`);
+        log.info(`🔧 After setting - orderUsernames map:`, Array.from(this.orderUsernames.entries()));
+        log.info(`🔧 Set username for order ${orderId}: ${username}`);
     }
 
     /**
@@ -2181,8 +2182,8 @@ export class DOMManipulator {
      */
     getUsernameForOrder(orderId) {
         const username = this.orderUsernames.get(orderId) || 'Unknown User';
-        console.log(`🔍 getUsernameForOrder called: orderId="${orderId}", returned username="${username}"`);
-        console.log(`🔍 Current orderUsernames map:`, Array.from(this.orderUsernames.entries()));
+        log.info(`🔍 getUsernameForOrder called: orderId="${orderId}", returned username="${username}"`);
+        log.info(`🔍 Current orderUsernames map:`, Array.from(this.orderUsernames.entries()));
         return username;
     }
 
@@ -2192,11 +2193,11 @@ export class DOMManipulator {
      */
     async restoreAllHiddenOrders() {
         try {
-            console.log('🔄 Restoring all hidden orders to original state...');
+            log.info('🔄 Restoring all hidden orders to original state...');
 
             // Find all order cards that are currently hidden
             const hiddenOrderCards = document.querySelectorAll('.order-card.archivaz-details-hidden');
-            console.log(`🔍 Found ${hiddenOrderCards.length} hidden order cards to restore`);
+            log.info(`🔍 Found ${hiddenOrderCards.length} hidden order cards to restore`);
 
             let restoredCount = 0;
 
@@ -2246,9 +2247,9 @@ export class DOMManipulator {
                             try {
                                 // Use the more thorough method to clear all order data
                                 const clearedKeys = await this.storage.clearAllOrderData(orderId);
-                                console.log(`🗑️ Cleared ${clearedKeys} storage keys for order ${orderId}`);
+                                log.info(`🗑️ Cleared ${clearedKeys} storage keys for order ${orderId}`);
                             } catch (error) {
-                                console.warn(`⚠️ Could not clear stored data for order ${orderId}:`, error);
+                                log.warn(`⚠️ Could not clear stored data for order ${orderId}:`, error);
                             }
                         }
                     }
@@ -2256,14 +2257,14 @@ export class DOMManipulator {
                     restoredCount++;
 
                 } catch (error) {
-                    console.error('Error restoring individual order card:', error);
+                    log.error('Error restoring individual order card:', error);
                 }
             }
 
             // Now clear ALL stored data for any orders that might have data from previous sessions
             if (this.storage) {
                 try {
-                    console.log('🔄 Clearing all stored order data from previous sessions...');
+                    log.info('🔄 Clearing all stored order data from previous sessions...');
 
                     // Get all Chrome storage data
                     const allData = await chrome.storage.local.get(null);
@@ -2279,7 +2280,7 @@ export class DOMManipulator {
                     // Remove all found keys
                     if (keysToRemove.length > 0) {
                         await chrome.storage.local.remove(keysToRemove);
-                        console.log(`🗑️ Cleared ${keysToRemove.length} Chrome storage keys from previous sessions`);
+                        log.info(`🗑️ Cleared ${keysToRemove.length} Chrome storage keys from previous sessions`);
                     }
 
                     // Also clear all order tags data from Chrome storage
@@ -2295,22 +2296,22 @@ export class DOMManipulator {
 
                         if (tagKeysToRemove.length > 0) {
                             await chrome.storage.local.remove(tagKeysToRemove);
-                            console.log(`🗑️ Cleared ${tagKeysToRemove.length} order tag entries from Chrome storage`);
+                            log.info(`🗑️ Cleared ${tagKeysToRemove.length} order tag entries from Chrome storage`);
                         }
                     } catch (error) {
-                        console.warn('⚠️ Could not clear order tags from Chrome storage:', error);
+                        log.warn('⚠️ Could not clear order tags from Chrome storage:', error);
                     }
 
                 } catch (error) {
-                    console.warn('⚠️ Could not clear all stored data:', error);
+                    log.warn('⚠️ Could not clear all stored data:', error);
                 }
             }
 
-            console.log(`✅ Successfully restored ${restoredCount} hidden order cards and cleared all stored data`);
+            log.info(`✅ Successfully restored ${restoredCount} hidden order cards and cleared all stored data`);
             return restoredCount;
 
         } catch (error) {
-            console.error('❌ Error restoring all hidden orders:', error);
+            log.error('❌ Error restoring all hidden orders:', error);
             throw error;
         }
     }
@@ -2322,19 +2323,19 @@ export class DOMManipulator {
      */
     async restoreHiddenOrdersFromStorage(storage) {
         try {
-            console.log('🔄 Restoring hidden orders from storage...');
+            log.info('🔄 Restoring hidden orders from storage...');
 
             if (!storage) {
-                console.warn('No storage manager provided for restoration');
+                log.warn('No storage manager provided for restoration');
                 return 0;
             }
 
             // Get all hidden orders from storage
             const hiddenOrders = await storage.getAllHiddenOrders();
-            console.log(`Found ${hiddenOrders.length} hidden orders in storage`);
+            log.info(`Found ${hiddenOrders.length} hidden orders in storage`);
 
             if (hiddenOrders.length === 0) {
-                console.log('ℹ️ No hidden orders to restore');
+                log.info('ℹ️ No hidden orders to restore');
                 return 0;
             }
 
@@ -2344,39 +2345,39 @@ export class DOMManipulator {
             for (const hiddenOrder of hiddenOrders) {
                 try {
                     const { orderId, type, orderData, username } = hiddenOrder;
-                    console.log(`🔄 Restoring hidden order ${orderId} (${type}) for user ${username}`);
+                    log.info(`🔄 Restoring hidden order ${orderId} (${type}) for user ${username}`);
 
                     // Find the order card on the page
                     const orderCard = this.findOrderCardById(orderId);
 
                     if (!orderCard) {
-                        console.log(`⚠️ Order card for ${orderId} not found on page, skipping restoration`);
+                        log.info(`⚠️ Order card for ${orderId} not found on page, skipping restoration`);
                         continue;
                     }
 
                     // Check if order is already hidden
                     if (orderCard.classList.contains('archivaz-details-hidden')) {
-                        console.log(`ℹ️ Order ${orderId} is already hidden, skipping restoration`);
+                        log.info(`ℹ️ Order ${orderId} is already hidden, skipping restoration`);
                         continue;
                     }
 
                     // Ensure buttons are injected for this order (needed for performHideOrderDetails)
                     if (!this.injectedButtons.has(orderId)) {
-                        console.log(`🔧 Injecting buttons for order ${orderId} during restoration`);
+                        log.info(`🔧 Injecting buttons for order ${orderId} during restoration`);
                         const success = this.injectButtons(orderCard, orderId);
                         if (!success) {
-                            console.warn(`⚠️ Failed to inject buttons for order ${orderId}, skipping restoration`);
+                            log.warn(`⚠️ Failed to inject buttons for order ${orderId}, skipping restoration`);
                             continue;
                         }
-                        console.log(`✅ Buttons successfully injected for order ${orderId} during restoration`);
+                        log.info(`✅ Buttons successfully injected for order ${orderId} during restoration`);
                     } else {
-                        console.log(`ℹ️ Buttons already exist for order ${orderId} during restoration`);
+                        log.info(`ℹ️ Buttons already exist for order ${orderId} during restoration`);
                     }
 
                     // Mark the order card as processed to prevent duplicate processing
                     if (!orderCard.hasAttribute('data-archivaz-processed')) {
                         orderCard.setAttribute('data-archivaz-processed', 'true');
-                        console.log(`🔧 Marked order card as processed for order ${orderId} during restoration`);
+                        log.info(`🔧 Marked order card as processed for order ${orderId} during restoration`);
                     }
 
                     // Get stored tags for this order
@@ -2384,25 +2385,25 @@ export class DOMManipulator {
                     try {
                         tagData = await storage.getOrderTags(orderId);
                     } catch (error) {
-                        console.warn(`⚠️ Could not retrieve tags for order ${orderId}:`, error);
+                        log.warn(`⚠️ Could not retrieve tags for order ${orderId}:`, error);
                     }
 
                     // Hide the order details - pass the order card directly and include username
                     await this.performHideOrderDetailsWithCard(orderId, orderCard, tagData, username);
 
                     restoredCount++;
-                    console.log(`✅ Successfully restored hidden order ${orderId}`);
+                    log.info(`✅ Successfully restored hidden order ${orderId}`);
 
                 } catch (error) {
-                    console.error(`❌ Error restoring hidden order ${hiddenOrder.orderId}:`, error);
+                    log.error(`❌ Error restoring hidden order ${hiddenOrder.orderId}:`, error);
                 }
             }
 
-            console.log(`✅ Restored ${restoredCount} hidden orders from storage`);
+            log.info(`✅ Restored ${restoredCount} hidden orders from storage`);
             return restoredCount;
 
         } catch (error) {
-            console.error('❌ Error restoring hidden orders from storage:', error);
+            log.error('❌ Error restoring hidden orders from storage:', error);
             return 0;
         }
     }
@@ -2445,7 +2446,7 @@ export class DOMManipulator {
 
             return null;
         } catch (error) {
-            console.error(`Error finding order card for ${orderId}:`, error);
+            log.error(`Error finding order card for ${orderId}:`, error);
             return null;
         }
     }
@@ -2455,7 +2456,7 @@ export class DOMManipulator {
      * @param {string} orderId - Order ID that was cancelled
      */
     handleTaggingDialogCancelled(orderId) {
-        console.log(`🚫 Tagging dialog cancelled for order ${orderId}`);
+        log.info(`🚫 Tagging dialog cancelled for order ${orderId}`);
 
         // Remove the event listener
         this.removeExistingTagsSavedListener(orderId);
@@ -2464,9 +2465,9 @@ export class DOMManipulator {
         if (window.taggingDialogManager && typeof window.taggingDialogManager.closeDialog === 'function') {
             try {
                 window.taggingDialogManager.closeDialog(orderId);
-                console.log(`✅ Tagging dialog closed for order ${orderId}`);
+                log.info(`✅ Tagging dialog closed for order ${orderId}`);
             } catch (error) {
-                console.warn(`⚠️ Error closing tagging dialog for order ${orderId}:`, error);
+                log.warn(`⚠️ Error closing tagging dialog for order ${orderId}:`, error);
             }
         }
     }
@@ -2511,7 +2512,7 @@ export class DOMManipulator {
             }
         }, 4000);
 
-        console.log(`📢 Shown dialog already open message for order ${orderId}`);
+        log.info(`📢 Shown dialog already open message for order ${orderId}`);
     }
 
     /**
@@ -2521,49 +2522,49 @@ export class DOMManipulator {
      */
     applyHiddenOrdersFromData(hiddenOrdersData) {
         try {
-            console.log(`🔄 Applying ${hiddenOrdersData.length} hidden orders from fetched data...`);
-            console.log(`📊 Raw hidden orders data for application:`, hiddenOrdersData);
+            log.info(`🔄 Applying ${hiddenOrdersData.length} hidden orders from fetched data...`);
+            log.info(`📊 Raw hidden orders data for application:`, hiddenOrdersData);
 
             let hiddenCount = 0;
 
             for (const orderData of hiddenOrdersData) {
                 try {
                     const orderId = orderData.orderId;
-                    console.log(`🔄 Processing order ${orderId} for hiding...`);
-                    console.log(`📊 Order data:`, orderData);
+                    log.info(`🔄 Processing order ${orderId} for hiding...`);
+                    log.info(`📊 Order data:`, orderData);
 
                     // Find the order card on the page
-                    console.log(`🔍 Searching for order card with ID: ${orderId}`);
+                    log.info(`🔍 Searching for order card with ID: ${orderId}`);
                     const orderCard = this.findOrderCardById(orderId);
                     if (!orderCard) {
-                        console.log(`⚠️ Order card not found for order ${orderId} (may not be on current page)`);
+                        log.info(`⚠️ Order card not found for order ${orderId} (may not be on current page)`);
 
                         // Debug: Show all available order IDs on the page
                         const allOrderElements = document.querySelectorAll('[data-order-id]');
-                        console.log(`🔍 Available order elements with data-order-id:`, allOrderElements);
+                        log.info(`🔍 Available order elements with data-order-id:`, allOrderElements);
 
                         const allOrderIds = Array.from(allOrderElements).map(el => el.getAttribute('data-order-id'));
-                        console.log(`🔍 Available order IDs on page:`, allOrderIds);
+                        log.info(`🔍 Available order IDs on page:`, allOrderIds);
 
                         // Also check for order cards that might have order IDs in their text
                         const allOrderCards = document.querySelectorAll('.order-card, .js-order-card');
-                        console.log(`🔍 All order cards on page:`, allOrderCards);
+                        log.info(`🔍 All order cards on page:`, allOrderCards);
 
                         for (const card of allOrderCards) {
                             const extractedId = this.getOrderIdFromElement(card);
                             if (extractedId) {
-                                console.log(`🔍 Order card with ID "${extractedId}":`, card);
+                                log.info(`🔍 Order card with ID "${extractedId}":`, card);
                             }
                         }
 
                         continue;
                     } else {
-                        console.log(`✅ Found order card for order ${orderId}:`, orderCard);
+                        log.info(`✅ Found order card for order ${orderId}:`, orderCard);
                     }
 
                     // Check if order is already hidden
                     if (orderCard.classList.contains('archivaz-details-hidden')) {
-                        console.log(`⚠️ Order ${orderId} is already hidden, skipping`);
+                        log.info(`⚠️ Order ${orderId} is already hidden, skipping`);
                         continue;
                     }
 
@@ -2577,17 +2578,17 @@ export class DOMManipulator {
                     this.performHideOrderDetailsWithCard(orderId, orderCard, tagData, orderData.hiddenBy);
                     hiddenCount++;
 
-                    console.log(`✅ Successfully hid order ${orderId}`);
+                    log.info(`✅ Successfully hid order ${orderId}`);
                 } catch (error) {
-                    console.error(`❌ Error hiding order ${orderData.orderId}:`, error);
+                    log.error(`❌ Error hiding order ${orderData.orderId}:`, error);
                 }
             }
 
-            console.log(`✅ Successfully applied hiding to ${hiddenCount} orders from fetched data`);
+            log.info(`✅ Successfully applied hiding to ${hiddenCount} orders from fetched data`);
             return hiddenCount;
 
         } catch (error) {
-            console.error('❌ Error applying hidden orders from data:', error);
+            log.error('❌ Error applying hidden orders from data:', error);
             return 0;
         }
     }

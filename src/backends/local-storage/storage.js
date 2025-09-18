@@ -47,7 +47,7 @@ export class StorageManager {
             // Try to access chrome.runtime to check if context is valid
             return chrome.runtime && chrome.runtime.id;
         } catch (error) {
-            console.warn('⚠️ Extension context invalidated:', error.message);
+            log.warn('⚠️ Extension context invalidated:', error.message);
             return false;
         }
     }
@@ -59,7 +59,7 @@ export class StorageManager {
      */
     async get(key) {
         if (!this._isContextValid()) {
-            console.warn('⚠️ Extension context invalidated, cannot access storage');
+            log.warn('⚠️ Extension context invalidated, cannot access storage');
             return null;
         }
 
@@ -68,7 +68,7 @@ export class StorageManager {
             const result = await chrome.storage.local.get(fullKey);
             return result[fullKey] || null;
         } catch (error) {
-            console.error('❌ Error getting from storage:', error);
+            log.error('❌ Error getting from storage:', error);
             return null;
         }
     }
@@ -80,7 +80,7 @@ export class StorageManager {
      */
     async set(key, value) {
         if (!this._isContextValid()) {
-            console.warn('⚠️ Extension context invalidated, cannot access storage');
+            log.warn('⚠️ Extension context invalidated, cannot access storage');
             return;
         }
 
@@ -98,7 +98,7 @@ export class StorageManager {
      */
     async remove(key) {
         if (!this._isContextValid()) {
-            console.warn('⚠️ Extension context invalidated, cannot access storage');
+            log.warn('⚠️ Extension context invalidated, cannot access storage');
             return;
         }
 
@@ -112,7 +112,7 @@ export class StorageManager {
 
     async clear() {
         if (!this._isContextValid()) {
-            console.warn('⚠️ Extension context invalidated, cannot access storage');
+            log.warn('⚠️ Extension context invalidated, cannot access storage');
             return;
         }
 

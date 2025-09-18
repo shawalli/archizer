@@ -28,6 +28,16 @@ describe('Amazon Orders Content Script', () => {
             warn: jest.fn()
         };
 
+        // Mock logger
+        jest.doMock('../utils/logger.js', () => ({
+            specializedLogger: {
+                info: jest.fn(),
+                error: jest.fn(),
+                warn: jest.fn(),
+                success: jest.fn()
+            }
+        }));
+
         // Mock chrome runtime
         global.chrome = {
             runtime: {
@@ -170,23 +180,26 @@ describe('Amazon Orders Content Script', () => {
 
     describe('Script Execution', () => {
         it('should log when script loads', () => {
+            const { specializedLogger } = require('../utils/logger.js');
             require('./amazon-orders.js');
 
-            expect(console.log).toHaveBeenCalledWith('🔧 Amazon Order Archiver content script loaded');
+            expect(specializedLogger.info).toHaveBeenCalledWith('🔧 Amazon Order Archiver content script loaded');
         });
 
         it('should log initialization start', () => {
+            const { specializedLogger } = require('../utils/logger.js');
             require('./amazon-orders.js');
 
-            expect(console.log).toHaveBeenCalledWith('🔧 Starting content script initialization...');
+            expect(specializedLogger.info).toHaveBeenCalledWith('🔧 Starting content script initialization...');
         });
 
         it('should log current URL and page title', () => {
+            const { specializedLogger } = require('../utils/logger.js');
             require('./amazon-orders.js');
 
             // The script logs the actual window.location.href, which may be different in test environment
-            expect(console.log).toHaveBeenCalledWith('🔧 Current URL:', expect.any(String));
-            expect(console.log).toHaveBeenCalledWith('🔧 Page title:', expect.any(String));
+            expect(specializedLogger.info).toHaveBeenCalledWith('🔧 Current URL:', expect.any(String));
+            expect(specializedLogger.info).toHaveBeenCalledWith('🔧 Page title:', expect.any(String));
         });
     });
 
@@ -200,15 +213,17 @@ describe('Amazon Orders Content Script', () => {
         });
 
         it('should proceed with initialization when extension loader is ready', async () => {
+            const { specializedLogger } = require('../utils/logger.js');
             require('./amazon-orders.js');
 
             // Wait for async operations
             await new Promise(resolve => setTimeout(resolve, 0));
 
-            expect(console.log).toHaveBeenCalledWith('✅ Content script initialized successfully');
+            expect(specializedLogger.success).toHaveBeenCalledWith('✅ Content script initialized successfully');
         });
 
         it('should skip initialization when page is not supported', async () => {
+            const { specializedLogger } = require('../utils/logger.js');
             // Mock extension loader as not initialized
             jest.doMock('../utils/extension-loader.js', () => ({
                 globalExtensionLoader: {
@@ -222,7 +237,7 @@ describe('Amazon Orders Content Script', () => {
             // Wait for async operations
             await new Promise(resolve => setTimeout(resolve, 0));
 
-            expect(console.log).toHaveBeenCalledWith('⚠️ Content script initialization skipped - page not supported');
+            expect(specializedLogger.warn).toHaveBeenCalledWith('⚠️ Content script initialization skipped - page not supported');
         });
     });
 
@@ -462,6 +477,7 @@ describe('Amazon Orders Content Script', () => {
             }));
 
             const { globalErrorHandler } = require('../utils/error-handler.js');
+            const { specializedLogger } = require('../utils/logger.js');
 
             require('./amazon-orders.js');
 
@@ -469,7 +485,7 @@ describe('Amazon Orders Content Script', () => {
             await new Promise(resolve => setTimeout(resolve, 0));
 
             expect(globalErrorHandler.handleError).toHaveBeenCalled();
-            expect(console.error).toHaveBeenCalledWith('❌ Content script initialization failed:', expect.any(Error));
+            expect(specializedLogger.error).toHaveBeenCalledWith('❌ Content script initialization failed:', expect.any(Error));
         });
 
         it('should handle order processing errors gracefully', async () => {

@@ -10,6 +10,9 @@ const mockChrome = {
             remove: jest.fn(),
             clear: jest.fn()
         }
+    },
+    runtime: {
+        id: 'test-extension-id'
     }
 };
 
@@ -77,8 +80,8 @@ describe('StorageManager', () => {
                 return Promise.reject(new Error('Storage error'));
             });
 
-            // Should not throw error
-            await expect(storageManager.set('test-key', testData)).rejects.toThrow('Storage error');
+            // Should not throw error - storage manager handles errors gracefully
+            await expect(storageManager.set('test-key', testData)).resolves.toBeUndefined();
         });
     });
 
@@ -98,8 +101,8 @@ describe('StorageManager', () => {
                 return Promise.reject(new Error('Storage error'));
             });
 
-            // Should not throw error
-            await expect(storageManager.remove('test-key')).rejects.toThrow('Storage error');
+            // Should not throw error - storage manager handles errors gracefully
+            await expect(storageManager.remove('test-key')).resolves.toBeUndefined();
         });
     });
 
@@ -119,8 +122,8 @@ describe('StorageManager', () => {
                 return Promise.reject(new Error('Storage error'));
             });
 
-            // Should not throw error
-            await expect(storageManager.clear()).rejects.toThrow('Storage error');
+            // Should not throw error - storage manager handles errors gracefully
+            await expect(storageManager.clear()).resolves.toBeUndefined();
         });
     });
 
