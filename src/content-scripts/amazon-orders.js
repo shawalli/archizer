@@ -106,6 +106,17 @@ async function initializeContentScript() {
                     sendResponse({ success: false, error: error.message });
                 }
                 return true; // Keep message channel open for async response
+            } else if (message.type === 'SHOW_ORDER_DETAILS') {
+                console.log('🔄 Received show order details request from popup');
+                try {
+                    const success = domManipulator.showOrderDetailsById(message.orderId, message.orderType);
+                    sendResponse({ success: success });
+                    console.log(`✅ Order ${message.orderId} details shown`);
+                } catch (error) {
+                    console.error('❌ Error showing order details:', error);
+                    sendResponse({ success: false, error: error.message });
+                }
+                return true; // Keep message channel open for async response
             }
         });
 

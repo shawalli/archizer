@@ -1508,6 +1508,78 @@ export class DOMManipulator {
     }
 
     /**
+     * Show order details by order ID (for popup communication)
+     * @param {string} orderId - Order ID to show details for
+     * @param {string} orderType - Type of order (e.g., 'details')
+     * @returns {boolean} True if order was shown successfully
+     */
+    showOrderDetailsById(orderId, orderType) {
+        try {
+            const buttonInfo = this.injectedButtons.get(orderId);
+            if (!buttonInfo) {
+                log.warning(`No button info found for order ${orderId}`);
+                return false;
+            }
+
+            const orderCard = buttonInfo.orderCard;
+            let totalShown = 0;
+
+            // First, try to restore elements from our stored list
+            if (buttonInfo.hiddenElements && buttonInfo.hiddenElements.length > 0) {
+                buttonInfo.hiddenElements.forEach(element => {
+                    if (element && element.classList.contains('archizer-hidden-details')) {
+                        // Restore original display value
+                        const originalDisplay = element.getAttribute('data-archizer-original-display');
+                        element.style.display = originalDisplay || '';
+
+                        // Remove hidden class
+                        element.classList.remove('archizer-hidden-details');
+
+                        // Clean up stored attributes
+                        element.removeAttribute('data-archizer-original-display');
+
+                        totalShown++;
+                    }
+                });
+
+                // Clear the stored hidden elements
+                buttonInfo.hiddenElements = [];
+            }
+
+            // Fallback: also check for any remaining elements with the hidden class
+            const remainingHiddenElements = orderCard.querySelectorAll('.archizer-hidden-details');
+            remainingHiddenElements.forEach(element => {
+                const originalDisplay = element.getAttribute('data-archizer-original-display');
+                element.style.display = originalDisplay || '';
+                element.classList.remove('archizer-hidden-details');
+                element.removeAttribute('data-archizer-original-display');
+                totalShown++;
+            });
+
+            // Remove the order from our hidden orders set
+            this.hiddenOrders.delete(`${orderId}-${orderType}`);
+
+            // Update button state
+            const extensionButton = orderCard.querySelector('[data-archizer-type="show-details"]');
+            if (extensionButton) {
+                extensionButton.textContent = 'Hide details';
+                extensionButton.setAttribute('data-archizer-type', 'hide-details');
+                extensionButton.classList.remove('archizer-details-hidden');
+                log.info(`✅ Updated button state to "Hide details" for order ${orderId}`);
+            } else {
+                log.warning(`⚠️ Could not find extension button to update for order ${orderId}`);
+            }
+
+            log.info(`✅ Restored ${totalShown} elements for order ${orderId}`);
+            return true;
+
+        } catch (error) {
+            log.error(`Error showing order details for ${orderId}:`, error);
+            return false;
+        }
+    }
+
+    /**
      * Show order details that were previously hidden
      * @param {string} orderId - Order ID to show details for
      * @param {Element} button - The button that was clicked
