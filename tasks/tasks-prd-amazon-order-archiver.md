@@ -95,36 +95,36 @@
   - [x] 3.5 Add comprehensive error handling for API failures and network issues ✅
   - [x] 3.6 Implement retry logic and token refresh mechanisms ✅
 
-- [ ] 4.0 **Extension Popup Interface Development**
-  - [ ] 4.1 Remove Archive Orders and View History buttons
-  - [ ] 4.2 Design and implement popup HTML structure with pagination
-  - [ ] 4.3 Create hidden order details list display with order metadata (number, price, date, tags, user)
-  - [ ] 4.4 Implement tag filtering and user filtering functionality, with ability to filter by one tag, one user, or a selected combination of tags and user
-  - [ ] 4.5 Add visual tag indicators (colored badges/icons) for better UX
-  - [ ] 4.6 Implement "Show Details" functionality with order details restoration
-  - [ ] 4.7 Add loading states and error messages for better user feedback
-  - [ ] 4.8 Implement responsive design for various popup sizes
-  - [ ] 4.9 Create button inline with Sheets URL on the right that opens Sheets URL in new tab
-  - [ ] 4.10 Create dropdown setting to support different logging levels: info, debug, error
+- [x] 4.0 **Extension Popup Interface Development**
+  - [x] 4.1 Remove Archive Orders and View History buttons
+  - [x] 4.2 Design and implement popup HTML structure with pagination
+  - [x] 4.3 Create hidden order details list display with order metadata (number, price, date, tags, user)
+  - [x] 4.4 Implement tag filtering and user filtering functionality, with ability to filter by one tag, one user, or a selected combination of tags and user
+  - [x] 4.5 Add visual tag indicators (colored badges/icons) for better UX
+  - [x] 4.6 Implement "Show Details" functionality with order details restoration
+  - [x] 4.7 Add loading states and error messages for better user feedback
+  - [x] 4.8 Implement responsive design for various popup sizes
+  - [x] 4.9 Create button inline with Sheets URL on the right that opens Sheets URL in new tab
+  - [x] 4.10 Create dropdown setting to support different logging levels: info, debug, error
 
-- [ ] 5.0 **Extension Polish**
-  - [x] 5.1 Rename extension and references to be "Archizer"
-  - [ ] 5.2 Modify Hide Details button to match radius and pill style of other buttons in column
-  - [ ] 5.3 Modify Add Tag button so that text is not cut off the left and right side of the button
-  - [ ] 5.4 Modify Cancel and Save & Hide buttons to have same pill styling as Hide Details and buttons in the Order column
-  - [ ] 5.5 Move Cancel and Save & Hide button column to vertically align with order button column
-  - [ ] 5.6 Review code base for extranneous logs.
-  - [ ] 5.6 Design logo, favicon for extension. The logo should evoke hiding inside a box, with the elements of amazon, e.g. the amazon arrow, the amazon font, etc.
-  - [ ] 5.7 Determine long-term plan so that OAuth doesn't ask for login every time I load the amazon page and hide an order.
+- [ ] 5.0 **Data Management & State Persistence**
+  - [ ] 5.1 Implement local storage for user preferences and tag configurations
+  - [ ] 5.2 Create data models for hidden order details and user settings
+  - [ ] 5.3 Implement caching system for Google Sheets data to improve performance
+  - [ ] 5.4 Add data validation and sanitization for order information
+  - [ ] 5.5 Implement conflict resolution for concurrent modifications
+  - [ ] 5.6 Add data export/import functionality for backup purposes
+  - [ ] 5.7 Create data migration utilities for future schema changes
 
-- [ ] 6.0 **Data Management & State Persistence**
-  - [ ] 6.1 Implement local storage for user preferences and tag configurations
-  - [ ] 6.2 Create data models for hidden order details and user settings
-  - [ ] 6.3 Implement caching system for Google Sheets data to improve performance
-  - [ ] 6.4 Add data validation and sanitization for order information
-  - [ ] 6.5 Implement conflict resolution for concurrent modifications
-  - [ ] 6.6 Add data export/import functionality for backup purposes
-  - [ ] 6.7 Create data migration utilities for future schema changes
+- [ ] 6.0 **Extension Polish**
+  - [x] 6.1 Rename extension and references to be "Archizer"
+  - [ ] 6.2 Modify Hide Details button to match radius and pill style of other buttons in column
+  - [ ] 6.3 Modify Add Tag button so that text is not cut off the left and right side of the button
+  - [ ] 6.4 Modify Cancel and Save & Hide buttons to have same pill styling as Hide Details and buttons in the Order column
+  - [ ] 6.5 Move Cancel and Save & Hide button column to vertically align with order button column
+  - [ ] 6.6 Review code base for extranneous logs.
+  - [ ] 6.7 Design logo, favicon for extension. The logo should evoke hiding inside a box, with the elements of amazon, e.g. the amazon arrow, the amazon font, etc.
+  - [ ] 6.8 Determine long-term plan so that OAuth doesn't ask for login every time I load the amazon page and hide an order.
 
 ## Implementation Notes
 
