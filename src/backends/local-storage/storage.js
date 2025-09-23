@@ -150,7 +150,7 @@ export class StorageManager {
             await this.syncHiddenOrderToGoogleSheets(hiddenOrderData);
 
             // Add audit log entry for hide action
-            await this.addAuditLogEntry('hide', orderId, type, username);
+            await this.addAuditLogEntry('hide', orderId, type, username, orderData);
         } catch (error) {
             log.error(`Error storing hidden order ${orderId}:`, error);
         }
@@ -177,7 +177,7 @@ export class StorageManager {
             if (hiddenOrderData) {
                 console.log(`🔧 Syncing unhide operation to Google Sheets...`);
                 await this.syncUnhideOrderToGoogleSheets(hiddenOrderData);
-                await this.addAuditLogEntry('unhide', orderId, type, hiddenOrderData.username);
+                await this.addAuditLogEntry('unhide', orderId, type, hiddenOrderData.username, hiddenOrderData.orderData);
             } else {
                 console.warn(`⚠️ No hidden order data found for order ${orderId}`);
             }
@@ -476,8 +476,9 @@ export class StorageManager {
      * @param {string} orderId - Order ID
      * @param {string} actionType - Type of action ('details')
      * @param {string} performedBy - Username who performed the action
+     * @param {Object} orderData - Order data containing tags and notes (optional)
      */
-    async addAuditLogEntry(action, orderId, actionType, performedBy) {
+    async addAuditLogEntry(action, orderId, actionType, performedBy, orderData = null) {
         try {
             if (!this._isContextValid()) {
                 console.warn('⚠️ Extension context invalidated, cannot add audit log');
@@ -486,12 +487,22 @@ export class StorageManager {
 
             log.info(`📝 Adding audit log entry: ${action} for order ${orderId} by ${performedBy}`);
 
+            // Get browser info
+            const browserInfo = this._getBrowserInfo();
+
+            // Extract tags and notes from orderData
+            const tags = orderData && orderData.tags ? orderData.tags.join(', ') : '';
+            const notes = orderData && orderData.notes ? orderData.notes : '';
+
             const auditLogData = {
                 timestamp: new Date().toISOString(),
                 orderId: orderId,
                 action: action,
                 actionType: actionType,
-                performedBy: performedBy
+                performedBy: performedBy,
+                tags: tags,
+                notes: notes,
+                browserInfo: browserInfo
             };
 
             // Send message to background script to add audit log entry
@@ -508,6 +519,34 @@ export class StorageManager {
         } catch (error) {
             log.error(`❌ Error adding audit log entry for ${action} operation on order ${orderId}:`, error);
             // Don't throw error - audit logging failure shouldn't break the operation
+        }
+    }
+
+    /**
+     * Get browser information for audit logging
+     * @returns {string} Browser info string
+     */
+    _getBrowserInfo() {
+        try {
+            const userAgent = navigator.userAgent;
+            // Extract browser name and version from user agent
+            if (userAgent.includes('Chrome/')) {
+                const match = userAgent.match(/Chrome\/(\d+\.\d+\.\d+\.\d+)/);
+                return match ? `Chrome ${match[1]}` : 'Chrome';
+            } else if (userAgent.includes('Firefox/')) {
+                const match = userAgent.match(/Firefox\/(\d+\.\d+)/);
+                return match ? `Firefox ${match[1]}` : 'Firefox';
+            } else if (userAgent.includes('Safari/') && !userAgent.includes('Chrome')) {
+                const match = userAgent.match(/Version\/(\d+\.\d+)/);
+                return match ? `Safari ${match[1]}` : 'Safari';
+            } else if (userAgent.includes('Edge/')) {
+                const match = userAgent.match(/Edge\/(\d+\.\d+\.\d+)/);
+                return match ? `Edge ${match[1]}` : 'Edge';
+            } else {
+                return 'Unknown Browser';
+            }
+        } catch (error) {
+            return 'Unknown Browser';
         }
     }
 }

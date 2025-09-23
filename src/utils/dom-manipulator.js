@@ -823,7 +823,7 @@ export class DOMManipulator {
 
             // Notify callback
             if (this.onOrderHidden) {
-                const orderData = this.extractOrderData(orderCard, orderId);
+                const orderData = this.extractOrderData(orderCard, orderId, tagData);
                 this.onOrderHidden(orderId, 'details', orderData);
             }
 
@@ -1636,7 +1636,7 @@ export class DOMManipulator {
      * @param {string} orderId - The order ID
      * @returns {Object|null} Order data or null if extraction fails
      */
-    extractOrderData(orderCard, orderId) {
+    extractOrderData(orderCard, orderId, tagData = null) {
         try {
             if (!this.orderParser) {
                 log.warn('OrderParser not available for data extraction');
@@ -1645,6 +1645,17 @@ export class DOMManipulator {
 
             // Use OrderParser to extract order data
             const orderData = this.orderParser.parseOrderCard(orderCard);
+
+            // Include tag data if provided
+            if (tagData && tagData.tags) {
+                orderData.tags = tagData.tags;
+            }
+
+            // Include notes if provided
+            if (tagData && tagData.notes) {
+                orderData.notes = tagData.notes;
+            }
+
             return orderData || { orderId };
 
         } catch (error) {

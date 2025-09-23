@@ -96,13 +96,15 @@
   - [x] 3.6 Implement retry logic and token refresh mechanisms ✅
 
 - [ ] 4.0 **Extension Popup Interface Development**
-  - [ ] 4.1 Design and implement popup HTML structure with pagination
-  - [ ] 4.2 Create hidden order details list display with order metadata (number, price, date, tags, user)
-  - [ ] 4.3 Implement tag filtering and user filtering functionality
-  - [ ] 4.4 Add visual tag indicators (colored badges/icons) for better UX
-  - [ ] 4.5 Implement "Show Details" functionality with order details restoration
-  - [ ] 4.6 Add loading states and error messages for better user feedback
-  - [ ] 4.7 Implement responsive design for various popup sizes
+  - [ ] 4.1 Remove Archive Orders and View History buttons
+  - [ ] 4.2 Design and implement popup HTML structure with pagination
+  - [ ] 4.3 Create hidden order details list display with order metadata (number, price, date, tags, user)
+  - [ ] 4.4 Implement tag filtering and user filtering functionality, with ability to filter by one tag, one user, or a selected combination of tags and user
+  - [ ] 4.5 Add visual tag indicators (colored badges/icons) for better UX
+  - [ ] 4.6 Implement "Show Details" functionality with order details restoration
+  - [ ] 4.7 Add loading states and error messages for better user feedback
+  - [ ] 4.8 Implement responsive design for various popup sizes
+  - [ ] 4.9 Create button inline with Sheets URL on the right that opens Sheets URL in new tab
 
 - [ ] 5.0 **Data Management & State Persistence**
   - [ ] 5.1 Implement local storage for user preferences and tag configurations

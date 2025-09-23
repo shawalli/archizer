@@ -804,7 +804,10 @@ async function handleAddAuditLogEntry(message, sendResponse) {
             auditLogData.orderId,       // Order ID
             auditLogData.action,        // Action (hide/unhide)
             auditLogData.actionType,    // Action Type (details)
-            auditLogData.performedBy    // Performed By (username)
+            auditLogData.performedBy,   // Performed By (username)
+            auditLogData.tags || '',    // Tags (comma-separated)
+            auditLogData.notes || '',   // Notes
+            auditLogData.browserInfo || '' // Browser Info
         ];
 
         // Append to ActionLog sheet
