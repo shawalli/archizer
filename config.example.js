@@ -1,4 +1,4 @@
-// Example configuration file for Amazon Order Archiver
+// Example configuration file for Archizer
 // Copy this file to config.js and update with your actual values
 
 module.exports = {

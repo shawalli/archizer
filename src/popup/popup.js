@@ -1,10 +1,10 @@
-// Popup JavaScript for Amazon Order Archiver
+// Popup JavaScript for Archizer
 // Handles popup interface logic, navigation, and settings management
 
 import { configManager } from '../utils/config-manager.js';
 import { specializedLogger as log } from '../utils/logger.js';
 
-log.info('Amazon Order Archiver popup script loaded');
+log.info('Archizer popup script loaded');
 
 // Simple storage manager for popup (for non-config data)
 export class PopupStorageManager {

@@ -139,9 +139,9 @@ export class DOMManipulator {
             }
 
             // Create container for the buttons using utility function
-            const buttonContainer = createContainer('archivaz-button-container', {
+            const buttonContainer = createContainer('archizer-button-container', {
                 attributes: {
-                    'data-archivaz-order-id': orderId
+                    'data-archizer-order-id': orderId
                 }
             });
 
@@ -165,8 +165,8 @@ export class DOMManipulator {
 
             const hideDetailsBtn = createButton('Hide details', {
                 attributes: {
-                    'data-archivaz-type': 'hide-details',
-                    'data-archivaz-order-id': orderId,
+                    'data-archizer-type': 'hide-details',
+                    'data-archizer-order-id': orderId,
                     'aria-label': `Hide details for order ${orderId}`
                 }
             });
@@ -200,7 +200,7 @@ export class DOMManipulator {
                 event.stopPropagation();
 
                 // CRITICAL: Ensure this button click only affects the specific order
-                const clickedOrderId = hideDetailsBtn.getAttribute('data-archivaz-order-id');
+                const clickedOrderId = hideDetailsBtn.getAttribute('data-archizer-order-id');
                 if (clickedOrderId !== orderId) {
                     log.error(`❌ Button click order ID mismatch: expected ${orderId}, got ${clickedOrderId}`);
                     return;
@@ -223,7 +223,7 @@ export class DOMManipulator {
                 log.info(`🔍 Button clicked:`, {
                     button: hideDetailsBtn,
                     orderId: orderId,
-                    buttonType: hideDetailsBtn.getAttribute('data-archivaz-type'),
+                    buttonType: hideDetailsBtn.getAttribute('data-archizer-type'),
                     buttonClasses: hideDetailsBtn.className,
                     buttonText: hideDetailsBtn.textContent,
                     buttonParent: hideDetailsBtn.parentElement,
@@ -231,7 +231,7 @@ export class DOMManipulator {
                     orderCardOrderId: orderCardOrderId
                 });
 
-                const buttonType = hideDetailsBtn.getAttribute('data-archivaz-type');
+                const buttonType = hideDetailsBtn.getAttribute('data-archizer-type');
                 this.handleButtonClick(buttonType, orderId, hideDetailsBtn);
             });
 
@@ -633,24 +633,24 @@ export class DOMManipulator {
             log.info('🔍 Order card ID:', orderCard.id);
 
             // CRITICAL CHECK: Prevent hiding if order is already hidden
-            if (orderCard.classList.contains('archivaz-details-hidden')) {
+            if (orderCard.classList.contains('archizer-details-hidden')) {
                 log.warn(`⚠️ Order ${orderId} is already hidden - this indicates a duplicate operation or incorrect flow`);
                 log.warn(`⚠️ The order should NOT be hidden until the user clicks "Save & Hide" in the tagging dialog`);
                 return;
             }
 
             // Clear any processing flags that might be leftover from previous operations
-            orderCard.removeAttribute('data-archivaz-processed');
-            orderCard.removeAttribute('data-archivaz-hiding');
+            orderCard.removeAttribute('data-archizer-processed');
+            orderCard.removeAttribute('data-archizer-hiding');
 
             // Check if this order is already being processed
-            if (orderCard.hasAttribute('data-archivaz-hiding')) {
+            if (orderCard.hasAttribute('data-archizer-hiding')) {
                 log.warn(`⚠️ Order ${orderId} is already being hidden, skipping duplicate operation`);
                 return;
             }
 
             // Mark this order as being hidden to prevent duplicate operations
-            orderCard.setAttribute('data-archivaz-hiding', 'true');
+            orderCard.setAttribute('data-archizer-hiding', 'true');
 
             // Enhanced selectors for different page formats to hide product details
             const selectorsToHide = [
@@ -685,8 +685,8 @@ export class DOMManipulator {
                     log.info(`🔍 Selector "${selector}" found ${elements.length} elements in order ${orderId}`);
                     elements.forEach(element => {
                         // Skip if already hidden or if it's our injected buttons
-                        if (element.classList.contains('archivaz-hidden-details') ||
-                            element.closest('.archivaz-button-container')) {
+                        if (element.classList.contains('archizer-hidden-details') ||
+                            element.closest('.archizer-button-container')) {
                             return;
                         }
 
@@ -698,10 +698,10 @@ export class DOMManipulator {
 
                         // Store original display value for restoration
                         const originalDisplay = window.getComputedStyle(element).display;
-                        element.setAttribute('data-archivaz-original-display', originalDisplay);
+                        element.setAttribute('data-archizer-original-display', originalDisplay);
 
                         // Hide the element
-                        element.classList.add('archivaz-hidden-details');
+                        element.classList.add('archizer-hidden-details');
                         element.style.display = 'none';
 
                         hiddenElements.push(element);
@@ -733,8 +733,8 @@ export class DOMManipulator {
 
             orderItemElements.forEach((element) => {
                 // Skip if already hidden or if it's our injected buttons
-                if (element.classList.contains('archivaz-hidden-details') ||
-                    element.closest('.archivaz-button-container')) {
+                if (element.classList.contains('archizer-hidden-details') ||
+                    element.closest('.archizer-button-container')) {
                     return;
                 }
 
@@ -753,10 +753,10 @@ export class DOMManipulator {
                 if (!hasEssentialStatus) {
                     // Store original display value for restoration
                     const originalDisplay = window.getComputedStyle(element).display;
-                    element.setAttribute('data-archivaz-original-display', originalDisplay);
+                    element.setAttribute('data-archizer-original-display', originalDisplay);
 
                     // Hide the element
-                    element.classList.add('archivaz-hidden-details');
+                    element.classList.add('archizer-hidden-details');
                     element.style.display = 'none';
 
                     hiddenElements.push(element);
@@ -775,11 +775,11 @@ export class DOMManipulator {
 
                 if (leftColumn) {
                     // Check if left column was hidden and needs restoration
-                    if (leftColumn.classList.contains('archivaz-hidden-details')) {
+                    if (leftColumn.classList.contains('archizer-hidden-details')) {
                         log.info('🔍 Left column was hidden, restoring it...');
                         // Restore the left column if it was hidden - it contains essential delivery status
-                        leftColumn.classList.remove('archivaz-hidden-details');
-                        leftColumn.style.display = leftColumn.getAttribute('data-archivaz-original-display') || 'block';
+                        leftColumn.classList.remove('archizer-hidden-details');
+                        leftColumn.style.display = leftColumn.getAttribute('data-archizer-original-display') || 'block';
 
                         // Remove from hidden elements array
                         const index = hiddenElements.indexOf(leftColumn);
@@ -811,11 +811,11 @@ export class DOMManipulator {
 
             // Update button text and type
             button.textContent = 'Show details';
-            button.setAttribute('data-archivaz-type', 'show-details');
-            button.classList.add('archivaz-details-hidden');
+            button.setAttribute('data-archizer-type', 'show-details');
+            button.classList.add('archizer-details-hidden');
 
             // Add visual indicator to order card
-            orderCard.classList.add('archivaz-details-hidden');
+            orderCard.classList.add('archizer-details-hidden');
             orderCard.style.opacity = '0.8';
 
             // Track hidden state
@@ -828,7 +828,7 @@ export class DOMManipulator {
             }
 
             // Clean up processing flag
-            orderCard.removeAttribute('data-archivaz-hiding');
+            orderCard.removeAttribute('data-archizer-hiding');
 
             log.info(`Hidden ${totalHidden} detail elements for order ${orderId}`);
 
@@ -836,7 +836,7 @@ export class DOMManipulator {
             log.error(`Error hiding details for order ${orderId}:`, error);
             // Clean up processing flag on error
             if (orderCard) {
-                orderCard.removeAttribute('data-archivaz-hiding');
+                orderCard.removeAttribute('data-archizer-hiding');
             }
         }
     }
@@ -901,7 +901,7 @@ export class DOMManipulator {
             log.info(`🔍 Username parameter received: "${username}"`);
 
             // Check if tags container already exists
-            if (leftColumn.querySelector('.archivaz-delivery-status-tags')) {
+            if (leftColumn.querySelector('.archizer-delivery-status-tags')) {
                 log.info('⚠️ Tags container already displayed, skipping');
                 return;
             }
@@ -916,7 +916,7 @@ export class DOMManipulator {
 
             // Create tags container
             const tagsContainer = document.createElement('div');
-            tagsContainer.className = 'archivaz-delivery-status-tags';
+            tagsContainer.className = 'archizer-delivery-status-tags';
             tagsContainer.style.cssText = `
                 margin-top: 4px;
                 padding-top: 0;
@@ -974,7 +974,7 @@ export class DOMManipulator {
 
             // Create tags list
             const tagsList = document.createElement('div');
-            tagsList.className = 'archivaz-tags-list';
+            tagsList.className = 'archizer-tags-list';
             tagsList.style.cssText = `
                 display: inline-block;
                 margin-top: 0;
@@ -984,7 +984,7 @@ export class DOMManipulator {
             if (tags && tags.length > 0) {
                 tags.forEach(tag => {
                     const tagElement = document.createElement('span');
-                    tagElement.className = 'archivaz-delivery-status-tag';
+                    tagElement.className = 'archizer-delivery-status-tag';
                     tagElement.textContent = tag;
                     tagElement.style.cssText = `
                         display: inline-block;
@@ -1038,7 +1038,7 @@ export class DOMManipulator {
      */
     removeTagsFromDeliveryStatus(orderCard) {
         try {
-            const tagsContainer = orderCard.querySelector('.archivaz-delivery-status-tags');
+            const tagsContainer = orderCard.querySelector('.archizer-delivery-status-tags');
             if (tagsContainer) {
                 tagsContainer.remove();
                 log.info('Removed tags from delivery status');
@@ -1080,7 +1080,7 @@ export class DOMManipulator {
             const text = textNode.textContent.trim();
             if (text && textToFind.some(searchText => text.includes(searchText))) {
                 const parentElement = textNode.parentElement;
-                if (parentElement && !parentElement.classList.contains('archivaz-hidden-details')) {
+                if (parentElement && !parentElement.classList.contains('archizer-hidden-details')) {
                     // Verify the element is within the order card boundaries
                     if (!this.isElementWithinOrderCard(parentElement, container)) {
                         log.warn(`⚠️ Element outside order card boundaries in order ${orderId}:`, parentElement);
@@ -1106,10 +1106,10 @@ export class DOMManipulator {
 
                     // Store original display value
                     const originalDisplay = window.getComputedStyle(parentElement).display;
-                    parentElement.setAttribute('data-archivaz-original-display', originalDisplay);
+                    parentElement.setAttribute('data-archizer-original-display', originalDisplay);
 
                     // Hide the element
-                    parentElement.classList.add('archivaz-hidden-details');
+                    parentElement.classList.add('archizer-hidden-details');
                     parentElement.style.display = 'none';
 
                     hiddenElements.push(parentElement);
@@ -1179,12 +1179,12 @@ export class DOMManipulator {
 
         allButtons.forEach(button => {
             // Skip if it's our extension button
-            if (button.hasAttribute('data-archivaz-type')) {
+            if (button.hasAttribute('data-archizer-type')) {
                 return;
             }
 
             // Skip if already hidden
-            if (button.classList.contains('archivaz-hidden-details')) {
+            if (button.classList.contains('archizer-hidden-details')) {
                 return;
             }
 
@@ -1200,10 +1200,10 @@ export class DOMManipulator {
             if (buttonText && buttonTexts.some(text => buttonText.includes(text))) {
                 // Store original display value
                 const originalDisplay = window.getComputedStyle(button).display;
-                button.setAttribute('data-archivaz-original-display', originalDisplay);
+                button.setAttribute('data-archizer-original-display', originalDisplay);
 
                 // Hide the button
-                button.classList.add('archivaz-hidden-details');
+                button.classList.add('archizer-hidden-details');
                 button.style.display = 'none';
 
                 hiddenElements.push(button);
@@ -1228,12 +1228,12 @@ export class DOMManipulator {
             }
 
             // Only hide containers that don't contain our extension buttons
-            if (!buttonContainer.querySelector('[data-archivaz-type]')) {
+            if (!buttonContainer.querySelector('[data-archizer-type]')) {
                 const buttonsInContainer = buttonContainer.querySelectorAll('button, .a-button, .a-button-normal, .a-link-normal');
                 let hasVisibleButtons = false;
 
                 buttonsInContainer.forEach(btn => {
-                    if (!btn.classList.contains('archivaz-hidden-details')) {
+                    if (!btn.classList.contains('archizer-hidden-details')) {
                         hasVisibleButtons = true;
                     }
                 });
@@ -1241,9 +1241,9 @@ export class DOMManipulator {
                 // If the container only has action buttons (no extension buttons), hide it
                 if (hasVisibleButtons) {
                     const originalDisplay = window.getComputedStyle(buttonContainer).display;
-                    buttonContainer.setAttribute('data-archivaz-original-display', originalDisplay);
+                    buttonContainer.setAttribute('data-archizer-original-display', originalDisplay);
 
-                    buttonContainer.classList.add('archivaz-hidden-details');
+                    buttonContainer.classList.add('archizer-hidden-details');
                     buttonContainer.style.display = 'none';
 
                     hiddenElements.push(buttonContainer);
@@ -1300,19 +1300,19 @@ export class DOMManipulator {
             }
 
             // CRITICAL CHECK: Prevent hiding if order is already hidden
-            if (orderCard.classList.contains('archivaz-details-hidden')) {
+            if (orderCard.classList.contains('archizer-details-hidden')) {
                 log.warn(`⚠️ Order ${orderId} is already hidden - skipping restoration`);
                 return;
             }
 
             // Check if this order is already being processed
-            if (orderCard.hasAttribute('data-archivaz-hiding')) {
+            if (orderCard.hasAttribute('data-archizer-hiding')) {
                 log.warn(`⚠️ Order ${orderId} is already being hidden, skipping duplicate operation`);
                 return;
             }
 
             // Mark this order as being hidden to prevent duplicate operations
-            orderCard.setAttribute('data-archivaz-hiding', 'true');
+            orderCard.setAttribute('data-archizer-hiding', 'true');
 
             // Enhanced selectors for different page formats to hide product details
             const selectorsToHide = [
@@ -1342,8 +1342,8 @@ export class DOMManipulator {
                 orderId,
                 (element) => {
                     // Skip if already hidden or if it's our injected buttons
-                    return element.classList.contains('archivaz-hidden-details') ||
-                        element.closest('.archivaz-button-container') ||
+                    return element.classList.contains('archizer-hidden-details') ||
+                        element.closest('.archizer-button-container') ||
                         !isElementWithinContainer(element, orderCard);
                 }
             );
@@ -1364,8 +1364,8 @@ export class DOMManipulator {
 
             orderItemElements.forEach((element) => {
                 // Skip if already hidden or if it's our injected buttons
-                if (element.classList.contains('archivaz-hidden-details') ||
-                    element.closest('.archivaz-button-container')) {
+                if (element.classList.contains('archizer-hidden-details') ||
+                    element.closest('.archizer-button-container')) {
                     return;
                 }
 
@@ -1398,11 +1398,11 @@ export class DOMManipulator {
 
                 if (leftColumn) {
                     // Check if left column was hidden and needs restoration
-                    if (leftColumn.classList.contains('archivaz-hidden-details')) {
+                    if (leftColumn.classList.contains('archizer-hidden-details')) {
                         log.info('🔍 Left column was hidden, restoring it...');
                         // Restore the left column if it was hidden - it contains essential delivery status
-                        leftColumn.classList.remove('archivaz-hidden-details');
-                        leftColumn.style.display = leftColumn.getAttribute('data-archivaz-original-display') || 'block';
+                        leftColumn.classList.remove('archizer-hidden-details');
+                        leftColumn.style.display = leftColumn.getAttribute('data-archizer-original-display') || 'block';
 
                         // Remove from hidden elements array
                         const index = hiddenElements.indexOf(leftColumn);
@@ -1430,7 +1430,7 @@ export class DOMManipulator {
             }
 
             // Mark the order as hidden
-            orderCard.classList.add('archivaz-details-hidden');
+            orderCard.classList.add('archizer-details-hidden');
             orderCard.style.opacity = '0.8';
 
             // Add to hidden orders tracking
@@ -1469,18 +1469,18 @@ export class DOMManipulator {
 
             // Update button state to reflect hidden status
             // Look for any button with our extension attributes, regardless of current type
-            const extensionButton = orderCard.querySelector('button[data-archivaz-type]');
+            const extensionButton = orderCard.querySelector('button[data-archizer-type]');
             log.info(`🔍 Looking for extension button in order ${orderId}:`, {
                 found: !!extensionButton,
-                buttonType: extensionButton?.getAttribute('data-archivaz-type'),
+                buttonType: extensionButton?.getAttribute('data-archizer-type'),
                 buttonText: extensionButton?.textContent,
                 orderCardClasses: orderCard.className
             });
 
             if (extensionButton) {
                 extensionButton.textContent = 'Show details';
-                extensionButton.setAttribute('data-archivaz-type', 'show-details');
-                extensionButton.classList.add('archivaz-details-hidden');
+                extensionButton.setAttribute('data-archizer-type', 'show-details');
+                extensionButton.classList.add('archizer-details-hidden');
                 log.info(`✅ Updated button state to "Show details" for order ${orderId}`);
             } else {
                 log.warn(`⚠️ Could not find extension button to update for order ${orderId}`);
@@ -1488,13 +1488,13 @@ export class DOMManipulator {
                 const allButtons = orderCard.querySelectorAll('button');
                 log.info(`🔍 All buttons in order card ${orderId}:`, Array.from(allButtons).map(btn => ({
                     text: btn.textContent,
-                    type: btn.getAttribute('data-archivaz-type'),
+                    type: btn.getAttribute('data-archizer-type'),
                     classes: btn.className
                 })));
             }
 
             // Clean up processing flag
-            orderCard.removeAttribute('data-archivaz-hiding');
+            orderCard.removeAttribute('data-archizer-hiding');
 
             log.info(`Hidden ${totalHidden} detail elements for order ${orderId} during restoration`);
 
@@ -1502,7 +1502,7 @@ export class DOMManipulator {
             log.error(`Error hiding details for order ${orderId} during restoration:`, error);
             // Clean up processing flag on error
             if (orderCard) {
-                orderCard.removeAttribute('data-archivaz-hiding');
+                orderCard.removeAttribute('data-archizer-hiding');
             }
         }
     }
@@ -1527,16 +1527,16 @@ export class DOMManipulator {
             // First, try to restore elements from our stored list
             if (buttonInfo.hiddenElements && buttonInfo.hiddenElements.length > 0) {
                 buttonInfo.hiddenElements.forEach(element => {
-                    if (element && element.classList.contains('archivaz-hidden-details')) {
+                    if (element && element.classList.contains('archizer-hidden-details')) {
                         // Restore original display value
-                        const originalDisplay = element.getAttribute('data-archivaz-original-display');
+                        const originalDisplay = element.getAttribute('data-archizer-original-display');
                         element.style.display = originalDisplay || '';
 
                         // Remove hidden class
-                        element.classList.remove('archivaz-hidden-details');
+                        element.classList.remove('archizer-hidden-details');
 
                         // Clean up stored attributes
-                        element.removeAttribute('data-archivaz-original-display');
+                        element.removeAttribute('data-archizer-original-display');
 
                         totalShown++;
                     }
@@ -1547,28 +1547,28 @@ export class DOMManipulator {
             }
 
             // Fallback: also check for any remaining elements with the hidden class
-            const remainingHiddenElements = orderCard.querySelectorAll('.archivaz-hidden-details');
+            const remainingHiddenElements = orderCard.querySelectorAll('.archizer-hidden-details');
             remainingHiddenElements.forEach(element => {
                 // Restore original display value if available
-                const originalDisplay = element.getAttribute('data-archivaz-original-display');
+                const originalDisplay = element.getAttribute('data-archizer-original-display');
                 element.style.display = originalDisplay || '';
 
                 // Remove hidden class
-                element.classList.remove('archivaz-hidden-details');
+                element.classList.remove('archizer-hidden-details');
 
                 // Clean up stored attributes
-                element.removeAttribute('data-archivaz-original-display');
+                element.removeAttribute('data-archizer-original-display');
 
                 totalShown++;
             });
 
             // Update button text and type
             button.textContent = 'Hide details';
-            button.setAttribute('data-archivaz-type', 'hide-details');
-            button.classList.remove('archivaz-details-hidden');
+            button.setAttribute('data-archizer-type', 'hide-details');
+            button.classList.remove('archizer-details-hidden');
 
             // Remove visual indicator from order card
-            orderCard.classList.remove('archivaz-details-hidden');
+            orderCard.classList.remove('archizer-details-hidden');
             orderCard.style.opacity = '';
 
             // Remove tags from delivery status if they were added
@@ -1696,7 +1696,7 @@ export class DOMManipulator {
             }
 
             // Check if this order card already has buttons
-            if (orderCard.querySelector('.archivaz-button-container')) {
+            if (orderCard.querySelector('.archizer-button-container')) {
                 log.warn(`⚠️ Order card already has buttons for order ${orderId}, skipping injection`);
                 return true;
             }
@@ -2207,7 +2207,7 @@ export class DOMManipulator {
             log.info('🔄 Restoring all hidden orders to original state...');
 
             // Find all order cards that are currently hidden
-            const hiddenOrderCards = document.querySelectorAll('.order-card.archivaz-details-hidden');
+            const hiddenOrderCards = document.querySelectorAll('.order-card.archizer-details-hidden');
             log.info(`🔍 Found ${hiddenOrderCards.length} hidden order cards to restore`);
 
             let restoredCount = 0;
@@ -2216,34 +2216,34 @@ export class DOMManipulator {
             for (const orderCard of hiddenOrderCards) {
                 try {
                     // Get the order ID for this card
-                    const orderId = orderCard.querySelector('[data-archivaz-order-id]')?.getAttribute('data-archivaz-order-id');
+                    const orderId = orderCard.querySelector('[data-archizer-order-id]')?.getAttribute('data-archizer-order-id');
 
                     // Remove hidden state from order card
-                    orderCard.classList.remove('archivaz-details-hidden');
+                    orderCard.classList.remove('archizer-details-hidden');
                     orderCard.style.opacity = '';
 
                     // Find and update the hide/show button
-                    const button = orderCard.querySelector('button[data-archivaz-type="show-details"]');
+                    const button = orderCard.querySelector('button[data-archizer-type="show-details"]');
                     if (button) {
                         button.textContent = 'Hide details';
-                        button.setAttribute('data-archivaz-type', 'hide-details');
-                        button.classList.remove('archivaz-details-hidden');
+                        button.setAttribute('data-archizer-type', 'hide-details');
+                        button.classList.remove('archizer-details-hidden');
                     }
 
                     // Remove tags container if it exists
                     this.removeTagsFromDeliveryStatus(orderCard);
 
                     // Show all hidden detail elements
-                    const hiddenElements = orderCard.querySelectorAll('.archivaz-hidden-details');
+                    const hiddenElements = orderCard.querySelectorAll('.archizer-hidden-details');
                     hiddenElements.forEach(element => {
                         // Remove hidden class
-                        element.classList.remove('archivaz-hidden-details');
+                        element.classList.remove('archizer-hidden-details');
 
                         // Restore original display
-                        const originalDisplay = element.getAttribute('data-archivaz-original-display');
+                        const originalDisplay = element.getAttribute('data-archizer-original-display');
                         if (originalDisplay) {
                             element.style.display = originalDisplay;
-                            element.removeAttribute('data-archivaz-original-display');
+                            element.removeAttribute('data-archizer-original-display');
                         } else {
                             element.style.display = '';
                         }
@@ -2367,7 +2367,7 @@ export class DOMManipulator {
                     }
 
                     // Check if order is already hidden
-                    if (orderCard.classList.contains('archivaz-details-hidden')) {
+                    if (orderCard.classList.contains('archizer-details-hidden')) {
                         log.info(`ℹ️ Order ${orderId} is already hidden, skipping restoration`);
                         continue;
                     }
@@ -2386,8 +2386,8 @@ export class DOMManipulator {
                     }
 
                     // Mark the order card as processed to prevent duplicate processing
-                    if (!orderCard.hasAttribute('data-archivaz-processed')) {
-                        orderCard.setAttribute('data-archivaz-processed', 'true');
+                    if (!orderCard.hasAttribute('data-archizer-processed')) {
+                        orderCard.setAttribute('data-archizer-processed', 'true');
                         log.info(`🔧 Marked order card as processed for order ${orderId} during restoration`);
                     }
 
@@ -2490,7 +2490,7 @@ export class DOMManipulator {
     showDialogAlreadyOpenMessage(orderId) {
         // Create a temporary message element
         const messageDiv = document.createElement('div');
-        messageDiv.className = 'archivaz-dialog-message';
+        messageDiv.className = 'archizer-dialog-message';
         messageDiv.style.cssText = `
             position: fixed;
             top: 20px;
@@ -2574,7 +2574,7 @@ export class DOMManipulator {
                     }
 
                     // Check if order is already hidden
-                    if (orderCard.classList.contains('archivaz-details-hidden')) {
+                    if (orderCard.classList.contains('archizer-details-hidden')) {
                         log.info(`⚠️ Order ${orderId} is already hidden, skipping`);
                         continue;
                     }

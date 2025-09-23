@@ -1,4 +1,4 @@
-// Background Script for Amazon Order Archiver
+// Background Script for Archizer
 // Handles Google Sheets API calls
 
 import { StorageManager } from '../backends/local-storage/storage.js';
@@ -8,7 +8,7 @@ import { googleOAuth } from '../backends/google-sheets/oauth.js';
 import { GoogleSheetsSchema } from '../backends/google-sheets/schema.js';
 import { specializedLogger as log } from '../utils/logger.js';
 
-log.info('Amazon Order Archiver background script loaded');
+log.info('Archizer background script loaded');
 
 // Initialize storage manager
 let storageManager;
@@ -373,7 +373,7 @@ async function testWritePermissions(sheetName) {
         const testRow = [
             'TEST',
             new Date().toISOString(),
-            'Amazon Order Archiver',
+            'Archizer',
             'Connection Test',
             'Write permissions verified'
         ];
@@ -1015,7 +1015,7 @@ chrome.runtime.onInstalled.addListener(async (details) => {
 
     if (details.reason === 'install') {
         // First time installation
-        log.success('Welcome to Amazon Order Archiver!');
+        log.success('Welcome to Archizer!');
 
 
         chrome.tabs.create({

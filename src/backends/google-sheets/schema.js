@@ -31,7 +31,7 @@ export class GoogleSheetsSchema {
             sheets: this.sheets,
             constraints: this.constraints,
             version: '1.0.0',
-            description: 'Amazon Order Archiver Google Sheets Schema'
+            description: 'Archizer Google Sheets Schema'
         };
     }
 

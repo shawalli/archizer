@@ -9,7 +9,7 @@ import { DOMManipulator } from '../utils/dom-manipulator.js';
 import { TaggingDialog } from '../components/tagging-dialog.js';
 import { specializedLogger as log } from '../utils/logger.js';
 
-log.info('🔧 Amazon Order Archiver content script loaded');
+log.info('🔧 Archizer content script loaded');
 
 // Initialize the extension when the content script loads
 (async () => {
@@ -286,13 +286,13 @@ async function startOrderArchivingSystem(orderParser, domManipulator, storage) {
                 console.log('🆕 New order detected:', orderParser);
 
                 // Check if this order card has already been processed
-                if (orderCard.hasAttribute('data-archivaz-processed')) {
+                if (orderCard.hasAttribute('data-archizer-processed')) {
                     console.log('⚠️ New order already processed, skipping');
                     return;
                 }
 
                 // Check if this order card already has buttons
-                if (orderCard.querySelector('.archivaz-button-container')) {
+                if (orderCard.querySelector('.archizer-button-container')) {
                     console.log('⚠️ New order already has buttons, skipping');
                     return;
                 }
@@ -317,13 +317,13 @@ async function startOrderArchivingSystem(orderParser, domManipulator, storage) {
                 console.log('🆕 DOM: New order detected:', orderCard);
 
                 // Check if this order card has already been processed
-                if (orderCard.hasAttribute('data-archivaz-processed')) {
+                if (orderCard.hasAttribute('data-archizer-processed')) {
                     console.log('⚠️ DOM: New order already processed, skipping');
                     return;
                 }
 
                 // Check if this order card already has buttons
-                if (orderCard.querySelector('.archivaz-button-container')) {
+                if (orderCard.querySelector('.archizer-button-container')) {
                     console.log('⚠️ DOM: New order already has buttons, skipping');
                     return;
                 }
@@ -362,7 +362,7 @@ function processOrderCard(orderCard, orderParser, domManipulator) {
         console.log('🔧 Processing order card:', orderCard);
 
         // Check if this order card has already been processed
-        if (orderCard.hasAttribute('data-archivaz-processed')) {
+        if (orderCard.hasAttribute('data-archizer-processed')) {
             console.log(`⚠️ Order card already processed, skipping`);
             return;
         }
@@ -384,7 +384,7 @@ function processOrderCard(orderCard, orderParser, domManipulator) {
         }
 
         // Mark this order card as processed BEFORE injecting buttons
-        orderCard.setAttribute('data-archivaz-processed', 'true');
+        orderCard.setAttribute('data-archizer-processed', 'true');
         console.log(`✅ Marked order card as processed for order ${orderId}`);
 
         // Inject buttons into the order card

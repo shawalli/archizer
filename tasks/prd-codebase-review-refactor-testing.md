@@ -2,7 +2,7 @@
 
 ## Introduction/Overview
 
-This PRD outlines a comprehensive codebase review and refactoring initiative for the Amazon Order Archiver extension. The primary goal is to improve code quality, maintainability, and test coverage by identifying and addressing code quality issues such as dead code, duplicative logic, overly aggressive/repetitive patterns, and inadequate testing. The focus will be on the entire codebase excluding test data, sample data, and demo files, with particular attention to maintainability and performance improvements.
+This PRD outlines a comprehensive codebase review and refactoring initiative for the Archizer extension. The primary goal is to improve code quality, maintainability, and test coverage by identifying and addressing code quality issues such as dead code, duplicative logic, overly aggressive/repetitive patterns, and inadequate testing. The focus will be on the entire codebase excluding test data, sample data, and demo files, with particular attention to maintainability and performance improvements.
 
 ## Goals
 

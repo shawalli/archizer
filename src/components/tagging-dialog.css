@@ -87,12 +87,12 @@
 }
 
 /* Styling for tags displayed in delivery status when details are hidden */
-.archivaz-delivery-status-tags {
+.archizer-delivery-status-tags {
     margin-top: 4px;
     padding-top: 0;
 }
 
-.archivaz-delivery-status-tags .archivaz-tags-label {
+.archizer-delivery-status-tags .archizer-tags-label {
     font-size: 12px;
     color: #666;
     font-weight: 500;
@@ -101,12 +101,12 @@
     margin-bottom: 4px;
 }
 
-.archivaz-delivery-status-tags .archivaz-tags-list {
+.archizer-delivery-status-tags .archizer-tags-list {
     display: inline-block;
     margin-top: 2px;
 }
 
-.archivaz-delivery-status-tag {
+.archizer-delivery-status-tag {
     display: inline-block;
     background: #e7f3ff;
     color: #0066cc;

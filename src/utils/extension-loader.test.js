@@ -51,7 +51,7 @@ describe('extension-loader.js', () => {
     describe('Script Execution and Initialization', () => {
         it('should log when script loads', () => {
             // The script logs when it initializes
-            expect(console.log).toHaveBeenCalledWith('🔧 Initializing Amazon Order Archiver extension...');
+            expect(console.log).toHaveBeenCalledWith('🔧 Initializing Archizer extension...');
         });
 
         it('should create globalExtensionLoader instance', () => {
@@ -80,21 +80,21 @@ describe('extension-loader.js', () => {
         it('should check if page is supported', async () => {
             await globalExtensionLoader.initialize();
 
-            expect(console.log).toHaveBeenCalledWith('🔧 Initializing Amazon Order Archiver extension...');
+            expect(console.log).toHaveBeenCalledWith('🔧 Initializing Archizer extension...');
         });
 
         it('should log page URL and title', async () => {
             await globalExtensionLoader.initialize();
 
             // The script logs the initialization message
-            expect(console.log).toHaveBeenCalledWith('🔧 Initializing Amazon Order Archiver extension...');
+            expect(console.log).toHaveBeenCalledWith('🔧 Initializing Archizer extension...');
         });
 
         it('should determine page type', async () => {
             await globalExtensionLoader.initialize();
 
             // The script checks if page is supported
-            expect(console.log).toHaveBeenCalledWith('🔧 Initializing Amazon Order Archiver extension...');
+            expect(console.log).toHaveBeenCalledWith('🔧 Initializing Archizer extension...');
         });
 
         it('should skip initialization for unsupported pages', async () => {

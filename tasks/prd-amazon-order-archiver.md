@@ -1,4 +1,4 @@
-# Product Requirements Document: Amazon Order Archiver Chrome Extension
+# Product Requirements Document: Archizer Chrome Extension
 
 ## Introduction/Overview
 
@@ -152,7 +152,7 @@ The extension solves the problem of order history clutter and privacy concerns w
 
 ```javascript
 /**
- * Amazon Order Archiver - Google Apps Script Backend
+ * Archizer - Google Apps Script Backend
  * Copy this code into your Apps Script project and deploy as a web app
  */
 
@@ -386,7 +386,7 @@ function testSetup() {
 1. Open Google Apps Script (script.google.com)
 2. Create a new project
 3. Replace the default code with the template above
-4. Save the project with a meaningful name (e.g., "Amazon Order Archiver")
+4. Save the project with a meaningful name (e.g., "Archizer")
 5. Run the `testSetup()` function to verify everything works
 6. Deploy as a web app:
    - Click "Deploy" → "New deployment"

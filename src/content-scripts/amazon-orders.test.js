@@ -183,7 +183,7 @@ describe('Amazon Orders Content Script', () => {
             const { specializedLogger } = require('../utils/logger.js');
             require('./amazon-orders.js');
 
-            expect(specializedLogger.info).toHaveBeenCalledWith('🔧 Amazon Order Archiver content script loaded');
+            expect(specializedLogger.info).toHaveBeenCalledWith('🔧 Archizer content script loaded');
         });
 
         it('should log initialization start', () => {

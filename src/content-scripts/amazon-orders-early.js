@@ -1,7 +1,7 @@
 // Amazon Orders Early Content Script
 // Runs at document_start to inject UI elements before the page fully loads
 
-console.log('🔧 Amazon Order Archiver early content script loaded (document_start)');
+console.log('🔧 Archizer early content script loaded (document_start)');
 
 // Create and inject the orders overlay immediately
 function createOrdersOverlay() {
@@ -33,7 +33,7 @@ function createOrdersOverlay() {
     overlay.innerHTML = `
         <div class="overlay-content">
             <div class="overlay-header">
-                <h3>Amazon Order Archiver</h3>
+                <h3>Archizer</h3>
                 <p>Orders are being processed...</p>
             </div>
             <div class="overlay-status">

@@ -318,8 +318,8 @@ describe('DOMManipulator', () => {
             const { createButton } = require('./dom-utils.js');
             expect(createButton).toHaveBeenCalledWith('Hide details', {
                 attributes: {
-                    'data-archivaz-type': 'hide-details',
-                    'data-archivaz-order-id': orderId,
+                    'data-archizer-type': 'hide-details',
+                    'data-archizer-order-id': orderId,
                     'aria-label': `Hide details for order ${orderId}`
                 }
             });
@@ -632,7 +632,7 @@ describe('DOMManipulator', () => {
             };
 
             domManipulator.removeTagsFromDeliveryStatus(mockElement);
-            expect(mockElement.querySelector).toHaveBeenCalledWith('.archivaz-delivery-status-tags');
+            expect(mockElement.querySelector).toHaveBeenCalledWith('.archizer-delivery-status-tags');
         });
     });
 

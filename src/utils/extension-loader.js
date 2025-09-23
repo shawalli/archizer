@@ -20,7 +20,7 @@ export class ExtensionLoader {
         }
 
         try {
-            log.info('Initializing Amazon Order Archiver extension...');
+            log.info('Initializing Archizer extension...');
 
             // Check if we're on a supported page
             if (!this.isSupportedPage()) {

@@ -1,9 +1,9 @@
 #!/bin/bash
 
-# Development Setup Script for Amazon Order Archiver
+# Development Setup Script for Archizer
 # This script sets up the development environment
 
-echo "🚀 Setting up Amazon Order Archiver development environment..."
+echo "🚀 Setting up Archizer development environment..."
 
 # Check if Node.js is installed
 if ! command -v node &> /dev/null; then

@@ -259,18 +259,18 @@ export function safeGetComputedStyle(element, property) {
 export function hideElement(element, orderId, elementType = 'element') {
     try {
         // Skip if already hidden
-        if (element.classList.contains('archivaz-hidden-details')) {
+        if (element.classList.contains('archizer-hidden-details')) {
             return { element, success: false, reason: 'already hidden' };
         }
 
         // Store original display value for restoration
         const originalDisplay = safeGetComputedStyle(element, 'display');
         if (originalDisplay) {
-            element.setAttribute('data-archivaz-original-display', originalDisplay);
+            element.setAttribute('data-archizer-original-display', originalDisplay);
         }
 
         // Hide the element
-        element.classList.add('archivaz-hidden-details');
+        element.classList.add('archizer-hidden-details');
         element.style.display = 'none';
 
         console.log(`🔍 Hidden ${elementType} in order ${orderId}:`, element);

@@ -369,7 +369,7 @@ describe('DOM Utility Functions', () => {
 
             expect(result.success).toBe(true);
             expect(element.style.display).toBe('none');
-            expect(element.classList.contains('archivaz-hidden-details')).toBe(true);
+            expect(element.classList.contains('archizer-hidden-details')).toBe(true);
             expect(result.element).toBe(element);
         });
 

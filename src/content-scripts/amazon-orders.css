@@ -1,7 +1,7 @@
-/* Amazon Order Archiver Content Script Styles */
+/* Archizer Content Script Styles */
 
 /* Button container styling - minimal, no gray box */
-.archivaz-button-container {
+.archizer-button-container {
     display: flex;
     flex-direction: column;
     gap: 8px;
@@ -9,22 +9,22 @@
 }
 
 /* Hidden elements styling */
-.archivaz-hidden-details {
+.archizer-hidden-details {
     display: none !important;
 }
 
 /* Order card states */
-.archivaz-details-hidden {
+.archizer-details-hidden {
     opacity: 0.8;
     transition: opacity 0.3s ease;
 }
 
-.archivaz-order-hidden {
+.archizer-order-hidden {
     display: none !important;
 }
 
 /* Hidden order indicator */
-.archivaz-hidden-order-indicator {
+.archizer-hidden-order-indicator {
     background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
     border: 1px solid #e7e7e7;
     border-radius: 8px;
@@ -35,7 +35,7 @@
     overflow: hidden;
 }
 
-.archivaz-hidden-order-indicator::before {
+.archizer-hidden-order-indicator::before {
     content: '';
     position: absolute;
     top: 0;
@@ -45,19 +45,19 @@
     background: linear-gradient(90deg, #ff9900 0%, #ff8c00 100%);
 }
 
-.archivaz-hidden-order-content {
+.archizer-hidden-order-content {
     display: flex;
     flex-direction: column;
     gap: 12px;
     align-items: flex-start;
 }
 
-.archivaz-hidden-order-icon {
+.archizer-hidden-order-icon {
     font-size: 24px;
     margin-right: 8px;
 }
 
-.archivaz-hidden-order-text {
+.archizer-hidden-order-text {
     font-size: 14px;
     font-weight: 600;
     color: #0f1111;
@@ -65,14 +65,14 @@
     align-items: center;
 }
 
-.archivaz-hidden-order-tags {
+.archizer-hidden-order-tags {
     display: flex;
     flex-direction: column;
     gap: 8px;
     width: 100%;
 }
 
-.archivaz-tags-label {
+.archizer-tags-label {
     font-size: 12px;
     font-weight: 600;
     color: #666;
@@ -80,13 +80,13 @@
     letter-spacing: 0.5px;
 }
 
-.archivaz-tags-list {
+.archizer-tags-list {
     display: flex;
     flex-wrap: wrap;
     gap: 6px;
 }
 
-.archivaz-tag {
+.archizer-tag {
     background: linear-gradient(135deg, #e3f2fd 0%, #bbdefb 100%);
     color: #1976d2;
     padding: 4px 10px;
@@ -97,14 +97,14 @@
     box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
 }
 
-.archivaz-hidden-order-notes {
+.archizer-hidden-order-notes {
     display: flex;
     flex-direction: column;
     gap: 6px;
     width: 100%;
 }
 
-.archivaz-notes-label {
+.archizer-notes-label {
     font-size: 12px;
     font-weight: 600;
     color: #666;
@@ -112,7 +112,7 @@
     letter-spacing: 0.5px;
 }
 
-.archivaz-notes-text {
+.archizer-notes-text {
     font-size: 13px;
     color: #333;
     line-height: 1.4;
@@ -122,7 +122,7 @@
     border-left: 3px solid #ff9900;
 }
 
-.archivaz-show-order-btn {
+.archizer-show-order-btn {
     background: linear-gradient(135deg, #ff9900 0%, #ff8c00 100%);
     color: white;
     border: none;
@@ -136,55 +136,55 @@
     box-shadow: 0 2px 4px rgba(255, 153, 0, 0.3);
 }
 
-.archivaz-show-order-btn:hover {
+.archizer-show-order-btn:hover {
     background: linear-gradient(135deg, #e68a00 0%, #e67e00 100%);
     transform: translateY(-1px);
     box-shadow: 0 4px 8px rgba(255, 153, 0, 0.4);
 }
 
-.archivaz-show-order-btn:active {
+.archizer-show-order-btn:active {
     transform: translateY(0);
 }
 
 /* Button states */
-.archivaz-details-hidden {
+.archizer-details-hidden {
     background: #e8f0fe !important;
     border-color: #4285f4 !important;
     color: #1a73e8 !important;
 }
 
-.archivaz-order-hidden {
+.archizer-order-hidden {
     background: #fce8e6 !important;
     border-color: #ea4335 !important;
     color: #d93025 !important;
 }
 
 /* Button hover states for hidden elements */
-.archivaz-details-hidden:hover {
+.archizer-details-hidden:hover {
     background: #d2e3fc !important;
     border-color: #1a73e8 !important;
 }
 
-.archivaz-order-hidden:hover {
+.archizer-order-hidden:hover {
     background: #fad2cf !important;
     border-color: #d93025 !important;
 }
 
 /* Smooth transitions for all state changes */
-.archivaz-button-container,
-.archivaz-button-container button,
+.archizer-button-container,
+.archizer-button-container button,
 .order-card {
     transition: all 0.2s ease;
 }
 
 /* Responsive design for smaller screens */
 @media (max-width: 768px) {
-    .archivaz-button-container {
+    .archizer-button-container {
         flex-direction: column;
         align-items: stretch;
     }
 
-    .archivaz-button-container button {
+    .archizer-button-container button {
         margin: 4px 0;
         width: 100%;
     }
@@ -192,20 +192,20 @@
 
 /* Responsive design for hidden order indicator */
 @media (max-width: 600px) {
-    .archivaz-hidden-order-indicator {
+    .archizer-hidden-order-indicator {
         margin: 8px 0;
         padding: 12px;
     }
 
-    .archivaz-hidden-order-content {
+    .archizer-hidden-order-content {
         gap: 10px;
     }
 
-    .archivaz-tags-list {
+    .archizer-tags-list {
         gap: 4px;
     }
 
-    .archivaz-tag {
+    .archizer-tag {
         font-size: 10px;
         padding: 3px 8px;
     }
@@ -213,12 +213,12 @@
 
 /* High contrast mode support */
 @media (prefers-contrast: high) {
-    .archivaz-button-container {
+    .archizer-button-container {
         border-width: 2px;
     }
 
-    .archivaz-details-hidden,
-    .archivaz-order-hidden {
+    .archizer-details-hidden,
+    .archizer-order-hidden {
         border-width: 2px;
     }
 }
@@ -226,8 +226,8 @@
 /* Reduced motion support */
 @media (prefers-reduced-motion: reduce) {
 
-    .archivaz-button-container,
-    .archivaz-button-container button,
+    .archizer-button-container,
+    .archizer-button-container button,
     .order-card {
         transition: none;
     }

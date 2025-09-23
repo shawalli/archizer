@@ -100,7 +100,7 @@ describe('Amazon Orders Early Content Script', () => {
         it('should log when script loads', () => {
             require('./amazon-orders-early.js');
 
-            expect(console.log).toHaveBeenCalledWith('🔧 Amazon Order Archiver early content script loaded (document_start)');
+            expect(console.log).toHaveBeenCalledWith('🔧 Archizer early content script loaded (document_start)');
         });
 
         it('should log initialization completion', () => {
@@ -115,21 +115,21 @@ describe('Amazon Orders Early Content Script', () => {
             require('./amazon-orders-early.js');
 
             // Should attempt injection (may or may not succeed in test environment)
-            expect(console.log).toHaveBeenCalledWith('🔧 Amazon Order Archiver early content script loaded (document_start)');
+            expect(console.log).toHaveBeenCalledWith('🔧 Archizer early content script loaded (document_start)');
         });
 
         it('should attempt fallback injection', () => {
             require('./amazon-orders-early.js');
 
             // Should attempt injection and potentially fallback
-            expect(console.log).toHaveBeenCalledWith('🔧 Amazon Order Archiver early content script loaded (document_start)');
+            expect(console.log).toHaveBeenCalledWith('🔧 Archizer early content script loaded (document_start)');
         });
 
         it('should handle injection failures gracefully', () => {
             require('./amazon-orders-early.js');
 
             // Should handle any injection errors gracefully
-            expect(console.log).toHaveBeenCalledWith('🔧 Amazon Order Archiver early content script loaded (document_start)');
+            expect(console.log).toHaveBeenCalledWith('🔧 Archizer early content script loaded (document_start)');
         });
     });
 
@@ -330,7 +330,7 @@ describe('Amazon Orders Early Content Script', () => {
             require('./amazon-orders-early.js');
 
             // Should attempt immediate injection
-            expect(console.log).toHaveBeenCalledWith('🔧 Amazon Order Archiver early content script loaded (document_start)');
+            expect(console.log).toHaveBeenCalledWith('🔧 Archizer early content script loaded (document_start)');
 
             // Execute the fallback callback
             if (setTimeoutCallback) {

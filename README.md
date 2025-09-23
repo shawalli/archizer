@@ -1,6 +1,6 @@
-# Amazon Order Archiver Chrome Extension
+# Archizer Chrome Extension
 
-A Chrome extension that allows users to archive and hide Amazon orders with Google Sheets integration for better order management.
+A Chrome extension that allows users to archive and hide Amazon orders.
 
 ## Features
 
@@ -13,7 +13,7 @@ A Chrome extension that allows users to archive and hide Amazon orders with Goog
 ## Project Structure
 
 ```
-archivaz/
+archizer/
 ├── manifest.json                 # Chrome extension manifest
 ├── package.json                  # Project dependencies and scripts
 ├── README.md                     # Project documentation

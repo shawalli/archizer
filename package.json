@@ -1,5 +1,5 @@
 {
-    "name": "amazon-order-archiver",
+    "name": "archizer",
     "version": "1.0.0",
     "description": "Chrome extension for archiving and hiding Amazon orders with Google Sheets integration",
     "main": "manifest.json",

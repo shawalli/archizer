@@ -1,12 +1,12 @@
 #!/usr/bin/env node
 
-// Test Runner Script for Amazon Order Archiver
+// Test Runner Script for Archizer
 // Provides custom test execution with better output formatting
 
 const { spawn } = require('child_process');
 const path = require('path');
 
-console.log('🧪 Running Amazon Order Archiver tests...\n');
+console.log('🧪 Running Archizer tests...\n');
 
 // Test configuration
 const testConfig = {

@@ -386,7 +386,7 @@ export class TaggingDialog {
                 const clonedInterface = taggingInterface.cloneNode(true);
                 clonedInterface.id = `tagging-interface-active-${this.orderId}`;
                 clonedInterface.style.display = 'block';
-                clonedInterface.setAttribute('data-archivaz-order-id', this.orderId);
+                clonedInterface.setAttribute('data-archizer-order-id', this.orderId);
 
                 // Insert the tagging interface inside the existing delivery-box container
                 deliveryBox.appendChild(clonedInterface);
@@ -398,7 +398,7 @@ export class TaggingDialog {
                 this.renderTags();
 
                 // Check if order details are already hidden and update delivery status tags
-                if (orderCard.classList.contains('archivaz-details-hidden')) {
+                if (orderCard.classList.contains('archizer-details-hidden')) {
                     this.updateDeliveryStatusTags(this.tags);
                 }
 
@@ -624,17 +624,17 @@ export class TaggingDialog {
             if (!this.currentOrderCard) return;
 
             // Find the delivery status tags container
-            const tagsContainer = this.currentOrderCard.querySelector('.archivaz-delivery-status-tags');
+            const tagsContainer = this.currentOrderCard.querySelector('.archizer-delivery-status-tags');
             if (!tagsContainer) return;
 
             // Update the tags list
-            const tagsList = tagsContainer.querySelector('.archivaz-tags-list');
+            const tagsList = tagsContainer.querySelector('.archizer-tags-list');
             if (tagsList) {
                 tagsList.innerHTML = '';
 
                 newTags.forEach(tag => {
                     const tagElement = document.createElement('span');
-                    tagElement.className = 'archivaz-delivery-status-tag';
+                    tagElement.className = 'archizer-delivery-status-tag';
                     tagElement.textContent = tag;
                     tagElement.style.cssText = `
                         display: inline-block;
