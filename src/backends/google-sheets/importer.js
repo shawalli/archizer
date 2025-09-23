@@ -28,11 +28,11 @@ export class GoogleSheetsImporter {
             const validationResult = defaultValidator.validateHiddenOrders(sheetRows);
 
             if (!validationResult.isValid) {
-                log.warn('Hidden orders validation failed:', validationResult.errors);
+                log.warning('Hidden orders validation failed:', validationResult.errors);
             }
 
             if (validationResult.warnings.length > 0) {
-                log.warn('Hidden orders validation warnings:', validationResult.warnings);
+                log.warning('Hidden orders validation warnings:', validationResult.warnings);
             }
 
             // Get validation statistics
@@ -68,11 +68,11 @@ export class GoogleSheetsImporter {
             const validationResult = defaultValidator.validateActionLog(sheetRows);
 
             if (!validationResult.isValid) {
-                log.warn('Action log validation failed:', validationResult.errors);
+                log.warning('Action log validation failed:', validationResult.errors);
             }
 
             if (validationResult.warnings.length > 0) {
-                log.warn('Action log validation warnings:', validationResult.warnings);
+                log.warning('Action log validation warnings:', validationResult.warnings);
             }
 
             // Get validation statistics
@@ -108,11 +108,11 @@ export class GoogleSheetsImporter {
             const validationResult = defaultValidator.validateUserSettings(sheetRows);
 
             if (!validationResult.isValid) {
-                log.warn('User settings validation failed:', validationResult.errors);
+                log.warning('User settings validation failed:', validationResult.errors);
             }
 
             if (validationResult.warnings.length > 0) {
-                log.warn('User settings validation warnings:', validationResult.warnings);
+                log.warning('User settings validation warnings:', validationResult.warnings);
             }
 
             // Get validation statistics
@@ -180,9 +180,9 @@ export class GoogleSheetsImporter {
             result.validationSummary = validationSummary;
 
             if (validationSummary.totalErrors > 0) {
-                log.warn(`Import completed with ${validationSummary.totalErrors} errors and ${validationSummary.totalWarnings} warnings`);
+                log.warning(`Import completed with ${validationSummary.totalErrors} errors and ${validationSummary.totalWarnings} warnings`);
             } else if (validationSummary.totalWarnings > 0) {
-                log.warn(`Import completed with ${validationSummary.totalWarnings} warnings`);
+                log.warning(`Import completed with ${validationSummary.totalWarnings} warnings`);
             } else {
                 log.success('All data imported successfully with no validation issues');
             }

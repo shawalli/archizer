@@ -536,16 +536,67 @@ export class OrderParser {
      */
     extractOrderTotal(orderCard, selectors) {
         try {
-            // Look for currency patterns
+            // Enhanced currency patterns for Amazon's various formats
             const currencyPatterns = [
                 /\$\d+\.\d{2}/,  // $XX.XX format
                 /\$\d+,\d{3}\.\d{2}/,  // $X,XXX.XX format
+                /\$\d+,\d{3}/,  // $X,XXX format
                 /\$\d+/,  // $XX format
                 /Total[:\s]*(\$[\d,]+\.?\d*)/i,
                 /Order Total[:\s]*(\$[\d,]+\.?\d*)/i,
-                /Subtotal[:\s]*(\$[\d,]+\.?\d*)/i
+                /Subtotal[:\s]*(\$[\d,]+\.?\d*)/i,
+                /Grand Total[:\s]*(\$[\d,]+\.?\d*)/i,
+                /Amount[:\s]*(\$[\d,]+\.?\d*)/i,
+                /Price[:\s]*(\$[\d,]+\.?\d*)/i,
+                /Cost[:\s]*(\$[\d,]+\.?\d*)/i,
+                /Paid[:\s]*(\$[\d,]+\.?\d*)/i,
+                /Charged[:\s]*(\$[\d,]+\.?\d*)/i
             ];
 
+            // First, try to find total in specific Amazon order elements
+            const amazonTotalSelectors = [
+                '.order-total',
+                '.order-total-amount',
+                '.total-amount',
+                '.order-summary-total',
+                '.order-summary-amount',
+                '.order-details-total',
+                '.order-details-amount',
+                '.order-header-total',
+                '.order-header-amount',
+                '[data-testid*="total"]',
+                '[data-testid*="amount"]',
+                '[data-testid*="price"]',
+                '.a-color-price',
+                '.a-price-whole',
+                '.a-price-symbol',
+                '.a-price-fraction'
+            ];
+
+            for (const selector of amazonTotalSelectors) {
+                const elements = orderCard.querySelectorAll(selector);
+                for (const element of elements) {
+                    const text = element.textContent.trim();
+                    const totalMatch = text.match(/\$[\d,]+\.?\d*/);
+                    if (totalMatch) {
+                        console.log(`🔍 Found order total in ${selector}: ${totalMatch[0]}`);
+                        return totalMatch[0];
+                    }
+                }
+            }
+
+            // Look for total in elements with price-related classes
+            const priceElements = orderCard.querySelectorAll('[class*="total"], [class*="Total"], [class*="price"], [class*="Price"], [class*="amount"], [class*="Amount"], [class*="cost"], [class*="Cost"]');
+            for (const element of priceElements) {
+                const text = element.textContent.trim();
+                const totalMatch = text.match(/\$[\d,]+\.?\d*/);
+                if (totalMatch) {
+                    console.log(`🔍 Found order total in price element: ${totalMatch[0]}`);
+                    return totalMatch[0];
+                }
+            }
+
+            // Try pattern matching on the entire order card text
             for (const pattern of currencyPatterns) {
                 const match = orderCard.textContent.match(pattern);
                 if (match) {
@@ -559,17 +610,39 @@ export class OrderParser {
 
                     // Validate it's a proper currency format
                     if (/^\$[\d,]+\.?\d*$/.test(total)) {
+                        console.log(`🔍 Found order total with pattern: ${total}`);
                         return total;
                     }
                 }
             }
 
-            // Look for total in specific elements
-            const totalElements = orderCard.querySelectorAll('[class*="total"], [class*="Total"], [class*="price"], [class*="Price"]');
-            for (const element of totalElements) {
-                const totalMatch = element.textContent.match(/\$[\d,]+\.?\d*/);
-                if (totalMatch) {
-                    return totalMatch[0];
+            // Look for total in order summary sections
+            const summarySelectors = [
+                '.order-summary',
+                '.order-details',
+                '.order-header',
+                '.order-info',
+                '.order-meta'
+            ];
+
+            for (const selector of summarySelectors) {
+                const summaryElement = orderCard.querySelector(selector);
+                if (summaryElement) {
+                    const text = summaryElement.textContent;
+                    for (const pattern of currencyPatterns) {
+                        const match = text.match(pattern);
+                        if (match) {
+                            let total = match[0];
+                            if (match[1]) {
+                                total = match[1];
+                            }
+                            total = total.trim();
+                            if (/^\$[\d,]+\.?\d*$/.test(total)) {
+                                console.log(`🔍 Found order total in ${selector}: ${total}`);
+                                return total;
+                            }
+                        }
+                    }
                 }
             }
 

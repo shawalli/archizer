@@ -134,7 +134,7 @@ export class DOMManipulator {
 
             // Check if buttons already exist for this order
             if (this.injectedButtons.has(orderId)) {
-                log.warn(`⚠️ Buttons already exist for order ${orderId}, skipping creation`);
+                log.warning(`⚠️ Buttons already exist for order ${orderId}, skipping creation`);
                 return null;
             }
 
@@ -279,7 +279,7 @@ export class DOMManipulator {
                     await this.showOrderDetails(orderId, button);
                     break;
                 default:
-                    log.warn(`Unknown button type: ${buttonType}`);
+                    log.warning(`Unknown button type: ${buttonType}`);
             }
         } catch (error) {
             log.error(`Error handling button click for ${buttonType} on order ${orderId}:`, error);
@@ -303,14 +303,14 @@ export class DOMManipulator {
             // Get order data from the OrderParser
             const orderData = this.getOrderData(orderId);
             if (!orderData) {
-                log.warn(`No order data found for order ${orderId}`);
+                log.warning(`No order data found for order ${orderId}`);
                 return;
             }
 
             // Get the global tagging dialog manager instance
             const taggingDialogManager = window.taggingDialogManager;
             if (!taggingDialogManager) {
-                log.warn('TaggingDialogManager instance not available - popup cannot be shown');
+                log.warning('TaggingDialogManager instance not available - popup cannot be shown');
                 return;
             }
 
@@ -331,14 +331,14 @@ export class DOMManipulator {
             // Find the order card that contains this button
             const orderCard = button.closest('.order-card, .js-order-card, [data-order-id]');
             if (!orderCard) {
-                log.warn('Could not find order card for button');
+                log.warning('Could not find order card for button');
                 return;
             }
 
             // Open the tagging dialog using the manager
             const dialogOpened = taggingDialogManager.openDialog(dialogData, orderCard);
             if (!dialogOpened) {
-                log.warn(`Failed to open tagging dialog for order ${orderId}`);
+                log.warning(`Failed to open tagging dialog for order ${orderId}`);
                 return;
             }
 
@@ -357,7 +357,7 @@ export class DOMManipulator {
 
                 // CRITICAL: Verify this event is for the correct order
                 if (tagData.orderNumber !== orderId) {
-                    log.warn(`⚠️ Tags saved event for wrong order: expected ${orderId}, got ${tagData.orderNumber}`);
+                    log.warning(`⚠️ Tags saved event for wrong order: expected ${orderId}, got ${tagData.orderNumber}`);
                     return;
                 }
 
@@ -367,7 +367,7 @@ export class DOMManipulator {
                 if (this.storage) {
                     await this.storeOrderTags(orderId, tagData, this.storage);
                 } else {
-                    log.warn('No storage manager available for storing order tags');
+                    log.warning('No storage manager available for storing order tags');
                 }
 
                 // Get username from storage and pass it to performHideOperation
@@ -439,8 +439,8 @@ export class DOMManipulator {
 
             // DEBUG: Check if this order is already hidden
             if (this.hiddenOrders.has(`${orderId}-details`)) {
-                log.warn(`⚠️ Order ${orderId} is already hidden - this indicates incorrect flow!`);
-                log.warn(`⚠️ Current hidden orders:`, Array.from(this.hiddenOrders));
+                log.warning(`⚠️ Order ${orderId} is already hidden - this indicates incorrect flow!`);
+                log.warning(`⚠️ Current hidden orders:`, Array.from(this.hiddenOrders));
                 return;
             }
 
@@ -491,7 +491,7 @@ export class DOMManipulator {
             log.info(`🔍 Getting order data for order ID: ${orderId}`);
 
             if (!this.orderParser) {
-                log.warn('OrderParser not available');
+                log.warning('OrderParser not available');
                 return null;
             }
 
@@ -514,7 +514,7 @@ export class DOMManipulator {
             }
 
             if (!targetOrderCard) {
-                log.warn(`⚠️ Could not find order card containing order ID ${orderId}`);
+                log.warning(`⚠️ Could not find order card containing order ID ${orderId}`);
                 // Fall back to the old method
                 for (const orderCard of orderCards) {
                     log.info(`🔍 Processing order card:`, orderCard);
@@ -536,7 +536,7 @@ export class DOMManipulator {
                     log.info(`✅ Found matching order data for ${orderId}`);
                     return extractedData;
                 } else {
-                    log.warn(`⚠️ Order number mismatch: expected ${orderId}, got ${extractedData?.orderNumber}`);
+                    log.warning(`⚠️ Order number mismatch: expected ${orderId}, got ${extractedData?.orderNumber}`);
                 }
             }
 
@@ -557,7 +557,7 @@ export class DOMManipulator {
     async storeOrderTags(orderId, tagData, storage) {
         try {
             if (!storage) {
-                log.warn('No storage manager provided for storeOrderTags');
+                log.warning('No storage manager provided for storeOrderTags');
                 return;
             }
             await storage.storeOrderTags(orderId, tagData);
@@ -575,7 +575,7 @@ export class DOMManipulator {
     async getOrderTags(orderId, storage) {
         try {
             if (!storage) {
-                log.warn('No storage manager provided for getOrderTags');
+                log.warning('No storage manager provided for getOrderTags');
                 return null;
             }
             const tagData = await storage.getOrderTags(orderId);
@@ -634,8 +634,8 @@ export class DOMManipulator {
 
             // CRITICAL CHECK: Prevent hiding if order is already hidden
             if (orderCard.classList.contains('archizer-details-hidden')) {
-                log.warn(`⚠️ Order ${orderId} is already hidden - this indicates a duplicate operation or incorrect flow`);
-                log.warn(`⚠️ The order should NOT be hidden until the user clicks "Save & Hide" in the tagging dialog`);
+                log.warning(`⚠️ Order ${orderId} is already hidden - this indicates a duplicate operation or incorrect flow`);
+                log.warning(`⚠️ The order should NOT be hidden until the user clicks "Save & Hide" in the tagging dialog`);
                 return;
             }
 
@@ -645,7 +645,7 @@ export class DOMManipulator {
 
             // Check if this order is already being processed
             if (orderCard.hasAttribute('data-archizer-hiding')) {
-                log.warn(`⚠️ Order ${orderId} is already being hidden, skipping duplicate operation`);
+                log.warning(`⚠️ Order ${orderId} is already being hidden, skipping duplicate operation`);
                 return;
             }
 
@@ -692,7 +692,7 @@ export class DOMManipulator {
 
                         // Verify the element is within the order card boundaries
                         if (!this.isElementWithinOrderCard(element, orderCard)) {
-                            log.warn(`⚠️ Element outside order card boundaries in order ${orderId}:`, element);
+                            log.warning(`⚠️ Element outside order card boundaries in order ${orderId}:`, element);
                             return;
                         }
 
@@ -740,7 +740,7 @@ export class DOMManipulator {
 
                 // Verify the element is within the order card boundaries
                 if (!this.isElementWithinOrderCard(element, orderCard)) {
-                    log.warn(`⚠️ Order-item element outside order card boundaries in order ${orderId}:`, element);
+                    log.warning(`⚠️ Order-item element outside order card boundaries in order ${orderId}:`, element);
                     return;
                 }
 
@@ -1083,7 +1083,7 @@ export class DOMManipulator {
                 if (parentElement && !parentElement.classList.contains('archizer-hidden-details')) {
                     // Verify the element is within the order card boundaries
                     if (!this.isElementWithinOrderCard(parentElement, container)) {
-                        log.warn(`⚠️ Element outside order card boundaries in order ${orderId}:`, parentElement);
+                        log.warning(`⚠️ Element outside order card boundaries in order ${orderId}:`, parentElement);
                         return;
                     }
 
@@ -1190,7 +1190,7 @@ export class DOMManipulator {
 
             // Verify the button is within the order card boundaries
             if (!this.isElementWithinOrderCard(button, container)) {
-                log.warn(`⚠️ Button outside order card boundaries in order ${orderId}:`, button);
+                log.warning(`⚠️ Button outside order card boundaries in order ${orderId}:`, button);
                 return;
             }
 
@@ -1223,7 +1223,7 @@ export class DOMManipulator {
 
             // Verify the container is within the order card boundaries
             if (!this.isElementWithinOrderCard(buttonContainer, container)) {
-                log.warn(`⚠️ Button container outside order card boundaries in order ${orderId}:`, buttonContainer);
+                log.warning(`⚠️ Button container outside order card boundaries in order ${orderId}:`, buttonContainer);
                 return;
             }
 
@@ -1295,19 +1295,19 @@ export class DOMManipulator {
             log.info('🔍 performHideOrderDetailsWithCard called with:', { orderId, orderCard, tagData });
 
             if (!orderCard) {
-                log.warn(`No order card provided for order ${orderId}`);
+                log.warning(`No order card provided for order ${orderId}`);
                 return;
             }
 
             // CRITICAL CHECK: Prevent hiding if order is already hidden
             if (orderCard.classList.contains('archizer-details-hidden')) {
-                log.warn(`⚠️ Order ${orderId} is already hidden - skipping restoration`);
+                log.warning(`⚠️ Order ${orderId} is already hidden - skipping restoration`);
                 return;
             }
 
             // Check if this order is already being processed
             if (orderCard.hasAttribute('data-archizer-hiding')) {
-                log.warn(`⚠️ Order ${orderId} is already being hidden, skipping duplicate operation`);
+                log.warning(`⚠️ Order ${orderId} is already being hidden, skipping duplicate operation`);
                 return;
             }
 
@@ -1371,7 +1371,7 @@ export class DOMManipulator {
 
                 // Verify the element is within the order card boundaries
                 if (!isElementWithinContainer(element, orderCard)) {
-                    log.warn(`⚠️ Order-item element outside order card boundaries in order ${orderId}:`, element);
+                    log.warning(`⚠️ Order-item element outside order card boundaries in order ${orderId}:`, element);
                     return;
                 }
 
@@ -1483,7 +1483,7 @@ export class DOMManipulator {
                 extensionButton.classList.add('archizer-details-hidden');
                 log.info(`✅ Updated button state to "Show details" for order ${orderId}`);
             } else {
-                log.warn(`⚠️ Could not find extension button to update for order ${orderId}`);
+                log.warning(`⚠️ Could not find extension button to update for order ${orderId}`);
                 // Debug: check what buttons exist in the order card
                 const allButtons = orderCard.querySelectorAll('button');
                 log.info(`🔍 All buttons in order card ${orderId}:`, Array.from(allButtons).map(btn => ({
@@ -1587,7 +1587,7 @@ export class DOMManipulator {
                     log.error(`❌ Error removing order ${orderId} from storage:`, error);
                 }
             } else {
-                log.warn(`⚠️ No storage manager available for order ${orderId}`);
+                log.warning(`⚠️ No storage manager available for order ${orderId}`);
             }
 
             // Reset the button info to ensure proper state for future hiding
@@ -1639,7 +1639,7 @@ export class DOMManipulator {
     extractOrderData(orderCard, orderId, tagData = null) {
         try {
             if (!this.orderParser) {
-                log.warn('OrderParser not available for data extraction');
+                log.warning('OrderParser not available for data extraction');
                 return { orderId };
             }
 
@@ -1697,7 +1697,7 @@ export class DOMManipulator {
 
             // Check if this order card already has buttons
             if (orderCard.querySelector('.archizer-button-container')) {
-                log.warn(`⚠️ Order card already has buttons for order ${orderId}, skipping injection`);
+                log.warning(`⚠️ Order card already has buttons for order ${orderId}, skipping injection`);
                 return true;
             }
 
@@ -2160,7 +2160,7 @@ export class DOMManipulator {
                 window.taggingDialogManager.cleanup();
                 log.info('✅ TaggingDialogManager cleanup completed');
             } catch (error) {
-                log.warn('⚠️ Error cleaning up TaggingDialogManager:', error);
+                log.warning('⚠️ Error cleaning up TaggingDialogManager:', error);
             }
         }
 
@@ -2260,7 +2260,7 @@ export class DOMManipulator {
                                 const clearedKeys = await this.storage.clearAllOrderData(orderId);
                                 log.info(`🗑️ Cleared ${clearedKeys} storage keys for order ${orderId}`);
                             } catch (error) {
-                                log.warn(`⚠️ Could not clear stored data for order ${orderId}:`, error);
+                                log.warning(`⚠️ Could not clear stored data for order ${orderId}:`, error);
                             }
                         }
                     }
@@ -2310,11 +2310,11 @@ export class DOMManipulator {
                             log.info(`🗑️ Cleared ${tagKeysToRemove.length} order tag entries from Chrome storage`);
                         }
                     } catch (error) {
-                        log.warn('⚠️ Could not clear order tags from Chrome storage:', error);
+                        log.warning('⚠️ Could not clear order tags from Chrome storage:', error);
                     }
 
                 } catch (error) {
-                    log.warn('⚠️ Could not clear all stored data:', error);
+                    log.warning('⚠️ Could not clear all stored data:', error);
                 }
             }
 
@@ -2337,7 +2337,7 @@ export class DOMManipulator {
             log.info('🔄 Restoring hidden orders from storage...');
 
             if (!storage) {
-                log.warn('No storage manager provided for restoration');
+                log.warning('No storage manager provided for restoration');
                 return 0;
             }
 
@@ -2377,7 +2377,7 @@ export class DOMManipulator {
                         log.info(`🔧 Injecting buttons for order ${orderId} during restoration`);
                         const success = this.injectButtons(orderCard, orderId);
                         if (!success) {
-                            log.warn(`⚠️ Failed to inject buttons for order ${orderId}, skipping restoration`);
+                            log.warning(`⚠️ Failed to inject buttons for order ${orderId}, skipping restoration`);
                             continue;
                         }
                         log.info(`✅ Buttons successfully injected for order ${orderId} during restoration`);
@@ -2396,7 +2396,7 @@ export class DOMManipulator {
                     try {
                         tagData = await storage.getOrderTags(orderId);
                     } catch (error) {
-                        log.warn(`⚠️ Could not retrieve tags for order ${orderId}:`, error);
+                        log.warning(`⚠️ Could not retrieve tags for order ${orderId}:`, error);
                     }
 
                     // Hide the order details - pass the order card directly and include username
@@ -2478,7 +2478,7 @@ export class DOMManipulator {
                 window.taggingDialogManager.closeDialog(orderId);
                 log.info(`✅ Tagging dialog closed for order ${orderId}`);
             } catch (error) {
-                log.warn(`⚠️ Error closing tagging dialog for order ${orderId}:`, error);
+                log.warning(`⚠️ Error closing tagging dialog for order ${orderId}:`, error);
             }
         }
     }

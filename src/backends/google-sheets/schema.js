@@ -63,6 +63,14 @@ export class GoogleSheetsSchema {
                     example: '2024-01-15'
                 },
                 {
+                    name: 'orderTotal',
+                    displayName: 'Order Total',
+                    description: 'Total amount of the order (e.g., $29.99)',
+                    type: 'string',
+                    required: false,
+                    example: '$29.99'
+                },
+                {
                     name: 'hiddenBy',
                     displayName: 'Hidden By',
                     description: 'Username who hid the order',

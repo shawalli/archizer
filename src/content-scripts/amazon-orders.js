@@ -27,7 +27,7 @@ log.info('🔧 Archizer content script loaded');
             // Initialize content script functionality directly
             await initializeContentScript();
         } else {
-            log.warn('⚠️ Content script initialization skipped - page not supported');
+            log.warning('⚠️ Content script initialization skipped - page not supported');
         }
 
     } catch (error) {

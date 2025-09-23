@@ -45,6 +45,17 @@ export class PopupManager {
         this.storage = new PopupStorageManager();
         this.currentView = 'main';
         this.lastToastTime = 0; // Track last toast time to prevent duplicates
+
+        // Pagination state
+        this.currentPage = 1;
+        this.itemsPerPage = 5;
+        this.filteredOrders = [];
+        this.allOrders = [];
+
+        // Filter state
+        this.selectedTags = new Set();
+        this.selectedUser = null;
+
         this.init();
     }
 
@@ -149,6 +160,46 @@ export class PopupManager {
         // Auto-save configuration with debounce
         this.setupAutoSave();
 
+        // Filter controls - event listeners will be added when pills are created
+
+        const clearFiltersBtn = document.getElementById('clear-filters');
+        if (clearFiltersBtn) {
+            clearFiltersBtn.addEventListener('click', () => {
+                this.clearFilters();
+            });
+        }
+
+        // Pagination controls
+        const prevPageBtn = document.getElementById('prev-page');
+        if (prevPageBtn) {
+            prevPageBtn.addEventListener('click', () => {
+                this.goToPreviousPage();
+            });
+        }
+
+        const nextPageBtn = document.getElementById('next-page');
+        if (nextPageBtn) {
+            nextPageBtn.addEventListener('click', () => {
+                this.goToNextPage();
+            });
+        }
+
+        // Open Sheets button
+        const openSheetsBtn = document.getElementById('open-sheets-btn');
+        if (openSheetsBtn) {
+            openSheetsBtn.addEventListener('click', () => {
+                this.openSheetsUrl();
+            });
+        }
+
+        // Log level setting
+        const logLevelSelect = document.getElementById('log-level');
+        if (logLevelSelect) {
+            logLevelSelect.addEventListener('change', (e) => {
+                this.updateLogLevel(e.target.value);
+            });
+        }
+
     }
 
     showView(viewName) {
@@ -185,7 +236,13 @@ export class PopupManager {
     async loadHiddenOrders() {
         try {
             const hiddenOrders = await this.getAllHiddenOrders();
-            this.displayHiddenOrders(hiddenOrders);
+            this.allOrders = hiddenOrders;
+
+            // Populate filter pills
+            this.populateFilterPills(hiddenOrders);
+
+            // Apply current filters and display
+            this.applyFilters();
         } catch (error) {
             log.error('Error loading hidden orders:', error);
         }
@@ -209,16 +266,194 @@ export class PopupManager {
         }
     }
 
-    displayHiddenOrders(hiddenOrders) {
+
+    populateFilterPills(hiddenOrders) {
+        log.info('🔍 Populating filter pills with', hiddenOrders.length, 'orders');
+
+        // Collect unique tags and users
+        const allTags = new Set();
+        const allUsers = new Set();
+
+        hiddenOrders.forEach(order => {
+            // Add username
+            if (order.username) {
+                allUsers.add(order.username);
+                log.info('📝 Found username:', order.username);
+            }
+
+            // Add tags from order data
+            if (order.orderData && order.orderData.tags) {
+                order.orderData.tags.forEach(tag => {
+                    if (tag && tag.trim()) {
+                        allTags.add(tag.trim());
+                        log.info('🏷️ Found tag:', tag.trim());
+                    }
+                });
+            }
+        });
+
+        log.info('📊 Collected tags:', Array.from(allTags));
+        log.info('👥 Collected users:', Array.from(allUsers));
+
+        // Populate tag pills
+        const tagPillsContainer = document.getElementById('tag-pills');
+        if (tagPillsContainer) {
+            tagPillsContainer.innerHTML = '';
+
+            // Add tag pills
+            Array.from(allTags).sort().forEach(tag => {
+                const pill = document.createElement('span');
+                pill.className = 'filter-pill tag-pill';
+                pill.textContent = tag;
+                pill.dataset.tag = tag;
+
+                pill.addEventListener('click', () => {
+                    this.toggleTagFilter(tag, pill);
+                });
+
+                tagPillsContainer.appendChild(pill);
+            });
+            log.info('✅ Tag pills populated with', allTags.size, 'pills');
+        } else {
+            log.warning('⚠️ Tag pills container not found');
+        }
+
+        // Populate user pills
+        const userPillsContainer = document.getElementById('user-pills');
+        if (userPillsContainer) {
+            userPillsContainer.innerHTML = '';
+
+            // Add user pills
+            Array.from(allUsers).sort().forEach(user => {
+                const pill = document.createElement('span');
+                pill.className = 'filter-pill user-pill';
+                pill.textContent = `@${user}`;
+                pill.dataset.user = user;
+
+                pill.addEventListener('click', () => {
+                    this.toggleUserFilter(user, pill);
+                });
+
+                userPillsContainer.appendChild(pill);
+            });
+            log.info('✅ User pills populated with', allUsers.size, 'pills');
+        } else {
+            log.warning('⚠️ User pills container not found');
+        }
+    }
+
+    toggleTagFilter(tag, pillElement) {
+        if (this.selectedTags.has(tag)) {
+            // Remove tag from selection
+            this.selectedTags.delete(tag);
+            pillElement.classList.remove('selected');
+            log.info('🏷️ Tag deselected:', tag);
+        } else {
+            // Add tag to selection
+            this.selectedTags.add(tag);
+            pillElement.classList.add('selected');
+            log.info('🏷️ Tag selected:', tag);
+        }
+
+        this.applyFilters();
+    }
+
+    toggleUserFilter(user, pillElement) {
+        if (this.selectedUser === user) {
+            // Deselect current user
+            this.selectedUser = null;
+            pillElement.classList.remove('selected');
+            log.info('👤 User deselected:', user);
+        } else {
+            // Deselect any previously selected user
+            const allUserPills = document.querySelectorAll('.user-pill');
+            allUserPills.forEach(pill => pill.classList.remove('selected'));
+
+            // Select new user
+            this.selectedUser = user;
+            pillElement.classList.add('selected');
+            log.info('👤 User selected:', user);
+        }
+
+        this.applyFilters();
+    }
+
+    applyFilters() {
+        if (!this.allOrders) return;
+
+        // Filter orders based on current filters
+        this.filteredOrders = this.allOrders.filter(order => {
+            // Check tag filters (ALL selected tags must be present)
+            if (this.selectedTags.size > 0) {
+                const orderTags = order.orderData?.tags || [];
+                const hasAllSelectedTags = Array.from(this.selectedTags).every(selectedTag =>
+                    orderTags.includes(selectedTag)
+                );
+                if (!hasAllSelectedTags) {
+                    return false;
+                }
+            }
+
+            // Check user filter
+            if (this.selectedUser) {
+                if (order.username !== this.selectedUser) {
+                    return false;
+                }
+            }
+
+            return true;
+        });
+
+        // Reset to first page and update display
+        this.currentPage = 1;
+        this.updateOrderCount();
+        this.displayFilteredOrders();
+        this.updatePagination();
+    }
+
+    clearFilters() {
+        // Clear selected tags
+        this.selectedTags.clear();
+
+        // Clear selected user
+        this.selectedUser = null;
+
+        // Reset pill visual states
+        const allTagPills = document.querySelectorAll('.tag-pill');
+        allTagPills.forEach(pill => pill.classList.remove('selected'));
+
+        const allUserPills = document.querySelectorAll('.user-pill');
+        allUserPills.forEach(pill => pill.classList.remove('selected'));
+
+        log.info('🧹 All filters cleared');
+
+        // Reapply filters (which will show all orders)
+        this.applyFilters();
+    }
+
+    updateOrderCount() {
+        const orderCount = document.getElementById('order-count');
+        if (orderCount) {
+            const total = this.filteredOrders.length;
+            orderCount.textContent = `${total} order${total !== 1 ? 's' : ''}`;
+        }
+    }
+
+    displayFilteredOrders() {
         const container = document.getElementById('hidden-orders-list');
         if (!container) return;
 
-        if (hiddenOrders.length === 0) {
+        if (this.filteredOrders.length === 0) {
             container.innerHTML = '<p class="no-orders-message">No hidden orders found.</p>';
             return;
         }
 
-        const ordersHTML = hiddenOrders.map(order => {
+        // Calculate pagination
+        const startIndex = (this.currentPage - 1) * this.itemsPerPage;
+        const endIndex = startIndex + this.itemsPerPage;
+        const pageOrders = this.filteredOrders.slice(startIndex, endIndex);
+
+        const ordersHTML = pageOrders.map(order => {
             const orderData = order.orderData || {};
             const tags = orderData.tags || [];
             const tagsHTML = tags.map(tag =>
@@ -230,29 +465,132 @@ export class PopupManager {
 
             return `
                 <div class="hidden-order-item">
-                    <div style="font-weight: bold; margin-bottom: 5px;">Order #${order.orderId}</div>
-                    <div style="font-size: 12px; color: #666; margin-bottom: 5px;">
-                        ${orderData.orderDate || 'Date unknown'} - ${orderData.orderTotal || 'Total unknown'}
+                    <div class="order-header">
+                        <div class="order-id">Order #${order.orderId}</div>
+                        <div class="order-date">${orderData.orderDate || 'Date unknown'}</div>
                     </div>
-                    <div style="margin-bottom: 5px;">
-                        ${usernameHTML}
-                        ${tagsHTML}
+                    <div class="order-meta">
+                        <div class="order-price">${orderData.orderTotal || 'Total unknown'}</div>
                     </div>
-                    <button class="unhide-btn" data-order-id="${order.orderId}" data-type="${order.type}">Unhide</button>
+                    <div class="tags-container">
+                        <div class="tags-list">
+                            ${usernameHTML}
+                            ${tagsHTML}
+                        </div>
+                    </div>
+                    <div class="order-actions">
+                        <button class="show-details-btn" data-order-id="${order.orderId}" data-type="${order.type}">Show Details</button>
+                    </div>
                 </div>
             `;
         }).join('');
 
         container.innerHTML = ordersHTML;
 
-        // Add event listeners for unhide buttons
-        container.querySelectorAll('.unhide-btn').forEach(btn => {
+        // Add event listeners for show details buttons
+        container.querySelectorAll('.show-details-btn').forEach(btn => {
             btn.addEventListener('click', (e) => {
                 const orderId = e.target.dataset.orderId;
                 const type = e.target.dataset.type;
-                this.unhideOrder(orderId, type);
+                this.showOrderDetails(orderId, type);
             });
         });
+    }
+
+
+    updatePagination() {
+        const pagination = document.getElementById('pagination');
+        const prevBtn = document.getElementById('prev-page');
+        const nextBtn = document.getElementById('next-page');
+        const pageInfo = document.getElementById('page-info');
+
+        if (!pagination || !prevBtn || !nextBtn || !pageInfo) return;
+
+        const totalPages = Math.ceil(this.filteredOrders.length / this.itemsPerPage);
+
+        if (totalPages <= 1) {
+            pagination.classList.add('hidden');
+            return;
+        }
+
+        pagination.classList.remove('hidden');
+
+        // Update button states
+        prevBtn.disabled = this.currentPage <= 1;
+        nextBtn.disabled = this.currentPage >= totalPages;
+
+        // Update page info
+        pageInfo.textContent = `Page ${this.currentPage} of ${totalPages}`;
+    }
+
+    goToPreviousPage() {
+        if (this.currentPage > 1) {
+            this.currentPage--;
+            this.displayFilteredOrders();
+            this.updatePagination();
+        }
+    }
+
+    goToNextPage() {
+        const totalPages = Math.ceil(this.filteredOrders.length / this.itemsPerPage);
+        if (this.currentPage < totalPages) {
+            this.currentPage++;
+            this.displayFilteredOrders();
+            this.updatePagination();
+        }
+    }
+
+    openSheetsUrl() {
+        const sheetUrlInput = document.getElementById('sheet-url');
+        if (sheetUrlInput && sheetUrlInput.value.trim()) {
+            chrome.tabs.create({ url: sheetUrlInput.value.trim() });
+        }
+    }
+
+    updateLogLevel(level) {
+        // Store log level in local storage
+        this.storage.set('log_level', level);
+
+        // Send message to background script to update log level
+        chrome.runtime.sendMessage({
+            type: 'UPDATE_LOG_LEVEL',
+            level: level
+        });
+
+        this.showMessage(`Log level updated to: ${level}`, 'success');
+    }
+
+    displayHiddenOrders(hiddenOrders) {
+        // This method is now replaced by displayFilteredOrders
+        // Keep for backward compatibility but redirect to new method
+        this.allOrders = hiddenOrders;
+        this.populateFilterPills(hiddenOrders);
+        this.applyFilters();
+    }
+
+    async showOrderDetails(orderId, type) {
+        try {
+            // Send message to content script to show order details
+            const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+
+            if (tab && tab.url && tab.url.includes('amazon.com')) {
+                chrome.tabs.sendMessage(tab.id, {
+                    type: 'SHOW_ORDER_DETAILS',
+                    orderId: orderId,
+                    orderType: type
+                });
+
+                // Remove from hidden orders list
+                await this.unhideOrder(orderId, type);
+
+                this.showMessage('Order details restored!', 'success');
+            } else {
+                this.showMessage('Please navigate to an Amazon order page first', 'error');
+            }
+        } catch (error) {
+            log.error('Error showing order details:', error);
+            this.showMessage('Error restoring order details', 'error');
+        }
     }
 
     async unhideOrder(orderId, type) {
@@ -365,10 +703,10 @@ export class PopupManager {
                     if (response && response.success) {
                         log.info(`✅ Content script restored ${response.restoredCount} hidden orders`);
                     } else {
-                        log.warn('⚠️ Content script resync response:', response);
+                        log.warning('⚠️ Content script resync response:', response);
                     }
                 } catch (error) {
-                    log.warn('⚠️ Could not communicate with content script (may not be on orders page):', error);
+                    log.warning('⚠️ Could not communicate with content script (may not be on orders page):', error);
                 }
             }
 
@@ -395,7 +733,7 @@ export class PopupManager {
                             log.info(`✅ Applied hiding to ${response.hiddenCount} orders on page`);
                         }
                     } catch (error) {
-                        log.warn('⚠️ Could not apply hiding to page:', error);
+                        log.warning('⚠️ Could not apply hiding to page:', error);
                     }
                 }
             } else {
@@ -460,7 +798,7 @@ export class PopupManager {
                     log.info(`🗑️ Cleared ${tagKeysToRemove.length} order tag entries from Chrome storage`);
                 }
             } catch (error) {
-                log.warn('⚠️ Could not clear order tags from Chrome storage:', error);
+                log.warning('⚠️ Could not clear order tags from Chrome storage:', error);
             }
 
             return keysToRemove.length;
@@ -489,7 +827,7 @@ export class PopupManager {
                 log.info('📊 Fetched hidden orders:', response.hiddenOrders);
                 return response.hiddenOrders;
             } else {
-                log.warn('⚠️ Failed to fetch hidden orders from Google Sheets:', response?.error);
+                log.warning('⚠️ Failed to fetch hidden orders from Google Sheets:', response?.error);
                 return [];
             }
         } catch (error) {
@@ -517,7 +855,6 @@ export class PopupManager {
                         orderNumber: orderData.orderId,
                         orderDate: orderData.orderDate,
                         orderTotal: orderData.orderTotal,
-                        orderStatus: orderData.orderStatus,
                         orderItems: orderData.orderItems || [],
                         tags: orderData.tags ? orderData.tags.split(',').map(tag => tag.trim()) : [],
                         notes: orderData.notes || ''
@@ -685,6 +1022,7 @@ export class PopupManager {
         try {
             const sheetUrlInput = document.getElementById('sheet-url');
             const testConnectionBtn = document.getElementById('test-connection-btn');
+            const openSheetsBtn = document.getElementById('open-sheets-btn');
 
             if (!sheetUrlInput || !testConnectionBtn) {
                 return;
@@ -692,6 +1030,11 @@ export class PopupManager {
 
             const currentUrl = sheetUrlInput.value.trim();
             log.info('⚡ Immediate check - Current URL:', currentUrl);
+
+            // Update open sheets button state
+            if (openSheetsBtn) {
+                openSheetsBtn.disabled = !currentUrl;
+            }
 
             // For immediate response, if URL is not empty, show setup mode
             if (currentUrl) {
@@ -716,6 +1059,7 @@ export class PopupManager {
         try {
             const sheetUrlInput = document.getElementById('sheet-url');
             const testConnectionBtn = document.getElementById('test-connection-btn');
+            const openSheetsBtn = document.getElementById('open-sheets-btn');
 
             if (!sheetUrlInput || !testConnectionBtn) {
                 log.info('❌ Missing elements for initial button state:', {
@@ -727,6 +1071,11 @@ export class PopupManager {
 
             const currentUrl = sheetUrlInput.value.trim();
             log.info('🔄 Setting initial button state, current URL:', currentUrl);
+
+            // Set initial state for open sheets button
+            if (openSheetsBtn) {
+                openSheetsBtn.disabled = !currentUrl;
+            }
 
             // Always start with "Test Connection" button
             testConnectionBtn.textContent = 'Test Connection';
@@ -953,7 +1302,7 @@ export class PopupManager {
                     log.info('💾 Google Sheets configuration auto-saved');
                     // Toast will be shown via the config callback
                 } catch (error) {
-                    log.warn('⚠️ Error during auto-save:', error.message);
+                    log.warning('⚠️ Error during auto-save:', error.message);
                     // Don't show error toast for auto-save failures
                 }
             } else {

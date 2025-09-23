@@ -618,6 +618,7 @@ async function handleSyncHiddenOrderToSheets(message, sendResponse) {
         const sheetRow = [
             hiddenOrderData.orderId,                    // Order ID
             orderData.orderDate || '',                  // Order Date
+            orderData.orderTotal || '',                 // Order Total
             hiddenOrderData.username,                   // Hidden By
             hiddenOrderData.timestamp,                  // Hidden At
             hiddenOrderData.type,                       // Hidden Type
@@ -627,7 +628,7 @@ async function handleSyncHiddenOrderToSheets(message, sendResponse) {
         ];
 
         // Check if order already exists in HiddenOrders sheet
-        const existingRange = 'HiddenOrders!A:H';
+        const existingRange = 'HiddenOrders!A:I';
         const existingData = await googleSheetsClient.getRange(existingRange);
 
         let orderExists = false;
@@ -923,10 +924,10 @@ async function handleFetchHiddenOrdersFromSheets(message, sendResponse) {
         googleSheetsClient.configure(sheetId);
 
         // Ensure HiddenOrders sheet has proper headers
-        await ensureSheetHeaders('HiddenOrders', ['Order ID', 'Order Date', 'Hidden By', 'Hidden At', 'Hidden Type', 'Tags', 'Notes', 'Last Modified']);
+        await ensureSheetHeaders('HiddenOrders', ['Order ID', 'Order Date', 'Order Total', 'Hidden By', 'Hidden At', 'Hidden Type', 'Tags', 'Notes', 'Last Modified']);
 
         // Get all data from HiddenOrders sheet
-        const range = 'HiddenOrders!A:H'; // Get all columns (assuming 8 columns based on schema)
+        const range = 'HiddenOrders!A:I'; // Get all columns (assuming 9 columns based on schema)
         const response = await googleSheetsClient.getRange(range);
 
         log.info('📊 Raw Google Sheets response:', response);
@@ -954,7 +955,7 @@ async function handleFetchHiddenOrdersFromSheets(message, sendResponse) {
             const row = dataRows[i];
             log.info(`📊 Processing row ${i + 1}:`, row);
 
-            if (row.length >= 8 && row[0]) { // Ensure we have order ID
+            if (row.length >= 9 && row[0]) { // Ensure we have order ID
                 // Additional validation: check if the first column looks like an order ID
                 const orderId = row[0].toString().trim();
                 const isValidOrderId = /^[A-Z0-9]{3}-[A-Z0-9]{7}-[A-Z0-9]{7}$/.test(orderId);
@@ -963,12 +964,13 @@ async function handleFetchHiddenOrdersFromSheets(message, sendResponse) {
                     const hiddenOrder = {
                         orderId: orderId,           // Order ID
                         orderDate: row[1] || '',   // Order Date
-                        hiddenBy: row[2] || '',    // Hidden By
-                        hiddenAt: row[3] || '',    // Hidden At
-                        type: row[4] || 'details', // Hidden Type
-                        tags: row[5] || '',        // Tags
-                        notes: row[6] || '',       // Notes
-                        lastModified: row[7] || '' // Last Modified
+                        orderTotal: row[2] || '',  // Order Total
+                        hiddenBy: row[3] || '',    // Hidden By
+                        hiddenAt: row[4] || '',    // Hidden At
+                        type: row[5] || 'details', // Hidden Type
+                        tags: row[6] || '',        // Tags
+                        notes: row[7] || '',       // Notes
+                        lastModified: row[8] || '' // Last Modified
                     };
 
                     log.info(`✅ Converted row ${i + 1} to hidden order:`, hiddenOrder);

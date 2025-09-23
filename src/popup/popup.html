@@ -25,17 +25,38 @@
             <p>Welcome to Archizer!</p>
             <p>This extension helps you archive and manage your Amazon orders.</p>
 
+            <!-- Filter Controls -->
+            <div class="filter-controls">
+                <div class="filter-pills-container">
+                    <div id="tag-pills" class="filter-pills">
+                        <!-- Tag pills will be populated here -->
+                    </div>
+                    <div id="user-pills" class="filter-pills">
+                        <!-- User pills will be populated here -->
+                    </div>
+                </div>
+                <button id="clear-filters" class="clear-filters-btn">Clear Filters</button>
+            </div>
+
             <div class="hidden-orders-section">
-                <h2>Hidden Orders</h2>
+                <div class="section-header">
+                    <h2>Hidden Orders</h2>
+                    <div class="order-count" id="order-count">0 orders</div>
+                </div>
+
+                <!-- Orders List -->
                 <div id="hidden-orders-list" class="hidden-orders-list">
                     <p class="no-orders-message">No hidden orders found.</p>
                 </div>
             </div>
 
-            <div class="quick-actions">
-                <button class="action-btn primary">Archive Orders</button>
-                <button class="action-btn secondary">View History</button>
+            <!-- Pagination -->
+            <div id="pagination" class="pagination hidden">
+                <button id="prev-page" class="page-btn" disabled>Previous</button>
+                <span id="page-info" class="page-info">Page 1 of 1</span>
+                <button id="next-page" class="page-btn" disabled>Next</button>
             </div>
+
         </div>
     </div>
 
@@ -72,8 +93,16 @@
                 </div>
                 <div class="form-group">
                     <label for="sheet-url">Google Sheet URL</label>
-                    <input type="text" id="sheet-url"
-                        placeholder="https://docs.google.com/spreadsheets/d/YOUR_SHEET_ID/edit" />
+                    <div class="input-with-button">
+                        <input type="text" id="sheet-url"
+                            placeholder="https://docs.google.com/spreadsheets/d/YOUR_SHEET_ID/edit" />
+                        <button id="open-sheets-btn" class="open-sheets-btn" title="Open in new tab" disabled>
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+                                <path
+                                    d="M14,3V5H17.59L7.76,14.83L9.17,16.24L19,6.41V10H21V3M19,19H5V5H12V3H5C3.89,3 3,3.9 3,5V19A2,2 0 0,0 5,21H19A2,2 0 0,0 21,19V12H19V19Z" />
+                            </svg>
+                        </button>
+                    </div>
                     <p class="help-text">Paste the full Google Sheets URL from your browser</p>
                 </div>
                 <div class="form-group">
@@ -84,6 +113,16 @@
 
             <div class="settings-section">
                 <h2>General</h2>
+                <div class="form-group">
+                    <label for="log-level">Logging Level</label>
+                    <select id="log-level" class="log-level-select">
+                        <option value="error">Error Only</option>
+                        <option value="warn">Warning & Error</option>
+                        <option value="info" selected>Info, Warning & Error</option>
+                        <option value="debug">Debug (All Messages)</option>
+                    </select>
+                    <p class="help-text">Controls the verbosity of extension logging</p>
+                </div>
                 <div class="form-group">
                     <button id="resync-btn" class="resync-btn">Resync Orders</button>
                     <p class="resync-description">Reset extension order data and reload from database</p>
