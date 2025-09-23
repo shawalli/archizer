@@ -192,14 +192,6 @@ export class PopupManager {
             });
         }
 
-        // Log level setting
-        const logLevelSelect = document.getElementById('log-level');
-        if (logLevelSelect) {
-            logLevelSelect.addEventListener('change', (e) => {
-                this.updateLogLevel(e.target.value);
-            });
-        }
-
     }
 
     showView(viewName) {
@@ -545,19 +537,6 @@ export class PopupManager {
         if (sheetUrlInput && sheetUrlInput.value.trim()) {
             chrome.tabs.create({ url: sheetUrlInput.value.trim() });
         }
-    }
-
-    updateLogLevel(level) {
-        // Store log level in local storage
-        this.storage.set('log_level', level);
-
-        // Send message to background script to update log level
-        chrome.runtime.sendMessage({
-            type: 'UPDATE_LOG_LEVEL',
-            level: level
-        });
-
-        this.showMessage(`Log level updated to: ${level}`, 'success');
     }
 
     displayHiddenOrders(hiddenOrders) {
