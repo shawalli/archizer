@@ -12,6 +12,7 @@ export class GoogleOAuth {
         this.tokenExpiry = null;
         this.clientId = null;
         this.clientSecret = null;
+        this.storageKey = 'google_oauth_tokens';
     }
 
     /**
@@ -24,10 +25,57 @@ export class GoogleOAuth {
     }
 
     /**
+     * Save tokens to Chrome storage
+     */
+    async saveTokens() {
+        try {
+            const tokenData = {
+                accessToken: this.accessToken,
+                refreshToken: this.refreshToken,
+                tokenExpiry: this.tokenExpiry
+            };
+
+            await chrome.storage.local.set({ [this.storageKey]: tokenData });
+            log.info('OAuth tokens saved to storage');
+        } catch (error) {
+            log.error('Error saving OAuth tokens:', error);
+        }
+    }
+
+    /**
+     * Load tokens from Chrome storage
+     */
+    async loadTokens() {
+        try {
+            const result = await chrome.storage.local.get([this.storageKey]);
+            const tokenData = result[this.storageKey];
+
+            if (tokenData) {
+                this.accessToken = tokenData.accessToken;
+                this.refreshToken = tokenData.refreshToken;
+                this.tokenExpiry = tokenData.tokenExpiry;
+                log.info('OAuth tokens loaded from storage');
+                return true;
+            }
+
+            log.info('No OAuth tokens found in storage');
+            return false;
+        } catch (error) {
+            log.error('Error loading OAuth tokens:', error);
+            return false;
+        }
+    }
+
+    /**
      * Get OAuth2 access token
      */
     async getAccessToken() {
         try {
+            // First, try to load tokens from storage if we don't have them in memory
+            if (!this.accessToken && !this.refreshToken) {
+                await this.loadTokens();
+            }
+
             // Check if we have a valid cached token
             if (this.accessToken && this.tokenExpiry && Date.now() < this.tokenExpiry) {
                 log.info('Using cached access token');
@@ -110,6 +158,9 @@ export class GoogleOAuth {
                     this.refreshToken = tokens.refresh_token;
                     this.tokenExpiry = Date.now() + (tokens.expires_in * 1000);
 
+                    // Save tokens to storage
+                    await this.saveTokens();
+
                     log.success('OAuth2 authorization successful');
                     resolve(this.accessToken);
                 } catch (error) {
@@ -180,6 +231,9 @@ export class GoogleOAuth {
         this.accessToken = tokens.access_token;
         this.tokenExpiry = Date.now() + (tokens.expires_in * 1000);
 
+        // Save updated tokens to storage
+        await this.saveTokens();
+
         log.success('Access token refreshed');
         return this.accessToken;
     }
@@ -191,6 +245,15 @@ export class GoogleOAuth {
         this.accessToken = null;
         this.refreshToken = null;
         this.tokenExpiry = null;
+
+        // Also clear from storage
+        try {
+            await chrome.storage.local.remove([this.storageKey]);
+            log.info('OAuth2 tokens cleared from storage');
+        } catch (error) {
+            log.error('Error clearing OAuth tokens from storage:', error);
+        }
+
         log.info('OAuth2 tokens cleared');
     }
 

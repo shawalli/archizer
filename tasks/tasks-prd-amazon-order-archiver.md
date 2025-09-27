@@ -124,7 +124,7 @@
   - [x] 6.5 Move Cancel and Save & Hide button column to vertically align with order button column
   - [ ] 6.6 Review code base for extranneous logs.
   - [ ] 6.7 Design logo, favicon for extension. The logo should evoke hiding inside a box, with the elements of amazon, e.g. the amazon arrow, the amazon font, etc.
-  - [ ] 6.8 Determine long-term plan so that OAuth doesn't ask for login every time I load the amazon page and hide an order.
+  - [x] 6.8 Determine long-term plan so that OAuth doesn't ask for login every time I load the amazon page and hide an order.
 
 ## Implementation Notes
 
