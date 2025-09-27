@@ -122,7 +122,7 @@
   - [x] 6.3 Modify Add Tag button so that text is not cut off the left and right side of the button
   - [x] 6.4 Modify Cancel and Save & Hide buttons to have same pill styling as Hide Details and buttons in the Order column
   - [x] 6.5 Move Cancel and Save & Hide button column to vertically align with order button column
-  - [ ] 6.6 Review code base for extranneous logs.
+  - [x] 6.6 Review code base for extranneous logs.
   - [ ] 6.7 Design logo, favicon for extension. The logo should evoke hiding inside a box, with the elements of amazon, e.g. the amazon arrow, the amazon font, etc.
   - [x] 6.8 Determine long-term plan so that OAuth doesn't ask for login every time I load the amazon page and hide an order.
 

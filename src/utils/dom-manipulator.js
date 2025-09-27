@@ -294,11 +294,7 @@ export class DOMManipulator {
      */
     async showTaggingDialogForHide(orderId, button, storage) {
         try {
-            log.info(`🔍 showTaggingDialogForHide called for order ${orderId}`);
-            log.info(`🔍 Current time: ${new Date().toISOString()}`);
-            log.info(`🔍 Button clicked:`, button);
-            log.info(`🔍 Button text: "${button.textContent}"`);
-            log.info(`🔍 Button classes: "${button.className}"`);
+            log.info(`🔍 Opening tagging dialog for order ${orderId}`);
 
             // Get order data from the OrderParser
             const orderData = this.getOrderData(orderId);
@@ -342,18 +338,12 @@ export class DOMManipulator {
                 return;
             }
 
-            log.info(`🔍 Tagging dialog opened for order ${orderId}`);
-            log.info(`🔍 Dialog data:`, dialogData);
+            log.info(`✅ Tagging dialog opened for order ${orderId}`);
 
             // Create a unique event listener for this order
             const handleTagsSaved = async (event) => {
-                log.info(`🔍 EVENT RECEIVED: ${event.type} for order ${orderId}`);
-                log.info(`🔍 Event detail:`, event.detail);
-                log.info(`🔍 Event target:`, event.target);
-                log.info(`🔍 Event currentTarget:`, event.currentTarget);
-
                 const tagData = event.detail;
-                log.info(`🔍 Tags saved event received for order ${orderId}:`, tagData);
+                log.info(`🔍 Tags saved event received for order ${orderId}`);
 
                 // CRITICAL: Verify this event is for the correct order
                 if (tagData.orderNumber !== orderId) {
@@ -396,10 +386,8 @@ export class DOMManipulator {
             document.addEventListener(eventName, handleTagsSaved);
             log.info(`✅ Added ${eventName} event listener for order ${orderId}`);
 
-            // DEBUG: Log all current event listeners
-            log.info(`🔍 Current tagsSavedListeners map:`, Array.from(this.tagsSavedListeners.keys()));
-            log.info(`🔍 Total event listeners registered: ${this.tagsSavedListeners.size}`);
-            log.info(`🔍 Event listener function:`, handleTagsSaved.toString().substring(0, 100) + '...');
+            // Store the event listener for cleanup
+            this.tagsSavedListeners.set(orderId, { eventName, handler: handleTagsSaved });
 
         } catch (error) {
             log.error(`Error showing tagging dialog for order ${orderId}:`, error);
@@ -2032,8 +2020,8 @@ export class DOMManipulator {
      * @returns {string|null} Order ID or null if not found
      */
     getOrderIdFromElement(orderElement) {
-        log.info('🔍 Extracting order ID from element:', orderElement);
-        log.info('🔍 Element HTML:', orderElement.outerHTML.substring(0, 500) + '...');
+        log.debug('🔍 Extracting order ID from element:', orderElement);
+        log.debug('🔍 Element HTML:', orderElement.outerHTML.substring(0, 500) + '...');
 
         // Try multiple selectors for order ID - more targeted approach
         const selectors = [
@@ -2062,15 +2050,15 @@ export class DOMManipulator {
         for (const selector of selectors) {
             const element = orderElement.querySelector(selector);
             if (element) {
-                log.info(`🔍 Found element with selector "${selector}":`, element);
+                log.debug(`🔍 Found element with selector "${selector}":`, element);
                 log.info(`🔍 Element text: "${element.textContent?.trim()}"`);
-                log.info(`🔍 Element attributes:`, element.attributes);
+                log.debug(`🔍 Element attributes:`, element.attributes);
 
                 // Special handling for .yohtmlc-order-id - find the span with the actual order ID
                 if (selector === '.yohtmlc-order-id' && element.classList.contains('yohtmlc-order-id')) {
                     log.info('🔍 Found yohtmlc-order-id div, searching for order ID span...');
                     const spans = element.querySelectorAll('span.a-color-secondary');
-                    log.info(`🔍 Found ${spans.length} spans with class a-color-secondary`);
+                    log.debug(`🔍 Found ${spans.length} spans with class a-color-secondary`);
 
                     for (const span of spans) {
                         const spanText = span.textContent?.trim();
@@ -2249,12 +2237,12 @@ export class DOMManipulator {
      * @param {string} username - Username for the order
      */
     setUsernameForOrder(orderId, username) {
-        log.info(`🔧 setUsernameForOrder called: orderId="${orderId}", username="${username}"`);
-        log.info(`🔧 Before setting - orderUsernames map:`, Array.from(this.orderUsernames.entries()));
+        log.debug(`🔧 setUsernameForOrder called: orderId="${orderId}", username="${username}"`);
+        log.debug(`🔧 Before setting - orderUsernames map:`, Array.from(this.orderUsernames.entries()));
 
         this.orderUsernames.set(orderId, username);
 
-        log.info(`🔧 After setting - orderUsernames map:`, Array.from(this.orderUsernames.entries()));
+        log.debug(`🔧 After setting - orderUsernames map:`, Array.from(this.orderUsernames.entries()));
         log.info(`🔧 Set username for order ${orderId}: ${username}`);
     }
 
@@ -2265,8 +2253,8 @@ export class DOMManipulator {
      */
     getUsernameForOrder(orderId) {
         const username = this.orderUsernames.get(orderId) || 'Unknown User';
-        log.info(`🔍 getUsernameForOrder called: orderId="${orderId}", returned username="${username}"`);
-        log.info(`🔍 Current orderUsernames map:`, Array.from(this.orderUsernames.entries()));
+        log.debug(`🔍 getUsernameForOrder called: orderId="${orderId}", returned username="${username}"`);
+        log.debug(`🔍 Current orderUsernames map:`, Array.from(this.orderUsernames.entries()));
         return username;
     }
 
@@ -2606,7 +2594,7 @@ export class DOMManipulator {
     applyHiddenOrdersFromData(hiddenOrdersData) {
         try {
             log.info(`🔄 Applying ${hiddenOrdersData.length} hidden orders from fetched data...`);
-            log.info(`📊 Raw hidden orders data for application:`, hiddenOrdersData);
+            log.debug(`📊 Raw hidden orders data for application:`, hiddenOrdersData);
 
             let hiddenCount = 0;
 
@@ -2614,7 +2602,7 @@ export class DOMManipulator {
                 try {
                     const orderId = orderData.orderId;
                     log.info(`🔄 Processing order ${orderId} for hiding...`);
-                    log.info(`📊 Order data:`, orderData);
+                    log.debug(`📊 Order data:`, orderData);
 
                     // Find the order card on the page
                     log.info(`🔍 Searching for order card with ID: ${orderId}`);
@@ -2624,25 +2612,25 @@ export class DOMManipulator {
 
                         // Debug: Show all available order IDs on the page
                         const allOrderElements = document.querySelectorAll('[data-order-id]');
-                        log.info(`🔍 Available order elements with data-order-id:`, allOrderElements);
+                        log.debug(`🔍 Available order elements with data-order-id:`, allOrderElements);
 
                         const allOrderIds = Array.from(allOrderElements).map(el => el.getAttribute('data-order-id'));
-                        log.info(`🔍 Available order IDs on page:`, allOrderIds);
+                        log.debug(`🔍 Available order IDs on page:`, allOrderIds);
 
                         // Also check for order cards that might have order IDs in their text
                         const allOrderCards = document.querySelectorAll('.order-card, .js-order-card');
-                        log.info(`🔍 All order cards on page:`, allOrderCards);
+                        log.debug(`🔍 All order cards on page:`, allOrderCards);
 
                         for (const card of allOrderCards) {
                             const extractedId = this.getOrderIdFromElement(card);
                             if (extractedId) {
-                                log.info(`🔍 Order card with ID "${extractedId}":`, card);
+                                log.debug(`🔍 Order card with ID "${extractedId}":`, card);
                             }
                         }
 
                         continue;
                     } else {
-                        log.info(`✅ Found order card for order ${orderId}:`, orderCard);
+                        log.debug(`✅ Found order card for order ${orderId}:`, orderCard);
                     }
 
                     // Check if order is already hidden

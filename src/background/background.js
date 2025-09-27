@@ -186,7 +186,7 @@ async function handleGoogleSheetsConfigGet(sendResponse) {
     try {
         log.info('📥 Received GOOGLE_SHEETS_CONFIG_GET request');
         const config = await configManager.get('google_sheets');
-        log.info('📤 Sending config response:', { ...config });
+        log.info('📤 Sending config response');
         sendResponse({ success: true, config });
     } catch (error) {
         log.error('❌ Error getting Google Sheets config:', error);
@@ -196,7 +196,7 @@ async function handleGoogleSheetsConfigGet(sendResponse) {
 
 async function handleGoogleSheetsConfigSet(config, sendResponse) {
     try {
-        log.info('📥 Received GOOGLE_SHEETS_CONFIG_SET request:', { ...config });
+        log.info('📥 Received GOOGLE_SHEETS_CONFIG_SET request');
 
         await configManager.set('google_sheets', config);
         log.info('💾 Config saved successfully');

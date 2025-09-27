@@ -72,23 +72,20 @@ export class PopupManager {
 
         // Register callback for username changes
         configManager.onAutoSave('username', (value) => {
-            log.info('📢 Username config changed:', value);
+            log.info('📢 Username config updated');
             // Username changes are silent (no toast)
         });
 
         // Register callback for Google Sheets changes
         configManager.onAutoSave('google_sheets', (value) => {
-            log.info('📢 Google Sheets config changed:', value);
-            log.info('📢 About to show toast...');
+            log.info('📢 Google Sheets config updated');
 
             // Prevent duplicate toasts within 1 second
             const now = Date.now();
             if (now - this.lastToastTime > 1000) {
                 this.showMessage('Configuration saved automatically', 'success');
                 this.lastToastTime = now;
-                log.info('📢 Toast shown');
-            } else {
-                log.info('📢 Toast skipped (duplicate prevention)');
+                log.info('📢 Toast notification shown');
             }
         });
 

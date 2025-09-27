@@ -116,9 +116,7 @@ export class GoogleOAuth {
             `access_type=offline&` +
             `prompt=consent`;
 
-        log.info('Opening OAuth2 authorization URL...');
-        log.info('Auth URL:', authUrl);
-        log.info('Redirect URI:', redirectUri);
+        log.info('Starting OAuth2 authorization flow...');
 
         return new Promise((resolve, reject) => {
             chrome.identity.launchWebAuthFlow({
@@ -131,7 +129,7 @@ export class GoogleOAuth {
                     return;
                 }
 
-                log.info('OAuth2 response URL received:', responseUrl);
+                log.info('OAuth2 response received');
 
                 try {
                     const url = new URL(responseUrl);

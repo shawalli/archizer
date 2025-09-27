@@ -14,9 +14,7 @@ log.info('🔧 Archizer content script loaded');
 // Initialize the extension when the content script loads
 (async () => {
     try {
-        log.info('🔧 Starting content script initialization...');
-        log.info('🔧 Current URL:', window.location.href);
-        log.info('🔧 Page title:', document.title);
+        log.info('🔧 Initializing content script...');
 
         // Wait for the extension loader to initialize
         await globalExtensionLoader.initialize();
