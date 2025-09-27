@@ -34,6 +34,7 @@ describe('Amazon Orders Content Script', () => {
                 info: jest.fn(),
                 error: jest.fn(),
                 warn: jest.fn(),
+                warning: jest.fn(),
                 success: jest.fn()
             }
         }));
@@ -190,16 +191,16 @@ describe('Amazon Orders Content Script', () => {
             const { specializedLogger } = require('../utils/logger.js');
             require('./amazon-orders.js');
 
-            expect(specializedLogger.info).toHaveBeenCalledWith('🔧 Starting content script initialization...');
+            expect(specializedLogger.info).toHaveBeenCalledWith('🔧 Initializing content script...');
         });
 
-        it('should log current URL and page title', () => {
+        it('should log content script initialization', () => {
             const { specializedLogger } = require('../utils/logger.js');
             require('./amazon-orders.js');
 
-            // The script logs the actual window.location.href, which may be different in test environment
-            expect(specializedLogger.info).toHaveBeenCalledWith('🔧 Current URL:', expect.any(String));
-            expect(specializedLogger.info).toHaveBeenCalledWith('🔧 Page title:', expect.any(String));
+            // The script logs initialization messages
+            expect(specializedLogger.info).toHaveBeenCalledWith('🔧 Archizer content script loaded');
+            expect(specializedLogger.info).toHaveBeenCalledWith('🔧 Initializing content script...');
         });
     });
 
@@ -237,7 +238,7 @@ describe('Amazon Orders Content Script', () => {
             // Wait for async operations
             await new Promise(resolve => setTimeout(resolve, 0));
 
-            expect(specializedLogger.warn).toHaveBeenCalledWith('⚠️ Content script initialization skipped - page not supported');
+            expect(specializedLogger.warning).toHaveBeenCalledWith('⚠️ Content script initialization skipped - page not supported');
         });
     });
 

@@ -574,7 +574,8 @@ describe('OrderParser', () => {
 
         test('should extract order total from various patterns', () => {
             const mockCard = {
-                textContent: 'Total: $29.99'
+                textContent: 'Total: $29.99',
+                querySelectorAll: jest.fn().mockReturnValue([])
             };
 
             const orderTotal = orderParser.extractOrderTotal(mockCard, orderParser.selectors.yourAccount);

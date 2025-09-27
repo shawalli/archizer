@@ -12,6 +12,7 @@ jest.mock('../../utils/logger.js', () => ({
     specializedLogger: {
         info: jest.fn(),
         warn: jest.fn(),
+        warning: jest.fn(),
         error: jest.fn(),
         success: jest.fn()
     }
@@ -136,7 +137,7 @@ describe('GoogleSheetsImporter', () => {
 
             const result = importer.importHiddenOrders(mockSheetRows);
 
-            expect(mockLogger.warn).toHaveBeenCalledWith('Hidden orders validation failed:', ['Row 1: Invalid order ID format']);
+            expect(mockLogger.warning).toHaveBeenCalledWith('Hidden orders validation failed:', ['Row 1: Invalid order ID format']);
             expect(mockLogger.info).toHaveBeenCalledWith('Hidden orders import complete. 0/1 rows valid (0.0% success rate)');
 
             expect(result.validation.isValid).toBe(false);
@@ -177,7 +178,7 @@ describe('GoogleSheetsImporter', () => {
 
             const result = importer.importHiddenOrders(mockSheetRows);
 
-            expect(mockLogger.warn).toHaveBeenCalledWith('Hidden orders validation warnings:', ['Row 1: Username length exceeds recommended limit']);
+            expect(mockLogger.warning).toHaveBeenCalledWith('Hidden orders validation warnings:', ['Row 1: Username length exceeds recommended limit']);
             expect(result.validation.warnings).toContain('Row 1: Username length exceeds recommended limit');
         });
 
@@ -257,7 +258,7 @@ describe('GoogleSheetsImporter', () => {
 
             const result = importer.importActionLog(mockSheetRows);
 
-            expect(mockLogger.warn).toHaveBeenCalledWith('Action log validation failed:', ['Row 1: Invalid action type']);
+            expect(mockLogger.warning).toHaveBeenCalledWith('Action log validation failed:', ['Row 1: Invalid action type']);
             expect(result.validation.isValid).toBe(false);
         });
     });
@@ -319,7 +320,7 @@ describe('GoogleSheetsImporter', () => {
 
             const result = importer.importUserSettings(mockSheetRows);
 
-            expect(mockLogger.warn).toHaveBeenCalledWith('User settings validation failed:', ['Row 1: Username cannot be empty']);
+            expect(mockLogger.warning).toHaveBeenCalledWith('User settings validation failed:', ['Row 1: Username cannot be empty']);
             expect(result.validation.isValid).toBe(false);
         });
     });
@@ -424,7 +425,7 @@ describe('GoogleSheetsImporter', () => {
 
             expect(result.validationSummary.totalErrors).toBe(1);
             expect(result.validationSummary.totalWarnings).toBe(1);
-            expect(mockLogger.warn).toHaveBeenCalledWith('Import completed with 1 errors and 1 warnings');
+            expect(mockLogger.warning).toHaveBeenCalledWith('Import completed with 1 errors and 1 warnings');
         });
 
         it('should handle errors during import', () => {

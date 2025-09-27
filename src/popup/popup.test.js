@@ -42,6 +42,7 @@ jest.mock('../utils/logger.js', () => ({
         info: jest.fn(),
         error: jest.fn(),
         warn: jest.fn(),
+        warning: jest.fn(),
         success: jest.fn()
     }
 }));
@@ -344,20 +345,24 @@ describe('PopupManager', () => {
             expect(container.innerHTML).toContain('Total unknown');
         });
 
-        it('should add event listeners to unhide buttons', () => {
+        it('should add event listeners to show details buttons', () => {
             const hiddenOrders = [
                 {
                     orderId: '123',
-                    type: 'details'
+                    type: 'details',
+                    orderData: {
+                        orderDate: '2023-01-01',
+                        orderTotal: '$29.99'
+                    }
                 }
             ];
 
             popupManager.displayHiddenOrders(hiddenOrders);
 
-            const unhideBtn = document.querySelector('.unhide-btn');
-            expect(unhideBtn).toBeDefined();
-            expect(unhideBtn.dataset.orderId).toBe('123');
-            expect(unhideBtn.dataset.type).toBe('details');
+            const showDetailsBtn = document.querySelector('.show-details-btn');
+            expect(showDetailsBtn).toBeDefined();
+            expect(showDetailsBtn.dataset.orderId).toBe('123');
+            expect(showDetailsBtn.dataset.type).toBe('details');
         });
     });
 
@@ -519,7 +524,7 @@ describe('PopupManager', () => {
 
             await popupManager.executeResync();
 
-            expect(specializedLogger.warn).toHaveBeenCalledWith('⚠️ Could not communicate with content script (may not be on orders page):', expect.any(Error));
+            expect(specializedLogger.warning).toHaveBeenCalledWith('⚠️ Could not communicate with content script (may not be on orders page):', expect.any(Error));
             expect(popupManager.hideResyncDialog).toHaveBeenCalled();
         });
 
