@@ -9,6 +9,36 @@
     margin: 10px 0;
 }
 
+/* Fix Add Tag button text cutoff */
+#add-tag-btn {
+    padding: 5px 16px !important;
+    /* Increase horizontal padding to prevent text cutoff */
+    min-width: 80px;
+    /* Ensure minimum width for text */
+    white-space: nowrap;
+    /* Prevent text wrapping */
+}
+
+/* Fix Cancel and Save & Hide buttons to match pill styling */
+#tagging-cancel-btn,
+#tagging-save-btn {
+    border-radius: 6.25rem !important;
+    /* Match Amazon's pill style */
+    height: 30px !important;
+    /* Match Amazon button height */
+    padding: 5px 11px !important;
+    /* Restore padding for text visibility */
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    font-size: 14px !important;
+    line-height: 20px !important;
+    text-align: center !important;
+    white-space: nowrap !important;
+    color: inherit !important;
+    /* Ensure text color is visible */
+}
+
 /* Style for tag items */
 .tag-item {
     display: inline-block;

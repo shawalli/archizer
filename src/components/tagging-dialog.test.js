@@ -72,7 +72,7 @@ const createMockDOM = () => {
     mockTaggingInterface.innerHTML = `
         <div class="a-box-inner">
             <div class="a-fixed-right-grid a-spacing-small">
-                <div class="a-fixed-right-grid-inner" style="padding-right: 220px;">
+                <div class="a-fixed-right-grid-inner" style="padding-right: 200px;">
                     <div class="a-fixed-right-grid-col a-col-left" style="padding-right: 3.2%; float: left;">
                         <div class="a-row a-spacing-top-base">
                             <div id="existing-tags" class="a-spacing-top-micro">
@@ -86,7 +86,7 @@ const createMockDOM = () => {
                                         <input type="text" id="new-tag-input" class="a-input-text a-width-full"
                                             placeholder="Enter a new tag" maxlength="50" />
                                     </div>
-                                    <button type="button" class="a-button a-button-primary a-button-small" id="add-tag-btn">
+                                    <button type="button" class="a-button a-button-primary" id="add-tag-btn">
                                         Add Tag
                                     </button>
                                 </div>

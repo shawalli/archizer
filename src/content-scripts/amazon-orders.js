@@ -191,7 +191,7 @@ async function initializeTaggingDialog() {
                                                     <div class="a-input-text-wrapper" style="display: inline-block; margin-right: 10px;">
                                                         <input type="text" id="new-tag-input" class="a-input-text a-width-full" placeholder="Enter a new tag" maxlength="50" />
                                                     </div>
-                                                    <button type="button" class="a-button a-button-primary a-button-small" id="add-tag-btn">Add Tag</button>
+                                                    <button type="button" class="a-button a-button-primary" id="add-tag-btn">Add Tag</button>
                                                 </div>
                                             </div>
                                         </div>
