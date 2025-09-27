@@ -96,8 +96,15 @@ describe('DOM Utility Functions', () => {
         test('should create button with text', () => {
             const button = createButton('Click me');
             expect(button.tagName).toBe('BUTTON');
-            expect(button.textContent).toBe('Click me');
             expect(button.type).toBe('button');
+
+            // Check for nested structure
+            const buttonInner = button.querySelector('.a-button-inner');
+            expect(buttonInner).toBeTruthy();
+
+            const buttonText = button.querySelector('.a-button-text');
+            expect(buttonText).toBeTruthy();
+            expect(buttonText.textContent).toBe('Click me');
         });
 
         test('should apply default styling', () => {
@@ -105,6 +112,7 @@ describe('DOM Utility Functions', () => {
             expect(button.style.backgroundColor).toBe('rgb(119, 89, 185)');
             expect(button.style.color).toBe('white');
             expect(button.style.cursor).toBe('pointer');
+            expect(button.style.borderRadius).toBe('6.25rem'); // Amazon pill style
         });
 
         test('should apply custom className', () => {

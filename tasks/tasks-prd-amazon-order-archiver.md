@@ -118,7 +118,7 @@
 
 - [ ] 6.0 **Extension Polish**
   - [x] 6.1 Rename extension and references to be "Archizer"
-  - [ ] 6.2 Modify Hide Details button to match radius and pill style of other buttons in column
+  - [x] 6.2 Modify Hide Details button to match radius and pill style of other buttons in column
   - [ ] 6.3 Modify Add Tag button so that text is not cut off the left and right side of the button
   - [ ] 6.4 Modify Cancel and Save & Hide buttons to have same pill styling as Hide Details and buttons in the Order column
   - [ ] 6.5 Move Cancel and Save & Hide button column to vertically align with order button column

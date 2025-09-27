@@ -58,7 +58,6 @@ export function createElement(tagName, options = {}) {
 export function createButton(text, options = {}) {
     const button = createElement('button', {
         className: options.className || 'a-button a-button-normal a-spacing-mini a-button-base',
-        textContent: text,
         attributes: {
             type: 'button',
             ...options.attributes
@@ -69,13 +68,52 @@ export function createButton(text, options = {}) {
             borderColor: '#888c8c',
             color: 'white',
             fontSize: '12px',
-            padding: '6px 12px',
-            borderRadius: '4px',
+            padding: '0',
+            borderRadius: '6.25rem', // Match Amazon's pill style
             cursor: 'pointer',
             transition: 'all 0.2s ease',
+            borderWidth: '1px',
+            display: 'inline-block',
+            textAlign: 'center',
+            textDecoration: 'none !important',
+            verticalAlign: 'middle',
+            height: '30px', // Match Amazon button height
             ...options.styles
         }
     });
+
+    // Create the nested structure to match Amazon's button layout
+    const buttonInner = createElement('span', {
+        className: 'a-button-inner',
+        styles: {
+            position: 'relative',
+            display: 'block',
+            height: '30px',
+            overflow: 'hidden',
+            borderRadius: '0.125rem'
+        }
+    });
+
+    const buttonText = createElement('span', {
+        className: 'a-button-text',
+        textContent: text,
+        styles: {
+            whiteSpace: 'nowrap',
+            display: 'block',
+            padding: '5px 11px',
+            margin: '0',
+            fontSize: '14px',
+            lineHeight: '20px',
+            textAlign: 'center',
+            backgroundColor: 'transparent',
+            border: '0',
+            outline: '0',
+            color: 'white'
+        }
+    });
+
+    buttonInner.appendChild(buttonText);
+    button.appendChild(buttonInner);
 
     return button;
 }
