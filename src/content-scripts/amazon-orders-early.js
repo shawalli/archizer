@@ -36,13 +36,11 @@ function createOrdersOverlay() {
     overlay.innerHTML = `
         <div class="overlay-content">
             <div class="overlay-header">
-                <img src="${logoUrl}" alt="Archizer Logo" class="logo-image" />
                 <h3>Archizer</h3>
-                <p>Orders are being processed...</p>
+                <p>Loading order data...</p>
             </div>
             <div class="overlay-status">
-                <div class="loading-spinner"></div>
-                <span>Loading order data...</span>
+                <img src="${logoUrl}" alt="Archizer Logo" class="logo-image" />
             </div>
         </div>
     `;
@@ -54,16 +52,11 @@ function createOrdersOverlay() {
         background: ${randomGradient};
     `;
 
-    // Add keyframe animation for spinner
+    // Add keyframe animation for gradient swirl
     try {
         if (document.head) {
             const style = document.createElement('style');
             style.textContent = `
-                @keyframes spin {
-                    0% { transform: rotate(0deg); }
-                    100% { transform: rotate(360deg); }
-                }
-                
                 @keyframes swirlGradient {
                     0% { background-position: 0% 50%; }
                     50% { background-position: 100% 50%; }
