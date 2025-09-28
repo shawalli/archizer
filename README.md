@@ -1,5 +1,9 @@
 # Archizer Chrome Extension
 
+<p align="center">
+  <img src="./icons/logo.png" alt="Archizer Logo" width="256" height="256">
+</p>
+
 A Chrome extension that allows users to archive and hide Amazon orders.
 
 ## Features
@@ -9,40 +13,6 @@ A Chrome extension that allows users to archive and hide Amazon orders.
 - **Tagging System**: Add custom tags to orders for better organization
 - **User Management**: Support for multiple users with separate order tracking
 - **Easy Restoration**: Unhide orders with a single click
-
-## Project Structure
-
-```
-archizer/
-├── manifest.json                 # Chrome extension manifest
-├── package.json                  # Project dependencies and scripts
-├── README.md                     # Project documentation
-├── src/
-│   ├── content-scripts/         # Amazon page integration
-│   │   ├── amazon-orders.js     # Main content script
-│   │   └── amazon-orders.css    # Content script styles
-│   ├── background/              # Background service worker
-│   │   └── background.js        # OAuth and API management
-│   ├── popup/                   # Extension popup interface
-│   │   ├── popup.html          # Popup HTML structure
-│   │   ├── popup.js            # Popup JavaScript logic
-│   │   └── popup.css           # Popup styling
-│   ├── utils/                   # Utility functions
-│   │   ├── google-sheets-api.js # Google Sheets API integration
-│   │   ├── order-parser.js      # Order data parsing
-│   │   ├── storage.js          # Local storage management
-│   │   └── dom-manipulator.js  # DOM manipulation utilities
-│   ├── components/              # Reusable components
-│   │   ├── tagging-dialog.js   # Tagging modal component
-│   │   ├── tagging-dialog.css  # Tagging dialog styles
-│   │   └── tagging-dialog.html # Tagging dialog HTML
-│   └── test-setup.js           # Jest test configuration
-└── icons/                       # Extension icons
-    ├── icon16.png              # 16x16 icon
-    ├── icon32.png              # 32x32 icon
-    ├── icon48.png              # 48x48 icon
-    └── icon128.png             # 128x128 icon
-```
 
 ## Development Setup
 
@@ -92,13 +62,13 @@ mise exec node -- npm build
 1. Create a Google Cloud Project
 2. Enable Google Sheets API
 3. Create OAuth 2.0 credentials
-4. Update the `client_id` in `manifest.json`
+4. Add the Client ID and Client Secret to the extension in the settings page of the extension popup.
 
 ### Google Sheets Setup
 
 1. Create a Google Sheet for order storage
-2. Set up Apps Script web app for backend API
-3. Configure sharing permissions
+2. Add the Sheets URL to the extension in the settings page of the extension popup.
+3. Click "Test Connection" to perform OAuth login and setup Google Sheet.
 
 ## Contributing
 
@@ -110,4 +80,4 @@ mise exec node -- npm build
 
 ## License
 
-MIT License - see LICENSE file for details
+Apache 2.0 License - see LICENSE file for details
