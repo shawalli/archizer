@@ -5,24 +5,26 @@ console.log('🔧 Archizer early content script loaded (document_start)');
 
 // Create and inject the orders overlay immediately
 function createOrdersOverlay() {
-    // Define 12 beautiful gradient schemes
+    // Define 12 beautiful gradient schemes with corresponding text colors
     const gradientSchemes = [
-        'linear-gradient(45deg, #667eea, #764ba2, #667eea, #764ba2)', // Blue to Purple
-        'linear-gradient(45deg, #f093fb, #f5576c, #f093fb, #f5576c)', // Pink to Red
-        'linear-gradient(45deg, #4facfe, #00f2fe, #4facfe, #00f2fe)', // Blue to Cyan
-        'linear-gradient(45deg, #43e97b, #38f9d7, #43e97b, #38f9d7)', // Green to Teal
-        'linear-gradient(45deg, #fa709a, #fee140, #fa709a, #fee140)', // Pink to Yellow
-        'linear-gradient(45deg, #a8edea, #fed6e3, #a8edea, #fed6e3)', // Mint to Pink
-        'linear-gradient(45deg, #ff9a9e, #fecfef, #ff9a9e, #fecfef)', // Coral to Pink
-        'linear-gradient(45deg, #a18cd1, #fbc2eb, #a18cd1, #fbc2eb)', // Lavender to Pink
-        'linear-gradient(45deg, #ffecd2, #fcb69f, #ffecd2, #fcb69f)', // Peach to Coral
-        'linear-gradient(45deg, #ff9a9e, #fad0c4, #ff9a9e, #fad0c4)', // Coral to Peach
-        'linear-gradient(45deg, #a8edea, #fed6e3, #a8edea, #fed6e3)', // Mint to Pink
-        'linear-gradient(45deg, #d299c2, #fef9d7, #d299c2, #fef9d7)'  // Rose to Cream
+        { gradient: 'linear-gradient(45deg, #667eea, #764ba2, #667eea, #764ba2)', textColor: '#ffffff' }, // Blue to Purple
+        { gradient: 'linear-gradient(45deg, #f093fb, #f5576c, #f093fb, #f5576c)', textColor: '#ffffff' }, // Pink to Red
+        { gradient: 'linear-gradient(45deg, #4facfe, #00f2fe, #4facfe, #00f2fe)', textColor: '#ffffff' }, // Blue to Cyan
+        { gradient: 'linear-gradient(45deg, #43e97b, #38f9d7, #43e97b, #38f9d7)', textColor: '#ffffff' }, // Green to Teal
+        { gradient: 'linear-gradient(45deg, #fa709a, #fee140, #fa709a, #fee140)', textColor: '#ffffff' }, // Pink to Yellow
+        { gradient: 'linear-gradient(45deg, #a8edea, #fed6e3, #a8edea, #fed6e3)', textColor: '#333333' }, // Mint to Pink
+        { gradient: 'linear-gradient(45deg, #ff9a9e, #fecfef, #ff9a9e, #fecfef)', textColor: '#333333' }, // Coral to Pink
+        { gradient: 'linear-gradient(45deg, #a18cd1, #fbc2eb, #a18cd1, #fbc2eb)', textColor: '#ffffff' }, // Lavender to Pink
+        { gradient: 'linear-gradient(45deg, #ffecd2, #fcb69f, #ffecd2, #fcb69f)', textColor: '#333333' }, // Peach to Coral
+        { gradient: 'linear-gradient(45deg, #ff9a9e, #fad0c4, #ff9a9e, #fad0c4)', textColor: '#333333' }, // Coral to Peach
+        { gradient: 'linear-gradient(45deg, #a8edea, #fed6e3, #a8edea, #fed6e3)', textColor: '#333333' }, // Mint to Pink
+        { gradient: 'linear-gradient(45deg, #d299c2, #fef9d7, #d299c2, #fef9d7)', textColor: '#333333' }  // Rose to Cream
     ];
 
     // Randomly select one gradient scheme
-    const randomGradient = gradientSchemes[Math.floor(Math.random() * gradientSchemes.length)];
+    const selectedScheme = gradientSchemes[Math.floor(Math.random() * gradientSchemes.length)];
+    const randomGradient = selectedScheme.gradient;
+    const textColor = selectedScheme.textColor;
 
     // Create overlay element
     const overlay = document.createElement('div');
@@ -51,6 +53,12 @@ function createOrdersOverlay() {
         transform: scale(1);
         background: ${randomGradient};
     `;
+
+    // Apply text color to overlay header
+    const overlayHeader = overlay.querySelector('.overlay-header');
+    if (overlayHeader) {
+        overlayHeader.style.color = textColor;
+    }
 
     // Add keyframe animation for gradient swirl
     try {
