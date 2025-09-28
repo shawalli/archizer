@@ -29,10 +29,14 @@ function createOrdersOverlay() {
     overlay.id = 'amazon-orders-archiver-overlay';
     overlay.className = 'amazon-orders-archiver-overlay';
 
+    // Get the extension URL for the logo
+    const logoUrl = chrome.runtime.getURL('icons/logo.png');
+
     // Set content
     overlay.innerHTML = `
         <div class="overlay-content">
             <div class="overlay-header">
+                <img src="${logoUrl}" alt="Archizer Logo" class="logo-image" />
                 <h3>Archizer</h3>
                 <p>Orders are being processed...</p>
             </div>
