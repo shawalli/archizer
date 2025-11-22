@@ -5,6 +5,7 @@
 
 import { createElement, createButton, createContainer, safeAddEventListener, safeSetStyles, hideElementsBySelectors, containsEssentialInfo, isElementWithinContainer, safeModifyClasses, safeSetMultipleStyles } from './dom-utils.js';
 import { specializedLogger as log } from './logger.js';
+import { configManager } from './config-manager.js';
 
 
 export class DOMManipulator {
@@ -360,10 +361,10 @@ export class DOMManipulator {
                     log.warning('No storage manager available for storing order tags');
                 }
 
-                // Get username from storage and pass it to performHideOperation
+                // Get username from config manager and pass it to performHideOperation
                 try {
-                    const username = await storage.get('username') || 'Unknown User';
-                    log.info(`🔧 Retrieved username from storage: "${username}" for order ${orderId}`);
+                    const username = await configManager.get('username') || 'Unknown User';
+                    log.info(`🔧 Retrieved username from config manager: "${username}" for order ${orderId}`);
 
                     // Now perform the hide operation with the username
                     await this.performHideOperation(orderId, tagData, username);
