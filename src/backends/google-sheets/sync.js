@@ -122,7 +122,7 @@ export class GoogleSheetsSync {
             // Find all keys that belong to our extension
             if (allData && typeof allData === 'object') {
                 for (const key of Object.keys(allData)) {
-                    if (key.startsWith('amazon_archiver_')) {
+                    if (key.startsWith('archizer_')) {
                         keysToRemove.push(key);
                     }
                 }

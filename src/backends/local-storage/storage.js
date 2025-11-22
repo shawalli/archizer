@@ -7,7 +7,7 @@ log.info('Storage utilities loaded');
 
 export class StorageManager {
     constructor() {
-        this.prefix = 'amazon_archiver_';
+        this.prefix = 'archizer_';
     }
 
     /**

@@ -7,7 +7,7 @@ import { specializedLogger as log } from './logger.js';
 
 export class ConfigManager {
     constructor() {
-        this.prefix = 'amazon_archiver_config_';
+        this.prefix = 'archizer_config_';
         this.configs = new Map();
         this.validators = new Map();
         this.autoSaveCallbacks = new Map();

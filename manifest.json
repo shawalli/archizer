@@ -9,7 +9,9 @@
         "identity"
     ],
     "host_permissions": [
-        "https://www.amazon.com/*",
+        "https://www.amazon.com/gp/your-account/order-history",
+        "https://www.amazon.com/gp/css/order-history",
+        "https://www.amazon.com/your-orders/orders",
         "https://sheets.googleapis.com/*"
     ],
     "content_scripts": [

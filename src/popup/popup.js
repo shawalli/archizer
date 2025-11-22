@@ -9,7 +9,7 @@ log.info('Archizer popup script loaded');
 // Simple storage manager for popup (for non-config data)
 export class PopupStorageManager {
     constructor() {
-        this.prefix = 'amazon_archiver_';
+        this.prefix = 'archizer_';
     }
 
     async get(key) {
@@ -243,7 +243,7 @@ export class PopupManager {
             const hiddenOrders = [];
 
             for (const [key, value] of Object.entries(allData)) {
-                if (key.startsWith('amazon_archiver_hidden_order_') && value) {
+                if (key.startsWith('archizer_hidden_order_') && value) {
                     hiddenOrders.push(value);
                 }
             }
@@ -745,7 +745,7 @@ export class PopupManager {
 
             // Find all keys that start with our hidden order prefix
             for (const key of Object.keys(allData)) {
-                if (key.startsWith('amazon_archiver_hidden_order_')) {
+                if (key.startsWith('archizer_hidden_order_')) {
                     keysToRemove.push(key);
                 }
             }
@@ -764,7 +764,7 @@ export class PopupManager {
                 const tagKeysToRemove = [];
 
                 for (const key of Object.keys(allData)) {
-                    if (key.includes('order_tags_') && key.startsWith('amazon_archiver_')) {
+                    if (key.includes('order_tags_') && key.startsWith('archizer_')) {
                         tagKeysToRemove.push(key);
                     }
                 }
@@ -840,7 +840,7 @@ export class PopupManager {
                 };
 
                 // Store in browser storage using the correct key format
-                const key = `amazon_archiver_hidden_order_${orderData.orderId}_${storageData.type}`;
+                const key = `archizer_hidden_order_${orderData.orderId}_${storageData.type}`;
 
                 // Check if this order already exists in storage
                 const existingData = await chrome.storage.local.get(key);

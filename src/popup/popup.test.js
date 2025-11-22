@@ -76,18 +76,18 @@ describe('PopupStorageManager', () => {
 
     describe('constructor', () => {
         it('should initialize with correct prefix', () => {
-            expect(storageManager.prefix).toBe('amazon_archiver_');
+            expect(storageManager.prefix).toBe('archizer_');
         });
     });
 
     describe('get method', () => {
         it('should retrieve data from storage successfully', async () => {
-            const mockData = { 'amazon_archiver_username': 'testuser' };
+            const mockData = { 'archizer_username': 'testuser' };
             mockChrome.storage.local.get.mockResolvedValue(mockData);
 
             const result = await storageManager.get('username');
 
-            expect(mockChrome.storage.local.get).toHaveBeenCalledWith('amazon_archiver_username');
+            expect(mockChrome.storage.local.get).toHaveBeenCalledWith('archizer_username');
             expect(result).toBe('testuser');
         });
 
@@ -117,7 +117,7 @@ describe('PopupStorageManager', () => {
             await storageManager.set('username', 'testuser');
 
             expect(mockChrome.storage.local.set).toHaveBeenCalledWith({
-                'amazon_archiver_username': 'testuser'
+                'archizer_username': 'testuser'
             });
         });
 
@@ -136,7 +136,7 @@ describe('PopupStorageManager', () => {
 
             await storageManager.remove('username');
 
-            expect(mockChrome.storage.local.remove).toHaveBeenCalledWith('amazon_archiver_username');
+            expect(mockChrome.storage.local.remove).toHaveBeenCalledWith('archizer_username');
         });
 
         it('should handle removal errors gracefully', async () => {
@@ -176,7 +176,7 @@ describe('PopupManager', () => {
             popupManager = new PopupManager();
 
             expect(popupManager.storage).toBeDefined();
-            expect(popupManager.storage.prefix).toBe('amazon_archiver_');
+            expect(popupManager.storage.prefix).toBe('archizer_');
         });
     });
 
@@ -257,9 +257,9 @@ describe('PopupManager', () => {
 
         it('should retrieve all hidden orders from storage', async () => {
             const mockStorageData = {
-                'amazon_archiver_hidden_order_123_details': { orderId: '123', type: 'details' },
-                'amazon_archiver_hidden_order_456_details': { orderId: '456', type: 'details' },
-                'amazon_archiver_other_data': 'unrelated'
+                'archizer_hidden_order_123_details': { orderId: '123', type: 'details' },
+                'archizer_hidden_order_456_details': { orderId: '456', type: 'details' },
+                'archizer_other_data': 'unrelated'
             };
             mockChrome.storage.local.get.mockResolvedValue(mockStorageData);
 
@@ -272,7 +272,7 @@ describe('PopupManager', () => {
 
         it('should return empty array when no hidden orders exist', async () => {
             mockChrome.storage.local.get.mockResolvedValue({
-                'amazon_archiver_other_data': 'unrelated'
+                'archizer_other_data': 'unrelated'
             });
 
             const result = await popupManager.getAllHiddenOrders();
@@ -379,7 +379,7 @@ describe('PopupManager', () => {
 
             await popupManager.unhideOrder('123', 'details');
 
-            expect(mockChrome.storage.local.remove).toHaveBeenCalledWith('amazon_archiver_hidden_order_123_details');
+            expect(mockChrome.storage.local.remove).toHaveBeenCalledWith('archizer_hidden_order_123_details');
             expect(popupManager.loadHiddenOrders).toHaveBeenCalled();
         });
 
@@ -477,7 +477,7 @@ describe('PopupManager', () => {
 
         it('should clear hidden orders and communicate with content script', async () => {
             mockChrome.storage.local.get.mockResolvedValue({
-                'amazon_archiver_hidden_order_123_details': { orderId: '123' }
+                'archizer_hidden_order_123_details': { orderId: '123' }
             });
             mockChrome.storage.local.remove.mockResolvedValue();
             mockChrome.tabs.query.mockResolvedValue([{ id: 1, url: 'https://amazon.com/orders' }]);
@@ -548,10 +548,10 @@ describe('PopupManager', () => {
 
         it('should clear all hidden order data from storage', async () => {
             const mockStorageData = {
-                'amazon_archiver_hidden_order_123_details': { orderId: '123' },
-                'amazon_archiver_hidden_order_456_details': { orderId: '456' },
-                'amazon_archiver_order_tags_123': ['tag1', 'tag2'],
-                'amazon_archiver_other_data': 'unrelated'
+                'archizer_hidden_order_123_details': { orderId: '123' },
+                'archizer_hidden_order_456_details': { orderId: '456' },
+                'archizer_order_tags_123': ['tag1', 'tag2'],
+                'archizer_other_data': 'unrelated'
             };
             mockChrome.storage.local.get.mockResolvedValue(mockStorageData);
             mockChrome.storage.local.remove.mockResolvedValue();
@@ -559,18 +559,18 @@ describe('PopupManager', () => {
             const result = await popupManager.clearAllHiddenOrders();
 
             expect(mockChrome.storage.local.remove).toHaveBeenCalledWith([
-                'amazon_archiver_hidden_order_123_details',
-                'amazon_archiver_hidden_order_456_details'
+                'archizer_hidden_order_123_details',
+                'archizer_hidden_order_456_details'
             ]);
             expect(mockChrome.storage.local.remove).toHaveBeenCalledWith([
-                'amazon_archiver_order_tags_123'
+                'archizer_order_tags_123'
             ]);
             expect(result).toBe(2);
         });
 
         it('should handle empty storage gracefully', async () => {
             mockChrome.storage.local.get.mockResolvedValue({
-                'amazon_archiver_other_data': 'unrelated'
+                'archizer_other_data': 'unrelated'
             });
 
             const result = await popupManager.clearAllHiddenOrders();
