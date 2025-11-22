@@ -2343,7 +2343,7 @@ export class DOMManipulator {
 
                     // Find all keys that contain order data
                     for (const key of Object.keys(allData)) {
-                        if (key.startsWith('amazon_archiver_hidden_order_')) {
+                        if (key.startsWith('archizer_hidden_order_')) {
                             keysToRemove.push(key);
                         }
                     }
@@ -2360,7 +2360,7 @@ export class DOMManipulator {
                         const tagKeysToRemove = [];
 
                         for (const key of Object.keys(allData)) {
-                            if (key.includes('order_tags_') && key.startsWith('amazon_archiver_')) {
+                            if (key.includes('order_tags_') && key.startsWith('archizer_')) {
                                 tagKeysToRemove.push(key);
                             }
                         }

@@ -246,9 +246,9 @@ describe('GoogleSheetsSync', () => {
         it('should clear all storage data', async () => {
             // Mock chrome storage to return some data
             mockChrome.storage.local.get.mockResolvedValue({
-                'amazon_archiver_hidden_orders': [],
-                'amazon_archiver_action_log': [],
-                'amazon_archiver_user_settings': []
+                'archizer_hidden_orders': [],
+                'archizer_action_log': [],
+                'archizer_user_settings': []
             });
             mockChrome.storage.local.remove.mockResolvedValue();
 
@@ -256,9 +256,9 @@ describe('GoogleSheetsSync', () => {
 
             expect(mockChrome.storage.local.get).toHaveBeenCalledWith(null);
             expect(mockChrome.storage.local.remove).toHaveBeenCalledWith([
-                'amazon_archiver_hidden_orders',
-                'amazon_archiver_action_log',
-                'amazon_archiver_user_settings'
+                'archizer_hidden_orders',
+                'archizer_action_log',
+                'archizer_user_settings'
             ]);
             expect(mockLogger.info).toHaveBeenCalledWith('Clearing existing cache...');
         });

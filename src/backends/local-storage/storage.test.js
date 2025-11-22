@@ -35,7 +35,7 @@ describe('StorageManager', () => {
 
             const result = await storageManager.get('test-key');
 
-            expect(mockChrome.storage.local.get).toHaveBeenCalledWith('amazon_archiver_test-key');
+            expect(mockChrome.storage.local.get).toHaveBeenCalledWith('archizer_test-key');
             expect(result).toEqual(mockData);
         });
 
@@ -70,7 +70,7 @@ describe('StorageManager', () => {
             await storageManager.set('test-key', testData);
 
             expect(mockChrome.storage.local.set).toHaveBeenCalledWith(
-                { 'amazon_archiver_test-key': testData }
+                { 'archizer_test-key': testData }
             );
         });
 
@@ -93,7 +93,7 @@ describe('StorageManager', () => {
 
             await storageManager.remove('test-key');
 
-            expect(mockChrome.storage.local.remove).toHaveBeenCalledWith('amazon_archiver_test-key');
+            expect(mockChrome.storage.local.remove).toHaveBeenCalledWith('archizer_test-key');
         });
 
         it('should handle storage errors gracefully', async () => {
@@ -141,7 +141,7 @@ describe('StorageManager', () => {
             await storageManager.storeHiddenOrder('123', 'details', mockOrderData);
 
             expect(mockChrome.storage.local.set).toHaveBeenCalledWith({
-                'amazon_archiver_hidden_order_123_details': {
+                'archizer_hidden_order_123_details': {
                     orderId: '123',
                     type: 'details',
                     orderData: mockOrderData,
@@ -163,7 +163,7 @@ describe('StorageManager', () => {
             await storageManager.storeHiddenOrder('123', 'details', mockOrderData);
 
             expect(mockChrome.storage.local.set).toHaveBeenCalledWith({
-                'amazon_archiver_hidden_order_123_details': {
+                'archizer_hidden_order_123_details': {
                     orderId: '123',
                     type: 'details',
                     orderData: mockOrderData,
@@ -193,7 +193,7 @@ describe('StorageManager', () => {
 
             await storageManager.removeHiddenOrder('123', 'details');
 
-            expect(mockChrome.storage.local.remove).toHaveBeenCalledWith('amazon_archiver_hidden_order_123_details');
+            expect(mockChrome.storage.local.remove).toHaveBeenCalledWith('archizer_hidden_order_123_details');
         });
 
         it('should handle storage errors gracefully', async () => {
@@ -217,9 +217,9 @@ describe('StorageManager', () => {
             };
 
             mockChrome.storage.local.get.mockImplementation((key) => {
-                if (key === 'amazon_archiver_hidden_order_123_details') {
+                if (key === 'archizer_hidden_order_123_details') {
                     return Promise.resolve({
-                        'amazon_archiver_hidden_order_123_details': mockHiddenOrder
+                        'archizer_hidden_order_123_details': mockHiddenOrder
                     });
                 }
                 return Promise.resolve({});
@@ -228,7 +228,7 @@ describe('StorageManager', () => {
             const result = await storageManager.getHiddenOrder('123', 'details');
 
             expect(result).toEqual(mockHiddenOrder);
-            expect(mockChrome.storage.local.get).toHaveBeenCalledWith('amazon_archiver_hidden_order_123_details');
+            expect(mockChrome.storage.local.get).toHaveBeenCalledWith('archizer_hidden_order_123_details');
         });
 
         it('should return null when hidden order does not exist', async () => {
@@ -255,21 +255,21 @@ describe('StorageManager', () => {
     describe('getAllHiddenOrders', () => {
         it('should retrieve all hidden orders from storage', async () => {
             const mockHiddenOrders = {
-                'amazon_archiver_hidden_order_123_details': {
+                'archizer_hidden_order_123_details': {
                     orderId: '123',
                     type: 'details',
                     orderData: { orderId: '123' },
                     username: 'TestUser',
                     timestamp: '2025-01-01T00:00:00.000Z'
                 },
-                'amazon_archiver_hidden_order_456_order': {
+                'archizer_hidden_order_456_order': {
                     orderId: '456',
                     type: 'order',
                     orderData: { orderId: '456' },
                     username: 'TestUser2',
                     timestamp: '2025-01-02T00:00:00.000Z'
                 },
-                'amazon_archiver_other_data': 'not a hidden order'
+                'archizer_other_data': 'not a hidden order'
             };
 
             mockChrome.storage.local.get.mockImplementation(() => {
@@ -328,7 +328,7 @@ describe('StorageManager', () => {
             await storageManager.storeOrderTags(orderId, mockTagData);
 
             expect(mockChrome.storage.local.set).toHaveBeenCalledWith({
-                'amazon_archiver_order_tags_123': {
+                'archizer_order_tags_123': {
                     orderId: '123',
                     tagData: mockTagData,
                     timestamp: expect.any(String)
@@ -355,9 +355,9 @@ describe('StorageManager', () => {
             const orderId = '123';
 
             mockChrome.storage.local.get.mockImplementation((key) => {
-                if (key === 'amazon_archiver_order_tags_123') {
+                if (key === 'archizer_order_tags_123') {
                     return Promise.resolve({
-                        'amazon_archiver_order_tags_123': {
+                        'archizer_order_tags_123': {
                             orderId: '123',
                             tagData: mockTagData,
                             timestamp: '2025-01-01T00:00:00.000Z'
@@ -370,7 +370,7 @@ describe('StorageManager', () => {
             const result = await storageManager.getOrderTags(orderId);
 
             expect(result).toEqual(mockTagData);
-            expect(mockChrome.storage.local.get).toHaveBeenCalledWith('amazon_archiver_order_tags_123');
+            expect(mockChrome.storage.local.get).toHaveBeenCalledWith('archizer_order_tags_123');
         });
 
         it('should return null when order tags do not exist', async () => {
@@ -408,7 +408,7 @@ describe('StorageManager', () => {
 
             await storageManager.removeOrderTags(orderId);
 
-            expect(mockChrome.storage.local.remove).toHaveBeenCalledWith('amazon_archiver_order_tags_123');
+            expect(mockChrome.storage.local.remove).toHaveBeenCalledWith('archizer_order_tags_123');
         });
 
         it('should handle storage errors gracefully', async () => {
@@ -426,17 +426,17 @@ describe('StorageManager', () => {
     describe('getAllOrderTags', () => {
         it('should retrieve all order tags from storage', async () => {
             const mockOrderTags = {
-                'amazon_archiver_order_tags_123': {
+                'archizer_order_tags_123': {
                     orderId: '123',
                     tagData: { tags: ['electronics'], notes: 'Test' },
                     timestamp: '2025-01-01T00:00:00.000Z'
                 },
-                'amazon_archiver_order_tags_456': {
+                'archizer_order_tags_456': {
                     orderId: '456',
                     tagData: { tags: ['gift'], notes: 'Another test' },
                     timestamp: '2025-01-02T00:00:00.000Z'
                 },
-                'amazon_archiver_other_data': 'not order tags'
+                'archizer_other_data': 'not order tags'
             };
 
             mockChrome.storage.local.get.mockImplementation(() => {
@@ -483,11 +483,11 @@ describe('StorageManager', () => {
         it('should clear all storage data for a specific order', async () => {
             const orderId = '123';
             const mockAllData = {
-                'amazon_archiver_hidden_order_123_details': { orderId: '123', type: 'details' },
-                'amazon_archiver_hidden_order_123_order': { orderId: '123', type: 'order' },
-                'amazon_archiver_order_tags_123': { orderId: '123', tags: ['test'] },
-                'amazon_archiver_username': 'TestUser',
-                'amazon_archiver_other_data': 'not related to order 123'
+                'archizer_hidden_order_123_details': { orderId: '123', type: 'details' },
+                'archizer_hidden_order_123_order': { orderId: '123', type: 'order' },
+                'archizer_order_tags_123': { orderId: '123', tags: ['test'] },
+                'archizer_username': 'TestUser',
+                'archizer_other_data': 'not related to order 123'
             };
 
             mockChrome.storage.local.get.mockImplementation(() => {
@@ -502,17 +502,17 @@ describe('StorageManager', () => {
 
             expect(result).toBe(3);
             expect(mockChrome.storage.local.remove).toHaveBeenCalledWith([
-                'amazon_archiver_hidden_order_123_details',
-                'amazon_archiver_hidden_order_123_order',
-                'amazon_archiver_order_tags_123'
+                'archizer_hidden_order_123_details',
+                'archizer_hidden_order_123_order',
+                'archizer_order_tags_123'
             ]);
         });
 
         it('should handle case when no order data exists', async () => {
             const orderId = '123';
             const mockAllData = {
-                'amazon_archiver_username': 'TestUser',
-                'amazon_archiver_other_data': 'not related to order 123'
+                'archizer_username': 'TestUser',
+                'archizer_other_data': 'not related to order 123'
             };
 
             mockChrome.storage.local.get.mockImplementation(() => {
@@ -542,7 +542,7 @@ describe('StorageManager', () => {
         it('should handle removal errors gracefully', async () => {
             const orderId = '123';
             const mockAllData = {
-                'amazon_archiver_hidden_order_123_details': { orderId: '123', type: 'details' }
+                'archizer_hidden_order_123_details': { orderId: '123', type: 'details' }
             };
 
             mockChrome.storage.local.get.mockImplementation(() => {
@@ -559,7 +559,7 @@ describe('StorageManager', () => {
 
     describe('constructor', () => {
         it('should initialize with correct prefix', () => {
-            expect(storageManager.prefix).toBe('amazon_archiver_');
+            expect(storageManager.prefix).toBe('archizer_');
         });
     });
 
@@ -572,8 +572,8 @@ describe('StorageManager', () => {
 
             // Mock successful operations
             mockChrome.storage.local.get.mockImplementation((key) => {
-                if (key === 'amazon_archiver_username') {
-                    return Promise.resolve({ 'amazon_archiver_username': 'TestUser' });
+                if (key === 'archizer_username') {
+                    return Promise.resolve({ 'archizer_username': 'TestUser' });
                 }
                 return Promise.resolve({});
             });
@@ -585,7 +585,7 @@ describe('StorageManager', () => {
             await storageManager.storeHiddenOrder(orderId, 'details', orderData);
             expect(mockChrome.storage.local.set).toHaveBeenCalledWith(
                 expect.objectContaining({
-                    [`amazon_archiver_hidden_order_${orderId}_details`]: expect.objectContaining({
+                    [`archizer_hidden_order_${orderId}_details`]: expect.objectContaining({
                         orderId,
                         type: 'details',
                         orderData,
@@ -599,7 +599,7 @@ describe('StorageManager', () => {
             await storageManager.storeOrderTags(orderId, tagData);
             expect(mockChrome.storage.local.set).toHaveBeenCalledWith(
                 expect.objectContaining({
-                    [`amazon_archiver_order_tags_${orderId}`]: expect.objectContaining({
+                    [`archizer_order_tags_${orderId}`]: expect.objectContaining({
                         orderId,
                         tagData,
                         timestamp: expect.any(String)
@@ -610,8 +610,8 @@ describe('StorageManager', () => {
             // Clear all data
             mockChrome.storage.local.get.mockImplementation(() => {
                 return Promise.resolve({
-                    [`amazon_archiver_hidden_order_${orderId}_details`]: { orderId, type: 'details' },
-                    [`amazon_archiver_order_tags_${orderId}`]: { orderId, tags: ['test'] }
+                    [`archizer_hidden_order_${orderId}_details`]: { orderId, type: 'details' },
+                    [`archizer_order_tags_${orderId}`]: { orderId, tags: ['test'] }
                 });
             });
 
